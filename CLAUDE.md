@@ -1,0 +1,24 @@
+# Ember Cash: reglas para Claude
+
+@AGENTS.md
+
+## Contexto
+
+- App web de finanzas personales (después iOS). Se construye por fases (15 en total). Haz solo la fase pedida.
+- Diseño: `docs/DESIGN_SPEC.md` y `docs/IVERN_FIXES.md`. IVERN_FIXES corrige al spec donde lo indica.
+
+## Reglas
+
+1. **Idioma**: explica en español neutro, sin voseo (usa "tú", no "vos").
+2. **Comentarios**: comenta todo el código (qué hace cada archivo, función y decisión no obvia).
+3. **Commits**: haz commit al terminar cada cambio. **Nunca hagas push.**
+4. **Versión y changelog**: en cada cambio sube la versión en `package.json` (SemVer) y anota el cambio en `CHANGELOG.md`.
+5. **UI**: sin emojis y sin glows decorativos.
+6. **Secretos**: nunca pongas secretos en el repo. Solo `.env.example` (sin valores) se versiona. `SUPABASE_SERVICE_ROLE_KEY` y `CRON_SECRET` solo se usan en el servidor, mediante `getServerEnv()` de `lib/env.ts`.
+7. **Alcance**: no avances más allá de la fase pedida.
+8. **Diseño ambiguo**: si algo del diseño es ambiguo, pregunta en vez de inventar.
+
+## Flujo
+
+- `pnpm check` (lint, typecheck y tests) debe pasar antes de cada commit.
+- La CLI de Supabase se usa con `pnpm exec supabase ...`.
