@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.9.0] - 2026-10-17
+
+### Añadido (fase 9: suscripciones y calendario)
+
+- Motor de fechas en `lib/recurring`: semanal, mensual y anual, con intervalo y `ends_on`. Un mensual anclado al 31 cae el último día de los meses más cortos; un anual del 29 de febrero cae el 28 cuando el año no es bisiesto. Las fechas usan la zona del perfil (`America/Bogota` por defecto). `ensureOccurrences` materializa 90 días hacia adelante y es idempotente (unique por ítem y fecha, y no recrea una fecha movida). Tests de fin de mes, bisiestos, pausa y cancelación.
+- `GET /api/cron/occurrences`, protegido con `CRON_SECRET`, a diario (08:45 en Bogotá). Materializa vencimientos y, si `auto_post` está activo, registra la transacción del día solo para suscripciones. Las facturas y los días de cobro quedan pendientes. Los pagos mínimos de deuda también quedan pendientes.
+- Pantalla Suscripciones: total mensual, total anual, activas y próximo cobro; filtro Todas / Mensuales / Anuales; cobros de 14 días. Crear, editar, pausar y cancelar (cancelar se deshace con el toast).
+- Pantalla Calendario: mes de lunes a domingo, tres tipos (pago por vencer, día de cobro, recurrente), "+N más", panel del día con "Marcar como pagado" y "Reprogramar" (mueve solo esa ocurrencia y guarda `rescheduled_from`). Resumen del mes y próximo día de cobro. El total del día va en la moneda elegida.
+- El campo Repetir del modal de transacciones (Nunca, Semanal, Mensual, Anual) crea el recurrente al guardar una transacción nueva. Una transferencia no se repite.
+- El pago mínimo de una deuda abierta genera ocurrencias `debt_payment` y aparecen en el calendario. Registrar el pago en Deudas marca el vencimiento de ese mes.
+- RPC `post_occurrence`: crea la transacción del vencimiento (y el reparto, si es del hogar) y lo marca pagado en la misma transacción de base de datos. Columna `subtitle` en los recurrentes.
+
 ## [0.8.2] - 2026-10-17
 
 ### Cambiado

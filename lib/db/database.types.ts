@@ -539,6 +539,7 @@ export type Database = {
           name: string;
           owner_id: string;
           status: string;
+          subtitle: string | null;
         };
         Insert: {
           account_id?: string | null;
@@ -558,6 +559,7 @@ export type Database = {
           name: string;
           owner_id?: string;
           status?: string;
+          subtitle?: string | null;
         };
         Update: {
           account_id?: string | null;
@@ -577,6 +579,7 @@ export type Database = {
           name?: string;
           owner_id?: string;
           status?: string;
+          subtitle?: string | null;
         };
         Relationships: [
           {
@@ -882,6 +885,10 @@ export type Database = {
       is_household_member: { Args: { hid: string }; Returns: boolean };
       is_household_owner: { Args: { hid: string }; Returns: boolean };
       max_household_members: { Args: never; Returns: number };
+      post_occurrence: {
+        Args: { p_account_id: string; p_occurrence_id: string };
+        Returns: string;
+      };
       save_transaction: {
         Args: {
           p_account_id: string;

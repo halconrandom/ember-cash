@@ -105,7 +105,18 @@ const DEFAULTS: Partial<Record<keyof TransactionFilters, string>> = {
 export function withFilters(
   current: URLSearchParams,
   changes: Partial<
-    Record<keyof TransactionFilters | "tx" | "goal" | "contribute" | "debt" | "pay", string | null>
+    Record<
+      | keyof TransactionFilters
+      | "tx"
+      | "goal"
+      | "contribute"
+      | "debt"
+      | "pay"
+      | "sub"
+      | "event"
+      | "day",
+      string | null
+    >
   >,
 ): string {
   const next = new URLSearchParams(current);
@@ -119,7 +130,7 @@ export function withFilters(
     else next.set(key, value);
   }
   // Abrir o cerrar un modal (tx, goal, contribute) no cambia de página.
-  const MODAL_KEYS = ["tx", "goal", "contribute", "debt", "pay"];
+  const MODAL_KEYS = ["tx", "goal", "contribute", "debt", "pay", "sub", "event"];
   if (!("page" in changes) && Object.keys(changes).some((k) => !MODAL_KEYS.includes(k)))
     next.delete("page");
   if (next.get("range") !== "custom") {

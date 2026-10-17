@@ -113,6 +113,7 @@ export function TransactionModal({
   const [accountId, setAccountId] = useState(editing?.account?.id ?? accounts[0]?.id ?? "");
   const [transferTo, setTransferTo] = useState(editing?.transferTo?.id ?? "");
   const [paidBy, setPaidBy] = useState(editing?.paidBy ?? currentUserId);
+  const [repeat, setRepeat] = useState<"never" | "weekly" | "monthly" | "yearly">("never");
   const [errors, setErrors] = useState<Partial<Record<TransactionField, TransactionErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -128,6 +129,7 @@ export function TransactionModal({
 
   function changeKind(next: TransactionKind) {
     setKind(next);
+    if (next === "transfer") setRepeat("never");
     if (
       next !== "transfer" &&
       categoryKey &&
@@ -168,6 +170,7 @@ export function TransactionModal({
       accountId,
       transferToAccountId: kind === "transfer" ? transferTo || null : null,
       paidBy: members && kind !== "transfer" ? paidBy : null,
+      repeat: kind === "transfer" ? "never" : repeat,
     };
     const check = validateTransaction(input, locale);
     if (!check.ok) {
@@ -442,6 +445,24 @@ export function TransactionModal({
               />
             )}
           </div>
+
+          {kind !== "transfer" && !editing && (
+            <div className="space-y-2">
+              <p className="text-callout text-ink-2 font-semibold">{tm("repeat")}</p>
+              <SegmentedControl
+                className="flex w-full [&>button]:flex-1"
+                label={tm("repeat")}
+                options={[
+                  { value: "never", label: tm("repeatNever") },
+                  { value: "weekly", label: tm("repeatWeekly") },
+                  { value: "monthly", label: tm("repeatMonthly") },
+                  { value: "yearly", label: tm("repeatYearly") },
+                ]}
+                value={repeat}
+                onChange={setRepeat}
+              />
+            </div>
+          )}
 
           <TextareaField
             label={tm("notes")}

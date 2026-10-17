@@ -27,6 +27,8 @@ export const transactionInputSchema = z.object({
   accountId: z.string(),
   transferToAccountId: z.string().nullable(),
   paidBy: z.string().nullable(),
+  /** Never por defecto (DESIGN_SPEC §5). Solo crea un recurrente al agregar. */
+  repeat: z.enum(["never", "weekly", "monthly", "yearly"]).default("never"),
 });
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 
@@ -65,6 +67,7 @@ export type ValidTransaction = {
   accountId: string;
   transferToAccountId: string | null;
   paidBy: string | null;
+  repeat: "never" | "weekly" | "monthly" | "yearly";
 };
 
 export type ValidationResult =
@@ -130,6 +133,7 @@ export function validateTransaction(raw: unknown, locale: Locale): ValidationRes
       transferToAccountId: transferTo,
       // Las transferencias no tienen pagador.
       paidBy: input.kind === "transfer" || !isUuid(input.paidBy) ? null : input.paidBy,
+      repeat: input.kind === "transfer" ? "never" : input.repeat,
     },
   };
 }

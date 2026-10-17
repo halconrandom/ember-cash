@@ -18,6 +18,8 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
 import { isLocale } from "@/lib/i18n/config";
+import { CATEGORY_META } from "@/lib/categories";
+import { recurringFromTransaction } from "@/lib/recurring/from-transaction";
 import { scopeHouseholdId } from "@/lib/scope/constants";
 import { getScope } from "@/lib/scope/server";
 import { createClient } from "@/lib/supabase/server";
@@ -70,7 +72,57 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
       error: error.code === "42501" ? "forbidden" : error.code === "P0002" ? "notFound" : "failed",
     };
   }
+  // Repetir solo al crear. La ocurrencia de esta fecha queda pagada: la
+  // transacción que se acaba de guardar es ese vencimiento.
+  const draft = recurringFromTransaction(t);
+  if (draft) {
+    const { data: item, error: itemError } = await supabase
+      .from("recurring_items")
+      .insert({
+        household_id: householdId,
+        kind: draft.kind,
+        name: draft.name,
+        icon_key: t.categoryKey
+          ? CATEGORY_META[t.categoryKey as keyof typeof CATEGORY_META].icon
+          : null,
+        category_key: t.categoryKey,
+        amount_minor: Number(t.amount.amountMinor),
+        currency: t.amount.currency,
+        account_id: t.accountId,
+        frequency: draft.frequency,
+        interval: 1,
+        anchor_date: draft.anchorDate,
+        auto_post: draft.autoPost,
+      })
+      .select("id")
+      .single();
+    if (itemError || !item) {
+      await supabase
+        .from("transactions")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", data);
+      return { ok: false, error: "failed" };
+    }
+    const { error: occurrenceError } = await supabase.from("recurring_occurrences").insert({
+      recurring_item_id: item.id,
+      due_on: t.occurredOn,
+      status: "paid",
+      transaction_id: data,
+    });
+    if (occurrenceError) {
+      await supabase.from("recurring_items").delete().eq("id", item.id);
+      await supabase
+        .from("transactions")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", data);
+      return { ok: false, error: "failed" };
+    }
+    await supabase.from("transactions").update({ recurring_item_id: item.id }).eq("id", data);
+  }
+
   revalidatePath("/transactions");
+  revalidatePath("/subscriptions");
+  revalidatePath("/calendar");
   return { ok: true, id: data };
 }
 

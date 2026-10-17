@@ -22,6 +22,7 @@ const base: TransactionInput = {
   accountId: ACCOUNT,
   transferToAccountId: null,
   paidBy: null,
+  repeat: "never",
 };
 
 describe("validación del formulario", () => {

@@ -44,8 +44,13 @@ export type PageConfig = {
   month?: boolean;
   /** Acción principal: texto (clave de messages) y parámetro de URL que abre su modal. */
   action?: {
-    label: "transactions.add" | "savings.newGoal" | "debts.addDebt";
-    param: "tx" | "goal" | "debt";
+    label:
+      | "transactions.add"
+      | "savings.newGoal"
+      | "debts.addDebt"
+      | "subscriptions.add"
+      | "calendar.addPayment";
+    param: "tx" | "goal" | "debt" | "sub" | "event";
   };
 };
 
@@ -58,8 +63,16 @@ export const PAGE_TITLES: Record<string, PageConfig> = {
   },
   "/savings": { title: "savings", action: { label: "savings.newGoal", param: "goal" } },
   "/debts": { title: "debts", action: { label: "debts.addDebt", param: "debt" } },
-  "/subscriptions": { title: "subscriptions" },
-  "/calendar": { title: "calendar", subtitle: "calendarSubtitle", month: true },
+  "/subscriptions": {
+    title: "subscriptions",
+    action: { label: "subscriptions.add", param: "sub" },
+  },
+  "/calendar": {
+    title: "calendar",
+    subtitle: "calendarSubtitle",
+    month: true,
+    action: { label: "calendar.addPayment", param: "event" },
+  },
   "/household": { title: "household", month: true },
   "/settings": { title: "settings" },
 };

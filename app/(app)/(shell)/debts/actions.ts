@@ -23,6 +23,7 @@ import {
   type PaymentField,
 } from "@/lib/debts/schema";
 import { isLocale } from "@/lib/i18n/config";
+import { markDebtOccurrencePaid, syncDebtRecurring } from "@/lib/recurring/debts";
 import { createClient } from "@/lib/supabase/server";
 import { todayIn } from "@/lib/transactions/dates";
 
@@ -37,7 +38,7 @@ export type DebtSaveResult =
   | { ok: false; fieldErrors?: Partial<Record<DebtField, DebtErrorKey>>; error?: "failed" };
 
 export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
-  const { locale, today } = await context();
+  const { user, locale, today } = await context();
   const result = validateDebt(input, locale);
   if (!result.ok) return { ok: false, fieldErrors: result.errors };
   const d = result.value;
@@ -62,19 +63,23 @@ export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
         .select("id")
         .single();
   if (error) return { ok: false, error: "failed" };
+  await syncDebtRecurring(supabase, { ownerId: user.id, today });
   revalidatePath("/debts");
+  revalidatePath("/calendar");
   return { ok: true, id: data.id };
 }
 
 async function setDeleted(id: string, deleted: boolean) {
-  await requireUser();
+  const { user, today } = await context();
   if (!z.uuid().safeParse(id).success) return { ok: false };
   const supabase = await createClient();
   const { error, count } = await supabase
     .from("debts")
     .update({ deleted_at: deleted ? new Date().toISOString() : null }, { count: "exact" })
     .eq("id", id);
+  if (!error && count === 1) await syncDebtRecurring(supabase, { ownerId: user.id, today });
   revalidatePath("/debts");
+  revalidatePath("/calendar");
   return { ok: !error && count === 1 };
 }
 
@@ -152,7 +157,9 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
     if (transactionId) await supabase.from("transactions").delete().eq("id", transactionId);
     return { ok: false, error: "failed" };
   }
+  await markDebtOccurrencePaid(supabase, p.debtId, p.paidOn, transactionId);
   revalidatePath("/debts");
   revalidatePath("/transactions");
+  revalidatePath("/calendar");
   return { ok: true };
 }
