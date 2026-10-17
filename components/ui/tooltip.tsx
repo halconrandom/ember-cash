@@ -1,9 +1,11 @@
 "use client";
 
 /**
- * Tooltip (19-states.png). Aparece con hover o foco; la primera vez espera un
- * poco y, si el usuario sigue recorriendo elementos, los siguientes salen al
- * instante. Esc lo cierra. El disparador queda enlazado con aria-describedby.
+ * Tooltip (19-states.png). Aparece con hover del mouse o con foco; la primera
+ * vez espera un poco y, si el usuario sigue recorriendo elementos, los
+ * siguientes salen al instante. Esc lo cierra. El disparador queda enlazado
+ * con aria-describedby. Un toque no lo abre por hover (en iOS haría que el
+ * primer toque no llegue al clic); en el teléfono se abre con el foco.
  */
 import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from "react";
 
@@ -62,8 +64,8 @@ export function Tooltip({ content, children, side = "top", className }: Props) {
   return (
     <span
       className="relative inline-flex"
-      onPointerEnter={show}
-      onPointerLeave={hide}
+      onPointerEnter={(event) => event.pointerType === "mouse" && show()}
+      onPointerLeave={(event) => event.pointerType === "mouse" && hide()}
       onFocus={show}
       onBlur={hide}
     >

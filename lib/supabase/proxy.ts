@@ -37,22 +37,15 @@ export function isPublicPath(
 
 export async function updateSession(request: NextRequest) {
   const env = getPublicEnv();
-  // Nonce por petición. Next lo copia a sus scripts si la CSP va en la request.
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  // CSP sin nonce (ver lib/security/headers.ts): va solo en la respuesta.
   const csp = contentSecurityPolicy({
-    nonce,
     isDev: process.env.NODE_ENV !== "production",
     supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
   });
 
-  // Next solo reenvía headers si se pasan en `request.headers` de
-  // NextResponse.next (ver la guía de CSP). Se clonan aquí, no se muta el
-  // request: al refrescar cookies hay que reconstruir el header que ve el render.
+  // Al refrescar cookies hay que reconstruir la respuesta; la CSP se vuelve a poner.
   const continueWith = () => {
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("Content-Security-Policy", csp);
-    requestHeaders.set("x-nonce", nonce);
-    const res = NextResponse.next({ request: { headers: requestHeaders } });
+    const res = NextResponse.next({ request });
     res.headers.set("Content-Security-Policy", csp);
     return res;
   };

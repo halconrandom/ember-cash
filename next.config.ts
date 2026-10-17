@@ -10,6 +10,13 @@ import { securityHeaders } from "./lib/security/static-headers";
 getServerEnv();
 
 const nextConfig: NextConfig = {
+  // Solo en desarrollo: deja que un teléfono en la misma red abra el servidor
+  // de `pnpm dev` por la IP del Mac (http://192.168.x.x:3000) o su nombre
+  // .local. Sin esto, Next 16 bloquea /_next/hmr para orígenes que no son
+  // localhost, el cliente de desarrollo no arranca, React no hidrata y los
+  // botones (p. ej. "Continuar con Google") no responden al toque. No afecta
+  // a producción. Rangos de red privada (RFC 1918) y mDNS.
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "172.*.*.*", "*.local"],
   cacheComponents: true,
   partialPrefetching: true,
   // Cabeceras estáticas en todas las rutas. La CSP va en proxy.ts porque

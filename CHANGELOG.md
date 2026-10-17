@@ -2,6 +2,21 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.2] - 2026-10-17
+
+### Corregido
+
+- En el teléfono, "Continuar con Google" (y cualquier botón) no respondía al toque: React no hidrataba, el botón quedaba como HTML sin `onClick` y el segundo toque solo hacía zoom. Había dos causas, reproducidas emulando un iPhone con toques reales:
+  - **Desarrollo por la red local** (`http://192.168.x.x:3000`): Next 16 bloquea `/_next/hmr` para orígenes que no son localhost y el cliente de desarrollo no arrancaba. Se agregó `allowedDevOrigins` con los rangos de red privada y `*.local` (solo afecta a `pnpm dev`).
+  - **Producción**: la CSP con nonce y `'strict-dynamic'` bloqueaba los `<script>` del esqueleto que Next prerenderiza con `cacheComponents` (13 de 23 sin nonce, incluido el arranque de Turbopack). La guía de CSP de Next 16 dice que PPR y nonce son incompatibles. La CSP pasa a `script-src 'self' 'unsafe-inline'` sin nonce ni hash, y se mantienen las demás directivas (`object-src 'none'`, `base-uri`, `frame-ancestors`, `form-action`, `connect-src` solo a Supabase). El proxy ya no genera nonce.
+- `touch-action: manipulation` en botones, enlaces, chips y controles: sin zoom por doble toque y sin la espera de 300 ms; el pellizco sigue funcionando. El resaltado al tocar ya era transparente (preflight de Tailwind v4).
+- Highlight (píldora del sidebar) y Tooltip reaccionan al hover solo con mouse. En iOS un toque dispara `pointerenter` y, si el DOM cambia antes del clic, Safari toma el primer toque como hover.
+- Revisado sin cambios: el meta viewport ya era `width=device-width, initial-scale=1` y los campos ya usaban 16 px en el teléfono.
+
+### Añadido
+
+- Tests: la CSP no lleva nonce, hash ni `strict-dynamic`; un toque no mueve el Highlight ni abre el Tooltip, el mouse sí; el botón es `type="button"` con `onClick` directo; el CSS tiene `touch-action` y los 16 px.
+
 ## [0.14.1] - 2026-10-17
 
 ### Cambiado

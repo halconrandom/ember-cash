@@ -544,6 +544,28 @@ main,
   overscroll-behavior-y: contain;
 }
 
+/* Toques en el teléfono: sin zoom por doble toque en lo que se presiona
+   (el pellizco para hacer zoom sigue funcionando) y sin la espera de 300 ms.
+   El resaltado gris al tocar ya lo quita el preflight de Tailwind v4
+   (-webkit-tap-highlight-color: transparent en html). */
+@layer base {
+  a,
+  button,
+  label,
+  summary,
+  select,
+  [role="button"],
+  [role="radio"],
+  [role="tab"],
+  [role="checkbox"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    touch-action: manipulation;
+  }
+}
+
 /* Inputs a 16 px solo en el teléfono: iOS hace zoom si el campo es más
    chico. El cuerpo de la UI sigue en text-body (14 px). */
 @media (max-width: 599px) {

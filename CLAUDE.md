@@ -37,6 +37,7 @@
 - Ningún vencimiento se registra solo: el cron solo marca "Vencida" (`overdue`); la única forma de crear la transacción es "Marcar como pagado" (`post_occurrence`, exige usuario, con la fecha real de pago).
 - Dashboard: los totales salen de la RPC `dashboard_totals` (sumas en la base) y se calculan con `lib/dashboard/aggregate.ts`; nunca se traen transacciones para sumarlas. Cada tarjeta lee sus datos con `safe()` (error aislado) y tiene su propio `<Suspense>`.
 - El interruptor Personal / Compartido se declara por ruta en `components/shell/nav.ts` (`scope: "shell"` o `"page"`).
+- CSP sin nonce (`lib/security/headers.ts`): con `cacheComponents` el esqueleto prerenderizado no puede llevar nonce; un nonce, un hash o `'strict-dynamic'` en `script-src` rompe la hidratación en producción. Probar cambios de CSP con `pnpm build && pnpm start`, no solo en dev.
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.
 
 ## UI

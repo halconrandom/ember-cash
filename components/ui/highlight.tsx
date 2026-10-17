@@ -85,6 +85,10 @@ export function Highlight({
 /**
  * Estado de un elemento: si lleva el fondo y los manejadores de hover para
  * ponerlos en el elemento. Fuera de un <Highlight>, usa `fallbackActive`.
+ *
+ * Solo el mouse (y el foco del teclado) mueve el fondo. En iOS un toque
+ * también dispara pointerenter; si eso cambia el DOM antes del clic, Safari
+ * toma el primer toque como hover y el enlace pide un segundo toque.
  */
 export function useHighlightItem(value: string, fallbackActive = false) {
   const ctx = useContext(HighlightContext);
@@ -92,9 +96,15 @@ export function useHighlightItem(value: string, fallbackActive = false) {
     highlighted: ctx ? ctx.shown === value : fallbackActive,
     handlers: ctx?.hover
       ? {
-          onPointerEnter: () => ctx.enter(value),
-          onPointerLeave: () => ctx.leave(),
-          onFocus: () => ctx.enter(value),
+          onPointerEnter: (event: React.PointerEvent) => {
+            if (event.pointerType === "mouse") ctx.enter(value);
+          },
+          onPointerLeave: (event: React.PointerEvent) => {
+            if (event.pointerType === "mouse") ctx.leave();
+          },
+          onFocus: (event: React.FocusEvent) => {
+            if (isKeyboardFocus(event.target)) ctx.enter(value);
+          },
           onBlur: () => ctx.leave(),
         }
       : {},
@@ -116,4 +126,9 @@ export function HighlightBackground({ show, className }: { show: boolean; classN
       className={cn("absolute inset-0", className)}
     />
   );
+}
+
+/** ¿El foco vino del teclado? (un toque o clic no cuenta). */
+function isKeyboardFocus(target: EventTarget): boolean {
+  return target instanceof Element && target.matches(":focus-visible");
 }
