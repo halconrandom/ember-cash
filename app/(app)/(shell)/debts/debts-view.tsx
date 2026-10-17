@@ -412,9 +412,11 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
         </Stat>
       </dl>
 
-      {/* Barra de "pagado" en verde, como en el frame. */}
+      {/* Barra de "pagado" en ember-fill (DESIGN_SPEC §1: el progreso de pago
+          de deudas es uno de los dos usos del naranja como dato, y las barras
+          de pago usan ember-fill). El valor va escrito arriba. */}
       <div className="bg-track mt-4 h-1.5 overflow-hidden rounded-full" aria-hidden>
-        <div className="bg-positive h-full rounded-full" style={{ width: `${percent}%` }} />
+        <div className="bg-ember-fill h-full rounded-full" style={{ width: `${percent}%` }} />
       </div>
       <ProgressBarLabel percent={percent} />
 

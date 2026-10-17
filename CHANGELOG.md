@@ -2,6 +2,13 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.8.1] - 2026-10-17
+
+### Cambiado
+
+- La barra de porcentaje pagado de las deudas usa ember-fill (#C6500B en claro y oscuro), según el uso del naranja como dato de DESIGN_SPEC §1, en lugar de verde.
+- Test de contraste: ember-fill sobre su pista y sobre el fondo de la fila. En claro cumple (3,88 y 4,24); en oscuro cumple contra la fila (3,48) pero queda en 2,41 contra la pista #3B3B40, por debajo de 3:1. Se documenta como pendiente.
+
 ## [0.8.0] - 2026-10-17
 
 ### Añadido (fase 8: deudas)
