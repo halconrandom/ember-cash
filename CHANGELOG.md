@@ -2,6 +2,20 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.10.1] - 2026-10-17
+
+### Añadido (fase 10.1: salir del hogar)
+
+- RPC `leave_household` (la persona sale) y `remove_household_member` (quien administra quita a otra persona). Las dos exigen que el neto de esa persona sea 0 en todas las monedas (`balance_not_settled`). Quien administra no puede salir (`owner_cannot_leave`). "Salir del hogar" y "Quitar" en el modal de miembros, en dos pasos, con el motivo traducido si hay saldo pendiente. Quien sale vuelve al scope Personal.
+- El historial queda tal cual: gastos, repartos, liquidaciones y aportes conservan su usuario. Tabla `household_departures` (con RLS) guarda el nombre, y el hogar muestra a esa persona como "Nombre (ex miembro)".
+- Lo que el ex miembro creó en el hogar se queda en el hogar. A sus suscripciones compartidas se les apaga el cobro automático, y el hogar muestra un aviso que cualquier miembro puede cerrar.
+- Un gasto compartido con reparto o pagador de un ex miembro queda bloqueado: monto, moneda, fecha, pagador, cuenta, tipo, descripción, borrado y reparto. Solo se pueden editar la categoría y la nota (el modal deshabilita lo demás y lo explica). Una liquidación con un ex miembro no se edita ni se borra. Lo hacen cumplir triggers en la base; `save_transaction` no rehace el reparto de un gasto bloqueado. La purga de lo ya borrado sigue funcionando.
+- Tests en `supabase/tests/household_leave.sql`: no se puede salir con saldo (tampoco con saldo en USD ni con una liquidación parcial), con saldo en cero sí; el historial se conserva; el ex miembro deja de ver los datos del hogar; los gastos con su reparto quedan bloqueados salvo categoría y nota; se apaga el cobro automático; quien administra no puede salir; un miembro no puede quitar a otro; borrar el hogar sigue funcionando en cascada.
+
+### Corregido
+
+- `post_occurrence` (migración `0010_household_leave.sql`) reparte como `save_transaction`: solo entre quienes ya eran miembros en la fecha del vencimiento; si nadie cumple, todo para quien paga. Rechaza un pagador que ya no es miembro (`payer_not_member`). Tests iguales a los de `save_transaction`.
+
 ## [0.10.0] - 2026-10-17
 
 ### Añadido (fase 10: hogar y gastos compartidos)

@@ -396,6 +396,47 @@ export type Database = {
           },
         ];
       };
+      household_departures: {
+        Row: {
+          auto_post_disabled: string[];
+          display_name: string | null;
+          household_id: string;
+          id: string;
+          left_at: string;
+          notice_dismissed_at: string | null;
+          removed_by: string | null;
+          user_id: string;
+        };
+        Insert: {
+          auto_post_disabled?: string[];
+          display_name?: string | null;
+          household_id: string;
+          id?: string;
+          left_at?: string;
+          notice_dismissed_at?: string | null;
+          removed_by?: string | null;
+          user_id: string;
+        };
+        Update: {
+          auto_post_disabled?: string[];
+          display_name?: string | null;
+          household_id?: string;
+          id?: string;
+          left_at?: string;
+          notice_dismissed_at?: string | null;
+          removed_by?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "household_departures_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       household_invites: {
         Row: {
           created_at: string;
@@ -881,16 +922,29 @@ export type Database = {
           user_id: string;
         }[];
       };
+      household_detach_member: {
+        Args: { hid: string; removed_by: string; uid: string };
+        Returns: undefined;
+      };
       household_has_member: {
+        Args: { hid: string; uid: string };
+        Returns: boolean;
+      };
+      household_member_settled: {
         Args: { hid: string; uid: string };
         Returns: boolean;
       };
       is_household_member: { Args: { hid: string }; Returns: boolean };
       is_household_owner: { Args: { hid: string }; Returns: boolean };
+      leave_household: { Args: { hid: string }; Returns: undefined };
       max_household_members: { Args: never; Returns: number };
       post_occurrence: {
         Args: { p_account_id: string; p_occurrence_id: string };
         Returns: string;
+      };
+      remove_household_member: {
+        Args: { hid: string; uid: string };
+        Returns: undefined;
       };
       save_transaction: {
         Args: {
@@ -909,6 +963,7 @@ export type Database = {
         };
         Returns: string;
       };
+      transaction_has_former_member: { Args: { tid: string }; Returns: boolean };
     };
     Enums: {
       [_ in never]: never;

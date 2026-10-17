@@ -34,7 +34,7 @@ export type SaveResult =
   | {
       ok: false;
       fieldErrors?: Partial<Record<TransactionField, TransactionErrorKey>>;
-      error?: "forbidden" | "notFound" | "failed";
+      error?: "forbidden" | "notFound" | "locked" | "failed";
     };
 
 export async function saveTransaction(input: unknown): Promise<SaveResult> {
@@ -69,7 +69,15 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
   if (error) {
     return {
       ok: false,
-      error: error.code === "42501" ? "forbidden" : error.code === "P0002" ? "notFound" : "failed",
+      error:
+        error.code === "42501"
+          ? "forbidden"
+          : error.code === "P0002"
+            ? "notFound"
+            : // Gasto con un ex miembro: solo categoría y nota (0010).
+              error.message === "former_member_locked"
+              ? "locked"
+              : "failed",
     };
   }
   // Repetir solo al crear. La ocurrencia de esta fecha queda pagada: la

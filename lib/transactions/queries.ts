@@ -25,6 +25,11 @@ export type TransactionRow = {
   paidBy: string | null;
   account: AccountRef | null;
   transferTo: AccountRef | null;
+  /**
+   * Compartida con un reparto o pagador que ya salió del hogar: solo se
+   * editan categoría y nota (0010). Solo lo llena getTransaction.
+   */
+  locked?: boolean;
 };
 
 export type TransactionPage = {
@@ -136,5 +141,8 @@ export async function getTransaction(id: string): Promise<TransactionRow | null>
     .is("deleted_at", null)
     .maybeSingle();
   if (error || !data) return null;
-  return toRow(data as unknown as DbRow);
+  const row = toRow(data as unknown as DbRow);
+  if (!(data as unknown as { household_id: string | null }).household_id) return row;
+  const { data: locked } = await supabase.rpc("transaction_has_former_member", { tid: id });
+  return { ...row, locked: Boolean(locked) };
 }

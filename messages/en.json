@@ -191,7 +191,25 @@
     "goalCreate": "Create shared goal",
     "goalProgress": "{percent}% of the goal",
     "goalOf": "of {target}",
-    "goalTarget": "Target {date}"
+    "goalTarget": "Target {date}",
+    "removeMember": "Remove",
+    "removeConfirm": "Confirm",
+    "removeHint": "To remove someone, their balance must be zero. Their expenses and contributions stay in the history.",
+    "leave": "Leave household",
+    "leaveConfirm": "Confirm leaving",
+    "leaveHint": "To leave, your balance must be zero. Your expenses and contributions stay in the household history.",
+    "leaving": "Working...",
+    "leaveErrors": {
+      "balance_not_settled": "Settle up first: the balance must be zero.",
+      "owner_cannot_leave": "The household admin can't leave.",
+      "only_owner_can_remove": "Only the household admin can remove members.",
+      "generic": "Couldn't complete it. Try again."
+    },
+    "formerMember": "Former member",
+    "formerMemberName": "{name} (former member)",
+    "departureTitle": "{name} left the household",
+    "departureAutoPost": "{count, plural, one {Auto-charge was turned off for this shared subscription: {names}. It's now recorded manually from Subscriptions.} other {Auto-charge was turned off for these shared subscriptions: {names}. They're now recorded manually from Subscriptions.}}",
+    "departureDismiss": "Got it"
   },
   "scope": {
     "label": "Space",
@@ -512,7 +530,10 @@
       "noAccountsDescription": "Transactions come out of an account. Create your first one to continue.",
       "errorForbidden": "You don't have permission to save this transaction.",
       "errorNotFound": "This transaction no longer exists.",
-      "errorFailed": "Couldn't save. Try again."
+      "errorFailed": "Couldn't save. Try again.",
+      "errorLocked": "This expense includes a former member: you can only change the category and note.",
+      "lockedNotice": "This expense includes someone who left the household. To keep settled balances intact, you can only edit the category and note.",
+      "formerMember": "Former member"
     },
     "errors": {
       "amountPositive": "Enter an amount greater than 0",

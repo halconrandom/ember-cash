@@ -39,6 +39,7 @@ import {
 import { budgetPercent, budgetState, spentIn, type BudgetState } from "@/lib/household/budget";
 import type {
   Budget,
+  Departure,
   HouseholdMemberInfo,
   Settlement,
   SharedGoal,
@@ -79,6 +80,8 @@ const BUDGET_TONE: Record<BudgetState, { bar: string; text: string }> = {
 type Props = {
   householdId: string;
   members: HouseholdMemberInfo[];
+  /** Ex miembros, para nombrarlos en el historial. */
+  departures: Departure[];
   currentUserId: string;
   transactions: SharedTransaction[];
   settlements: Settlement[];
@@ -97,7 +100,15 @@ export function HouseholdView(props: Props) {
   const usable = status === "error" ? null : rate;
 
   const ids = members.map((m) => m.userId);
-  const nameOf = (id: string) => members.find((m) => m.userId === id)?.displayName ?? t("noName");
+  // Un ex miembro conserva su nombre con la marca "(ex miembro)".
+  const nameOf = (id: string) => {
+    const member = members.find((m) => m.userId === id);
+    if (member) return member.displayName ?? t("noName");
+    const former = props.departures.find((d) => d.userId === id);
+    return former?.displayName
+      ? t("formerMemberName", { name: former.displayName })
+      : t("formerMember");
+  };
   const colorOf = (id: string): "a" | "b" => (ids.indexOf(id) === 0 ? "a" : "b");
 
   // Mes elegido: gastos para las tarjetas de miembros y la lista.
@@ -410,7 +421,8 @@ function ExpensesCard({
             const percents = splitPercents(
               tx.amount.amountMinor,
               tx.splits.map((s) => ({ userId: s.userId, shareMinor: s.share.amountMinor })),
-              ids,
+              // Miembros actuales y, si el gasto los incluye, ex miembros al final.
+              [...ids, ...tx.splits.map((s) => s.userId).filter((u) => !ids.includes(u))],
             );
             const income = tx.kind === "income";
             return (

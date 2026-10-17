@@ -13,6 +13,9 @@
  * - undoSettlement: Deshacer (borra las liquidaciones recién creadas).
  * - saveBudget / deleteBudget / copyBudgets: presupuestos compartidos por
  *   categoría y mes.
+ * - leaveHousehold / removeMember: salir o quitar a alguien (solo con el
+ *   saldo en cero; lo valida la base, 0010). dismissDepartureNotice cierra el
+ *   aviso de suscripciones sin cobro automático.
  */
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -275,4 +278,69 @@ export async function copyBudgets(input: unknown): Promise<{ ok: boolean; count:
   const { error } = await supabase.from("budgets").insert(rows);
   revalidatePath("/household");
   return { ok: !error, count: error ? 0 : rows.length };
+}
+
+// ---------------------------------------------------------------------------
+// Salir del hogar / quitar a un miembro
+// ---------------------------------------------------------------------------
+
+/** Errores de las RPC de salida que tienen texto propio. */
+const LEAVE_ERRORS = [
+  "balance_not_settled",
+  "owner_cannot_leave",
+  "only_owner_can_remove",
+] as const;
+
+export type LeaveResult = { ok: true } | { ok: false; error: string };
+
+async function leaveError(message: string): Promise<LeaveResult> {
+  const t = await getTranslations("household.leaveErrors");
+  const key = (LEAVE_ERRORS as readonly string[]).includes(message) ? message : "generic";
+  return { ok: false, error: t(key) };
+}
+
+/** La persona sale del hogar y su scope vuelve a Personal. */
+export async function leaveHousehold(householdId: unknown): Promise<LeaveResult> {
+  await requireUser();
+  const parsed = z.uuid().safeParse(householdId);
+  if (!parsed.success) return leaveError("generic");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("leave_household", { hid: parsed.data });
+  if (error) return leaveError(error.message);
+  (await cookies()).set(SCOPE_COOKIE, "personal", {
+    path: "/",
+    maxAge: SCOPE_COOKIE_MAX_AGE,
+    sameSite: "lax",
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Quien administra quita a otra persona del hogar. */
+export async function removeMember(input: unknown): Promise<LeaveResult> {
+  await requireUser();
+  const parsed = z.object({ householdId: z.uuid(), userId: z.uuid() }).safeParse(input);
+  if (!parsed.success) return leaveError("generic");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("remove_household_member", {
+    hid: parsed.data.householdId,
+    uid: parsed.data.userId,
+  });
+  if (error) return leaveError(error.message);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Cierra el aviso de una salida (para todo el hogar). */
+export async function dismissDepartureNotice(id: unknown): Promise<{ ok: boolean }> {
+  await requireUser();
+  const parsed = z.uuid().safeParse(id);
+  if (!parsed.success) return { ok: false };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("household_departures")
+    .update({ notice_dismissed_at: new Date().toISOString() })
+    .eq("id", parsed.data);
+  revalidatePath("/household");
+  return { ok: !error };
 }

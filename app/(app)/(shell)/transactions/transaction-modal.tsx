@@ -117,6 +117,8 @@ export function TransactionModal({
   const [errors, setErrors] = useState<Partial<Record<TransactionField, TransactionErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Gasto con un ex miembro: solo categoría y nota se pueden cambiar.
+  const locked = Boolean(editing?.locked);
 
   /** Al editar un campo, su error desaparece. */
   const clear = (field: TransactionField) =>
@@ -191,7 +193,9 @@ export function TransactionModal({
                 ? "errorForbidden"
                 : result.error === "notFound"
                   ? "errorNotFound"
-                  : "errorFailed",
+                  : result.error === "locked"
+                    ? "errorLocked"
+                    : "errorFailed",
             ),
           );
         }
@@ -219,7 +223,7 @@ export function TransactionModal({
       </Button>
     ) : (
       <>
-        {editing && (
+        {editing && !locked && (
           <Button
             variant="danger-outline"
             size="lg"
@@ -271,90 +275,98 @@ export function TransactionModal({
             submit();
           }}
         >
-          <SegmentedControl
-            className="flex w-full [&>button]:flex-1"
-            label={tm("kindLabel")}
-            options={[
-              { value: "expense", label: tm("expense") },
-              { value: "income", label: tm("income") },
-              { value: "transfer", label: tm("transfer") },
-            ]}
-            value={kind}
-            onChange={changeKind}
-          />
+          {locked && (
+            <p className="rounded-control bg-surface2 text-callout text-ink-2 px-4 py-3">
+              {tm("lockedNotice")}
+            </p>
+          )}
+          {/* Bloqueada: tipo, monto y descripción quedan deshabilitados. */}
+          <fieldset disabled={locked} className="space-y-6 disabled:opacity-60">
+            <SegmentedControl
+              className="flex w-full [&>button]:flex-1"
+              label={tm("kindLabel")}
+              options={[
+                { value: "expense", label: tm("expense") },
+                { value: "income", label: tm("income") },
+                { value: "transfer", label: tm("transfer") },
+              ]}
+              value={kind}
+              onChange={changeKind}
+            />
 
-          {/* Monto: número grande con la unidad una sola vez y su conversión. */}
-          <div
-            className={cn(
-              "rounded-card bg-surface2 border-[1.5px] p-5",
-              errors.amount ? "border-negative" : "border-transparent",
-            )}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <label htmlFor="tx-amount" className="text-callout text-ink-2 font-semibold">
-                {tm("amount")}
-              </label>
-              <SegmentedControl
-                label={tm("amountCurrency")}
-                options={[
-                  { value: "COP", label: "COP" },
-                  { value: "USD", label: "USD" },
-                ]}
-                value={currency}
-                onChange={setCurrency}
-              />
+            {/* Monto: número grande con la unidad una sola vez y su conversión. */}
+            <div
+              className={cn(
+                "rounded-card bg-surface2 border-[1.5px] p-5",
+                errors.amount ? "border-negative" : "border-transparent",
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="tx-amount" className="text-callout text-ink-2 font-semibold">
+                  {tm("amount")}
+                </label>
+                <SegmentedControl
+                  label={tm("amountCurrency")}
+                  options={[
+                    { value: "COP", label: "COP" },
+                    { value: "USD", label: "USD" },
+                  ]}
+                  value={currency}
+                  onChange={setCurrency}
+                />
+              </div>
+              <div className="mt-3 flex items-baseline justify-center gap-2">
+                <input
+                  ref={amountRef}
+                  id="tx-amount"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  placeholder="0"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    clear("amount");
+                  }}
+                  onBlur={() => parsed.ok && setAmount(f.amount(parsed.value))}
+                  aria-invalid={errors.amount ? true : undefined}
+                  aria-describedby={errors.amount ? "tx-amount-error" : "tx-amount-conversion"}
+                  style={{ width: `${Math.max(amount.length, 1) + 0.5}ch` }}
+                  className="text-display text-ink placeholder:text-ink-3 min-w-[2ch] bg-transparent text-center tabular-nums outline-none"
+                />
+                <span className="text-title2 text-ink-2 font-semibold">{currency}</span>
+              </div>
+              <div className="mt-3 flex justify-center">
+                <span
+                  id="tx-amount-conversion"
+                  className="bg-surface text-callout text-ink-2 inline-flex min-h-9 items-center gap-2 rounded-full px-4 tabular-nums"
+                >
+                  <Icon name="exchange" size={16} className="text-ember-text" />
+                  {conversion}
+                </span>
+              </div>
+              {errors.amount && (
+                <p
+                  id="tx-amount-error"
+                  role="alert"
+                  className="text-callout text-negative-text mt-3 text-center"
+                >
+                  {err("amount")}
+                </p>
+              )}
             </div>
-            <div className="mt-3 flex items-baseline justify-center gap-2">
-              <input
-                ref={amountRef}
-                id="tx-amount"
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder="0"
-                value={amount}
-                onChange={(e) => {
-                  setAmount(e.target.value);
-                  clear("amount");
-                }}
-                onBlur={() => parsed.ok && setAmount(f.amount(parsed.value))}
-                aria-invalid={errors.amount ? true : undefined}
-                aria-describedby={errors.amount ? "tx-amount-error" : "tx-amount-conversion"}
-                style={{ width: `${Math.max(amount.length, 1) + 0.5}ch` }}
-                className="text-display text-ink placeholder:text-ink-3 min-w-[2ch] bg-transparent text-center tabular-nums outline-none"
-              />
-              <span className="text-title2 text-ink-2 font-semibold">{currency}</span>
-            </div>
-            <div className="mt-3 flex justify-center">
-              <span
-                id="tx-amount-conversion"
-                className="bg-surface text-callout text-ink-2 inline-flex min-h-9 items-center gap-2 rounded-full px-4 tabular-nums"
-              >
-                <Icon name="exchange" size={16} className="text-ember-text" />
-                {conversion}
-              </span>
-            </div>
-            {errors.amount && (
-              <p
-                id="tx-amount-error"
-                role="alert"
-                className="text-callout text-negative-text mt-3 text-center"
-              >
-                {err("amount")}
-              </p>
-            )}
-          </div>
 
-          <Field
-            label={tm("description")}
-            placeholder={tm("descriptionPlaceholder")}
-            value={description}
-            maxLength={200}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              clear("description");
-            }}
-            error={err("description")}
-          />
+            <Field
+              label={tm("description")}
+              placeholder={tm("descriptionPlaceholder")}
+              value={description}
+              maxLength={200}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                clear("description");
+              }}
+              error={err("description")}
+            />
+          </fieldset>
 
           {kind === "transfer" ? (
             <p className="rounded-control bg-surface2 text-callout text-ink-2 px-4 py-3">
@@ -399,7 +411,7 @@ export function TransactionModal({
             </fieldset>
           )}
 
-          <div className="grid gap-5 sm:grid-cols-2">
+          <fieldset disabled={locked} className="grid gap-5 disabled:opacity-60 sm:grid-cols-2">
             <DateField
               label={tm("date")}
               value={occurredOn}
@@ -441,10 +453,16 @@ export function TransactionModal({
                 icon="user"
                 value={paidBy}
                 onChange={setPaidBy}
-                options={members.map((m) => ({ value: m.userId, label: m.displayName ?? "—" }))}
+                options={[
+                  ...members.map((m) => ({ value: m.userId, label: m.displayName ?? "—" })),
+                  // Pagó alguien que ya salió del hogar: se muestra igual.
+                  ...(members.some((m) => m.userId === paidBy)
+                    ? []
+                    : [{ value: paidBy, label: tm("formerMember") }]),
+                ]}
               />
             )}
-          </div>
+          </fieldset>
 
           {kind !== "transfer" && !editing && (
             <div className="space-y-2">

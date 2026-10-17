@@ -191,7 +191,25 @@
     "goalCreate": "Crear meta compartida",
     "goalProgress": "{percent} % de la meta",
     "goalOf": "de {target}",
-    "goalTarget": "Meta {date}"
+    "goalTarget": "Meta {date}",
+    "removeMember": "Quitar",
+    "removeConfirm": "Confirmar",
+    "removeHint": "Para quitar a alguien, su saldo debe estar en cero. Sus gastos y aportes quedan en el historial.",
+    "leave": "Salir del hogar",
+    "leaveConfirm": "Confirmar salida",
+    "leaveHint": "Para salir, tu saldo debe estar en cero. Tus gastos y aportes quedan en el historial del hogar.",
+    "leaving": "Procesando...",
+    "leaveErrors": {
+      "balance_not_settled": "Primero liquiden las cuentas: el saldo debe estar en cero.",
+      "owner_cannot_leave": "Quien administra el hogar no puede salir.",
+      "only_owner_can_remove": "Solo quien administra el hogar puede quitar miembros.",
+      "generic": "No se pudo completar. Intenta de nuevo."
+    },
+    "formerMember": "Ex miembro",
+    "formerMemberName": "{name} (ex miembro)",
+    "departureTitle": "{name} salió del hogar",
+    "departureAutoPost": "{count, plural, one {Se apagó el cobro automático de esta suscripción compartida: {names}. Ahora se registra a mano desde Suscripciones.} other {Se apagó el cobro automático de estas suscripciones compartidas: {names}. Ahora se registran a mano desde Suscripciones.}}",
+    "departureDismiss": "Entendido"
   },
   "scope": {
     "label": "Espacio",
@@ -512,7 +530,10 @@
       "noAccountsDescription": "Las transacciones salen de una cuenta. Crea la primera para continuar.",
       "errorForbidden": "No tienes permiso para guardar esta transacción.",
       "errorNotFound": "Esta transacción ya no existe.",
-      "errorFailed": "No se pudo guardar. Intenta de nuevo."
+      "errorFailed": "No se pudo guardar. Intenta de nuevo.",
+      "errorLocked": "Este gasto incluye a un ex miembro: solo puedes cambiar la categoría y la nota.",
+      "lockedNotice": "Este gasto incluye a alguien que ya salió del hogar. Para no cambiar cuentas ya liquidadas, solo puedes editar la categoría y la nota.",
+      "formerMember": "Ex miembro"
     },
     "errors": {
       "amountPositive": "Escribe un monto mayor que 0",

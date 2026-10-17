@@ -215,3 +215,36 @@ export async function getSharedGoal(householdId: string): Promise<SharedGoal | n
     byMember: Object.fromEntries(Object.entries(byMember).map(([u, v]) => [u, money(v, currency)])),
   };
 }
+
+export type Departure = {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  removedBy: string | null;
+  leftAt: string;
+  /** Recurrentes a los que se les apagó el cobro automático. */
+  autoPostDisabled: string[];
+  noticeDismissed: boolean;
+};
+
+/** Salidas del hogar (ex miembros), recientes primero. */
+export async function listDepartures(householdId: string): Promise<Departure[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("household_departures")
+    .select(
+      "id, user_id, display_name, removed_by, left_at, auto_post_disabled, notice_dismissed_at",
+    )
+    .eq("household_id", householdId)
+    .order("left_at", { ascending: false });
+  if (error) throw new Error(`No se pudieron leer las salidas del hogar: ${error.message}`);
+  return data.map((d) => ({
+    id: d.id,
+    userId: d.user_id,
+    displayName: d.display_name,
+    removedBy: d.removed_by,
+    leftAt: d.left_at,
+    autoPostDisabled: d.auto_post_disabled,
+    noticeDismissed: d.notice_dismissed_at !== null,
+  }));
+}

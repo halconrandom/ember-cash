@@ -33,6 +33,7 @@
 - Una transacción compartida y sus repartos se escriben en la misma transacción de base de datos (la suma se valida al hacer COMMIT); las personales y las transferencias no llevan repartos.
 - Miembro nuevo: ve todo el historial del hogar, pero solo comparte (y debe) los gastos con fecha igual o posterior a su ingreso (`joined_at` en la zona del perfil). Lo aplica `save_transaction`; un gasto anterior queda entero para quien pagó.
 - El balance del hogar sale de `lib/household/balance.ts` (por moneda; se convierte solo para mostrar). Liquidar total guarda una fila de `settlements` por moneda con saldo y queda exactamente en 0; Deshacer borra esas filas. No dupliques esa lógica en componentes.
+- Salir o quitar a un miembro solo con `leave_household` / `remove_household_member` (saldo en cero). Lo que involucra a un ex miembro queda bloqueado en la base (gastos: solo categoría y nota; liquidaciones: nada).
 - El interruptor Personal / Compartido se declara por ruta en `components/shell/nav.ts` (`scope: "shell"` o `"page"`).
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.
 
