@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.9.1] - 2026-10-17
+
+### Añadido
+
+- Tests del día 31 (febrero, abril y bisiesto), de las 23:30 en Bogotá (el vencimiento no pasa al día siguiente de UTC) y del cron a las 13:45 UTC (hoy es el día de Bogotá).
+
 ## [0.9.0] - 2026-10-17
 
 ### Añadido (fase 9: suscripciones y calendario)

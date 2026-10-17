@@ -84,6 +84,17 @@ describe("zona horaria", () => {
     });
     expect(occurrenceHorizon(now, "UTC").from).toBe("2026-10-17");
   });
+
+  it("a las 23:30 en Bogotá el vencimiento cae ese día, no el siguiente", () => {
+    // 23:30 en Bogotá (UTC−5) ya es las 04:30 del día siguiente en UTC.
+    const now = new Date("2026-10-16T23:30:00-05:00");
+    expect(now.toISOString()).toBe("2026-10-17T04:30:00.000Z");
+    expect(occurrenceHorizon(now, "America/Bogota")).toEqual({
+      from: "2026-10-16",
+      until: "2027-01-14",
+    });
+    expect(occurrenceHorizon(now, "UTC").from).toBe("2026-10-17");
+  });
 });
 
 describe("materializar sin duplicar", () => {
