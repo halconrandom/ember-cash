@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.3] - 2026-10-17
+
+### Añadido
+
+- `docs/security/AUDIT.md`: fase 0 de la auditoría de seguridad (solo lectura, sin cambios en el código). No hay secretos en el historial ni en el cliente, ni acceso entre hogares o usuarios. Hallazgos: 1 alta (los tests de base de datos corren contra el proyecto real), 4 medias (`connect-src` con comodín, cookies de sesión sin `httpOnly`, integridad dentro de un hogar, falta de límites), 9 bajas y 7 informativas, cada una con su fase de corrección.
+
 ## [0.14.2] - 2026-10-17
 
 ### Corregido
