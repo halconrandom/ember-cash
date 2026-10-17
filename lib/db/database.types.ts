@@ -60,6 +60,7 @@ export type Database = {
           household_id: string | null;
           id: string;
           limit_minor: number;
+          month: string;
           owner_id: string;
         };
         Insert: {
@@ -68,6 +69,7 @@ export type Database = {
           household_id?: string | null;
           id?: string;
           limit_minor: number;
+          month?: string;
           owner_id?: string;
         };
         Update: {
@@ -76,6 +78,7 @@ export type Database = {
           household_id?: string | null;
           id?: string;
           limit_minor?: number;
+          month?: string;
           owner_id?: string;
         };
         Relationships: [

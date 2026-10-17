@@ -2,6 +2,22 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.10.0] - 2026-10-17
+
+### Añadido (fase 10: hogar y gastos compartidos)
+
+- Interruptor Personal / Compartido en el shell (Transacciones, Ahorros, Suscripciones, Calendario y Hogar). Cambia el scope de toda la app. Sin hogar, Compartido abre un modal para crear uno (y pasar a Compartido) o unirse con el enlace de invitación. La tarjeta de usuario muestra el hogar cuando el scope es Compartido.
+- Pantalla Hogar: tarjetas de miembros (lo pagado en gastos compartidos del mes, su porcentaje y el reparto 50/50) y Liquidar cuentas (quién le debe a quién, con el equivalente en la otra moneda). Gastos compartidos del mes con filtro por quién pagó y el reparto de cada uno. Presupuesto compartido con sus estados: gris por debajo de 80 %, ámbar de 80 % al límite y rojo por encima ("103 % usado, sobre el presupuesto"). Meta compartida con los aportes por miembro e historial de liquidaciones. "Agregar gasto compartido" abre el modal de transacciones con "Pagó".
+- `lib/household/balance.ts`: balance por moneda (gastos, ingresos compartidos y liquidaciones), conversión con la tasa más reciente y transferencias mínimas. Tests con varias combinaciones, montos impares, COP y USD mezclados, tres miembros, liquidación parcial, total y pago de más. También `lib/household/budget.ts` (porcentaje y estado) y `split.ts` (etiqueta 50 / 50), con tests.
+- Liquidar: Total guarda una liquidación por moneda con saldo (el servidor recalcula el balance) y deja el balance en 0 con cualquier tasa. Parcial guarda un monto en la moneda elegida, hasta lo que se debe. Las dos se deshacen desde el toast.
+- Presupuestos compartidos por categoría y mes: crear, editar, quitar (con Deshacer) y copiar los de un mes anterior.
+- Invitar y ver miembros desde Hogar, con el flujo de la fase 2.
+- Migración `0009_household_rules.sql`: `save_transaction` reparte solo entre los miembros que ya eran del hogar en la fecha del gasto (un gasto anterior queda entero para quien pagó; el miembro nuevo igual lo ve). `budgets.month` (primer día del mes) y los índices únicos pasan a ser por categoría y mes. Tests en `supabase/tests/household_rules.sql`.
+
+### Cambiado
+
+- `ProgressBar` acepta el color del relleno (`barClassName`).
+
 ## [0.9.1] - 2026-10-17
 
 ### Añadido

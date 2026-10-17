@@ -1,76 +1,160 @@
 /**
- * Hogar: miembros del hogar del usuario y, para quien lo administra, el
- * enlace de invitación (flujo de la fase 2). Las finanzas compartidas llegan
- * después.
+ * Hogar (08-household.png / 18-household-dark.png).
+ *
+ * - Sin hogar: el interruptor y un estado vacío para crear uno o unirse.
+ * - Con hogar, en scope Personal: los miembros, la invitación y una nota
+ *   para cambiar a Compartido (las finanzas del hogar solo se ven ahí).
+ * - En scope Compartido: tarjetas de miembros, liquidar cuentas, gastos
+ *   compartidos del mes con su reparto, presupuesto compartido, meta
+ *   compartida e historial de liquidaciones. "Agregar gasto compartido"
+ *   abre el modal de transacciones (?tx=new) con "Pagó".
  */
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { z } from "zod";
 
-import { Avatar } from "@/components/ui/avatar";
-import { Card, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/chip";
-import { EmptyState } from "@/components/ui/empty-state";
+import { TopbarHideAction, TopbarSubtitle } from "@/components/shell/topbar-context";
+import { Card } from "@/components/ui/card";
 import { SkeletonList } from "@/components/ui/skeleton";
-import { requireUser } from "@/lib/auth/session";
+import { getAccounts } from "@/lib/accounts/queries";
+import { getCurrentProfile, requireUser } from "@/lib/auth/session";
+import {
+  getHouseholdMembers,
+  getSharedGoal,
+  listBudgets,
+  listSettlements,
+  listSharedTransactions,
+  previousBudgetMonth,
+} from "@/lib/household/queries";
 import { getMaxHouseholdMembers, getMyHouseholds } from "@/lib/households/queries";
+import { getScope } from "@/lib/scope/server";
+import { todayIn } from "@/lib/transactions/dates";
+import { parseFilters } from "@/lib/transactions/filters";
+import { getTransaction } from "@/lib/transactions/queries";
 
-import { InviteLink } from "./invite-link";
+import { TransactionModal } from "../transactions/transaction-modal";
+import { HouseholdHeader, NoHousehold, PersonalScopeNote } from "./household-header";
+import { HouseholdView } from "./household-view";
 
-export default function HouseholdPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default function HouseholdPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="max-w-xl space-y-6">
-      <Suspense
-        fallback={
-          <Card>
+    <Suspense fallback={<HouseholdSkeleton />}>
+      <HouseholdContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+/** Placeholder con la geometría de la pantalla mientras carga. */
+function HouseholdSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-12" />
+      <div className="grid gap-6 lg:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <Card key={i}>
             <SkeletonList rows={2} />
           </Card>
-        }
-      >
-        <HouseholdContent />
-      </Suspense>
+        ))}
+      </div>
     </div>
   );
 }
 
-async function HouseholdContent() {
-  const user = await requireUser();
-  const [households, maxMembers, t] = await Promise.all([
-    getMyHouseholds(user.id),
-    getMaxHouseholdMembers(),
+async function HouseholdContent({ searchParams }: { searchParams: SearchParams }) {
+  const [params, user, profile, scope, t] = await Promise.all([
+    searchParams,
+    requireUser(),
+    getCurrentProfile(),
+    getScope(),
     getTranslations("household"),
   ]);
+  const [households, maxMembers] = await Promise.all([
+    getMyHouseholds(user.id),
+    getMaxHouseholdMembers(),
+  ]);
+  const today = todayIn(profile.timezone);
 
   if (households.length === 0) {
-    return <EmptyState icon="users" title={t("emptyTitle")} description={t("emptyDescription")} />;
+    return (
+      <>
+        <TopbarHideAction />
+        <NoHousehold />
+      </>
+    );
   }
 
-  return households.map((household) => (
-    <Card key={household.id} className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
-        <CardTitle>{household.name}</CardTitle>
-        <span className="text-callout text-ink-2 tabular-nums">
-          {t("membersCount", { count: household.members.length, max: maxMembers })}
-        </span>
+  const household =
+    (scope.kind === "household" && households.find((h) => h.id === scope.householdId)) ||
+    households[0];
+  const header = (
+    <HouseholdHeader
+      scope={scope.kind === "household" ? "shared" : "personal"}
+      household={household}
+      currentUserId={user.id}
+      maxMembers={maxMembers}
+    />
+  );
+
+  if (scope.kind !== "household") {
+    return (
+      <div className="space-y-6">
+        <TopbarHideAction />
+        {header}
+        <PersonalScopeNote />
       </div>
+    );
+  }
 
-      <ul className="divide-divider divide-y">
-        {household.members.map((member, i) => (
-          <li key={member.userId} className="flex items-center gap-3 py-3">
-            <Avatar name={member.displayName} member={i === 0 ? "a" : "b"} />
-            <span className="text-body text-ink min-w-0 flex-1 font-medium">
-              {member.displayName ?? t("noName")}
-              {member.userId === user.id && <span className="text-ink-3"> {t("you")}</span>}
-            </span>
-            <Badge tone="neutral" size="sm">
-              {member.role === "owner" ? t("roleOwner") : t("roleMember")}
-            </Badge>
-          </li>
-        ))}
-      </ul>
+  const { month } = parseFilters(params, today);
+  const txParam = typeof params.tx === "string" ? params.tx : null;
+  const editingId = txParam && z.uuid().safeParse(txParam).success ? txParam : null;
+  const [members, transactions, settlements, budgets, prevMonth, goal, accounts, editing] =
+    await Promise.all([
+      getHouseholdMembers(household.id),
+      listSharedTransactions(household.id),
+      listSettlements(household.id),
+      listBudgets(household.id, month),
+      previousBudgetMonth(household.id, month),
+      getSharedGoal(household.id),
+      getAccounts(scope, { includeArchived: true }),
+      editingId ? getTransaction(editingId) : Promise.resolve(null),
+    ]);
+  const others = members.filter((m) => m.userId !== user.id);
 
-      {household.myRole === "owner" && household.members.length < maxMembers && (
-        <InviteLink householdId={household.id} />
-      )}
-    </Card>
-  ));
+  return (
+    <div className="space-y-6">
+      <TopbarSubtitle
+        text={
+          others.length > 0
+            ? t("subtitleWith", {
+                names: others.map((m) => m.displayName ?? t("noName")).join(", "),
+              })
+            : t("subtitleAlone")
+        }
+      />
+      {header}
+      <HouseholdView
+        householdId={household.id}
+        members={members}
+        currentUserId={user.id}
+        transactions={transactions}
+        settlements={settlements}
+        budgets={budgets}
+        previousBudgetMonth={prevMonth}
+        goal={goal}
+        month={month}
+      />
+      <TransactionModal
+        key={txParam ?? "closed"}
+        open={txParam === "new" || Boolean(editing)}
+        editing={editing}
+        accounts={accounts.filter((a) => !a.archived_at || a.id === editing?.account?.id)}
+        members={members.map((m) => ({ userId: m.userId, displayName: m.displayName }))}
+        currentUserId={user.id}
+        today={today}
+      />
+    </div>
+  );
 }

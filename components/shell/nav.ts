@@ -42,6 +42,12 @@ export type PageConfig = {
   title: NavKey;
   subtitle?: "calendarSubtitle";
   month?: boolean;
+  /**
+   * Dónde va el interruptor Personal / Compartido: "shell" (fila sobre el
+   * contenido) o "page" (la página lo pone en su propia fila, como Hogar).
+   * Sin valor, la ruta no depende del scope (Deudas, Ajustes).
+   */
+  scope?: "shell" | "page";
   /** Acción principal: texto (clave de messages) y parámetro de URL que abre su modal. */
   action?: {
     label:
@@ -49,7 +55,8 @@ export type PageConfig = {
       | "savings.newGoal"
       | "debts.addDebt"
       | "subscriptions.add"
-      | "calendar.addPayment";
+      | "calendar.addPayment"
+      | "household.addShared";
     param: "tx" | "goal" | "debt" | "sub" | "event";
   };
 };
@@ -59,21 +66,33 @@ export const PAGE_TITLES: Record<string, PageConfig> = {
   "/transactions": {
     title: "transactions",
     month: true,
+    scope: "shell",
     action: { label: "transactions.add", param: "tx" },
   },
-  "/savings": { title: "savings", action: { label: "savings.newGoal", param: "goal" } },
+  "/savings": {
+    title: "savings",
+    scope: "shell",
+    action: { label: "savings.newGoal", param: "goal" },
+  },
   "/debts": { title: "debts", action: { label: "debts.addDebt", param: "debt" } },
   "/subscriptions": {
     title: "subscriptions",
+    scope: "shell",
     action: { label: "subscriptions.add", param: "sub" },
   },
   "/calendar": {
     title: "calendar",
     subtitle: "calendarSubtitle",
     month: true,
+    scope: "shell",
     action: { label: "calendar.addPayment", param: "event" },
   },
-  "/household": { title: "household", month: true },
+  "/household": {
+    title: "household",
+    month: true,
+    scope: "page",
+    action: { label: "household.addShared", param: "tx" },
+  },
   "/settings": { title: "settings" },
 };
 

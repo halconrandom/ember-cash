@@ -121,6 +121,7 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
   }
 
   revalidatePath("/transactions");
+  revalidatePath("/household");
   revalidatePath("/subscriptions");
   revalidatePath("/calendar");
   return { ok: true, id: data };
@@ -137,6 +138,7 @@ async function setDeleted(id: string, deleted: boolean): Promise<{ ok: boolean }
     .update({ deleted_at: deleted ? new Date().toISOString() : null }, { count: "exact" })
     .eq("id", id);
   revalidatePath("/transactions");
+  revalidatePath("/household");
   return { ok: !error && count === 1 };
 }
 

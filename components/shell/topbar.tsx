@@ -22,7 +22,7 @@ export function Topbar() {
   const params = useSearchParams();
   const router = useRouter();
   const t = useTranslations();
-  const { subtitle } = useTopbar();
+  const { subtitle, actionHidden } = useTopbar();
   const page = PAGE_TITLES[pathname];
   const subtitleText = subtitle ?? (page?.subtitle ? t(`pages.${page.subtitle}`) : null);
 
@@ -38,7 +38,7 @@ export function Topbar() {
         <LiveRateChip />
         {page?.month && <MonthSelector />}
         <DisplayCurrencyToggle />
-        {page?.action && (
+        {page?.action && !actionHidden && (
           <Button
             icon="plus"
             onClick={() =>
