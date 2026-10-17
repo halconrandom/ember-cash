@@ -541,7 +541,7 @@
       "transfer": "Transfer",
       "amount": "Amount",
       "amountCurrency": "Amount currency",
-      "conversion": "{amount} at 1 USD = {rate} COP · {date}",
+      "conversion": "<amount></amount> at 1 USD = {rate} COP · {date}",
       "conversionUnavailable": "Rate unavailable: the original amount is saved",
       "description": "Description",
       "descriptionPlaceholder": "For example: neighborhood market",

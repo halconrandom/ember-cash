@@ -484,6 +484,15 @@
   }
 }
 
+/* Presión (DESIGN_SPEC §7): escala 0.97 en 100 ms ease-out al presionar, para
+   enlaces con aspecto de tarjeta o de navegación que no son <motion.button>. */
+.press-scale {
+  transition: transform 100ms var(--ease-out-ember);
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
 /* Movimiento reducido: sin brillo animado, sin escalas al presionar. Las
    animaciones de `motion` se reducen con <MotionConfig reducedMotion="user">. */
 @media (prefers-reduced-motion: reduce) {

@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field } from "@/components/ui/field";
+import { Highlight, HighlightBackground } from "@/components/ui/highlight";
+import { SlidingNumber } from "@/components/ui/sliding-number";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -146,14 +148,20 @@ export function TransactionModal({
   const conversion =
     status === "error" || !rate
       ? tm("conversionUnavailable")
-      : tm("conversion", {
-          amount: f.money(
-            convert(
-              parsed.ok ? parsed.value : { amountMinor: 0n, currency },
-              otherCurrency(currency),
-              rate,
-            ),
-            { approx: true },
+      : tm.rich("conversion", {
+          // El monto convertido rueda cifra por cifra mientras se escribe
+          // (Sliding Number, spec §7).
+          amount: () => (
+            <SlidingNumber
+              text={f.money(
+                convert(
+                  parsed.ok ? parsed.value : { amountMinor: 0n, currency },
+                  otherCurrency(currency),
+                  rate,
+                ),
+                { approx: true },
+              )}
+            />
           ),
           rate: f.number(Number(rate.rate), 2),
           date: f.date(rate.asOf),
@@ -377,32 +385,39 @@ export function TransactionModal({
               <legend className="text-callout text-ink-2 mb-2 font-semibold">
                 {tm("category")}
               </legend>
-              <div className="flex flex-wrap gap-2.5">
-                {categoriesFor(kind).map((key) => {
-                  const meta = CATEGORY_META[key as CategoryKey];
-                  const selected = categoryKey === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => {
-                        setCategoryKey(key);
-                        clear("categoryKey");
-                      }}
-                      className={cn(
-                        "text-body text-ink inline-flex h-11 items-center gap-2 rounded-full border-[1.5px] px-4 font-medium transition-colors duration-100",
-                        selected
-                          ? cn(SELECTED[meta.tone], "font-semibold")
-                          : "bg-surface2 hover:bg-border border-transparent",
-                      )}
-                    >
-                      <Icon name={meta.icon} size={18} className={ICON_COLOR[meta.tone]} />
-                      {t(`categories.${key}`)}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* El contorno de la categoría elegida se desliza entre chips (Highlight, spec §7). */}
+              <Highlight value={categoryKey}>
+                <div className="flex flex-wrap gap-2.5">
+                  {categoriesFor(kind).map((key) => {
+                    const meta = CATEGORY_META[key as CategoryKey];
+                    const selected = categoryKey === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setCategoryKey(key);
+                          clear("categoryKey");
+                        }}
+                        className={cn(
+                          "text-body text-ink press-scale relative inline-flex h-11 items-center rounded-full px-4 font-medium transition-colors duration-100",
+                          selected ? "font-semibold" : "bg-surface2 hover:bg-border",
+                        )}
+                      >
+                        <HighlightBackground
+                          show={selected}
+                          className={cn("rounded-full border-[1.5px]", SELECTED[meta.tone])}
+                        />
+                        <span className="relative inline-flex items-center gap-2">
+                          <Icon name={meta.icon} size={18} className={ICON_COLOR[meta.tone]} />
+                          {t(`categories.${key}`)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Highlight>
               {errors.categoryKey && (
                 <p role="alert" className="text-callout text-negative-text">
                   {err("categoryKey")}

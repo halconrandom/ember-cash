@@ -4,10 +4,16 @@
  * Anillo de progreso (03-savings.png). El naranja gráfico aquí codifica
  * "cuánto falta para mi objetivo", uno de los dos usos permitidos del
  * naranja como dato (DESIGN_SPEC §1); el valor siempre va escrito al centro.
- * Se llena una vez al aparecer; después, los cambios parten del valor actual.
- * Con movimiento reducido, motion lo muestra sin animación.
+ * Comportamiento del Animated Circular Progress Bar de Magic UI (spec §7):
+ * se llena al aparecer solo en la primera carga de la pantalla y, después,
+ * los cambios parten del valor actual. El aspecto sigue al frame (pista
+ * completa y arco con punta redonda, sin el hueco entre arcos del original).
+ * Con movimiento reducido el arco aparece lleno: `strokeDashoffset` no es
+ * una propiedad de posición, así que motion no lo recorta solo.
  */
-import { motion } from "motion/react";
+import { motion, useReducedMotionConfig } from "motion/react";
+
+import { useFirstView } from "@/lib/motion/first-view";
 
 type Props = {
   /** 0 a 100. */
@@ -23,6 +29,11 @@ export function ProgressRing({ percent, size = 124, stroke = 14, label, children
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const value = Math.min(Math.max(percent, 0), 100);
+  const first = useFirstView();
+  // null en el servidor (mismo HTML que sin reducir). En el cliente, true
+  // deja el trazo en el valor final sin dibujarlo.
+  const reduce = useReducedMotionConfig() === true;
+  const target = c * (1 - value / 100);
   return (
     <div
       role="img"
@@ -54,9 +65,12 @@ export function ProgressRing({ percent, size = 124, stroke = 14, label, children
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c * (1 - value / 100) }}
-          transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+          // El arranque no depende de `reduce`: en el servidor es null y el
+          // HTML tiene que coincidir. Con duración 0 el trazo salta al
+          // valor final antes de pintar.
+          initial={first ? { strokeDashoffset: c } : false}
+          animate={{ strokeDashoffset: target }}
+          transition={{ duration: reduce ? 0 : 0.6, ease: [0.23, 1, 0.32, 1] }}
         />
       </svg>
       <span className="absolute inset-0 grid place-items-center" aria-hidden>

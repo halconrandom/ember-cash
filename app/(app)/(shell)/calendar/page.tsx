@@ -12,7 +12,7 @@ import { listCalendar } from "@/lib/recurring/queries";
 import { getScope } from "@/lib/scope/server";
 import { monthBounds, MONTH_PATTERN, todayIn } from "@/lib/transactions/dates";
 
-import { CalendarView } from "./calendar-view";
+import { CalendarMonthFade, CalendarView } from "./calendar-view";
 import { SubscriptionModal } from "../subscriptions/subscription-modal";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -61,15 +61,17 @@ async function CalendarContent({ searchParams }: { searchParams: SearchParams })
 
   return (
     <>
-      <CalendarView
-        key={month}
-        month={month}
-        today={today}
-        initialDay={initialDay}
-        events={events}
-        nextPayday={nextPayday}
-        accounts={accounts}
-      />
+      <CalendarMonthFade month={month}>
+        <CalendarView
+          key={month}
+          month={month}
+          today={today}
+          initialDay={initialDay}
+          events={events}
+          nextPayday={nextPayday}
+          accounts={accounts}
+        />
+      </CalendarMonthFade>
       <SubscriptionModal
         key={creating ? "new-event" : "closed"}
         open={creating}

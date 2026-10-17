@@ -541,7 +541,7 @@
       "transfer": "Transferencia",
       "amount": "Monto",
       "amountCurrency": "Moneda del monto",
-      "conversion": "{amount} a 1 USD = {rate} COP · {date}",
+      "conversion": "<amount></amount> a 1 USD = {rate} COP · {date}",
       "conversionUnavailable": "Tasa no disponible: se guarda el monto original",
       "description": "Descripción",
       "descriptionPlaceholder": "Por ejemplo: mercado del barrio",

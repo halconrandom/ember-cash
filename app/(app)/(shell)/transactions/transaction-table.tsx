@@ -4,20 +4,28 @@
  * Lista de transacciones (02-transactions.png): encabezados en mayúsculas,
  * grupos por día y filas clicables que abren el modal de edición. Abajo,
  * "Mostrando 9 de 42 transacciones" y la paginación.
+ *
+ * Animated List (spec §7): las filas entran solo en la primera carga de la
+ * pantalla; después, solo se anima lo que llega nuevo (una transacción recién
+ * guardada entra arriba y las demás se acomodan con `layout`). Cambiar un
+ * filtro o la página no anima nada.
  */
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { CurrencyBadge } from "@/components/money/currency-badge";
 import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
 import { Button } from "@/components/ui/button";
+import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-list";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
 import { ACCOUNT_TYPE_ICON, CATEGORY_META, TRANSFER_META } from "@/lib/categories";
+import { useFirstView } from "@/lib/motion/first-view";
 import { withFilters } from "@/lib/transactions/filters";
 import type { DayGroup } from "@/lib/transactions/group";
 import type { TransactionRow } from "@/lib/transactions/queries";
@@ -56,6 +64,20 @@ export function TransactionTable({ rows, groups, total, page, pageCount, filtere
   const pathname = usePathname();
   const params = useSearchParams();
   const byId = new Map(rows.map((r) => [r.id, r]));
+  const first = useFirstView();
+  // Lista base: filtros y página actuales (sin el modal) y los días que ya
+  // estaban. Si cambian los filtros, la base se renueva sin animar.
+  const listParams = new URLSearchParams(params);
+  listParams.delete("tx");
+  const listKey = listParams.toString();
+  const [base, setBase] = useState(() => ({
+    key: listKey,
+    dates: new Set(groups.map((g) => g.date)),
+    animate: first,
+  }));
+  if (base.key !== listKey) {
+    setBase({ key: listKey, dates: new Set(groups.map((g) => g.date)), animate: false });
+  }
 
   if (rows.length === 0) {
     return filtered ? (
@@ -112,22 +134,25 @@ export function TransactionTable({ rows, groups, total, page, pageCount, filtere
                   : group.shortDate}
               </span>
             </h3>
-            <ul>
-              {group.items.map((id) => {
-                const row = byId.get(id);
-                return row ? (
-                  <li key={id}>
-                    <TransactionRowView
-                      row={row}
-                      onOpen={() =>
-                        router.push(`${pathname}${withFilters(params, { tx: row.id })}`, {
-                          scroll: false,
-                        })
-                      }
-                    />
-                  </li>
-                ) : null;
-              })}
+            <ul key={`${base.key}|${group.date}`}>
+              {/* Un día nuevo (p. ej. la primera transacción de hoy) también anima su fila. */}
+              <AnimatedList animateOnMount={base.animate || !base.dates.has(group.date)}>
+                {group.items.map((id) => {
+                  const row = byId.get(id);
+                  return row ? (
+                    <AnimatedListItem key={id}>
+                      <TransactionRowView
+                        row={row}
+                        onOpen={() =>
+                          router.push(`${pathname}${withFilters(params, { tx: row.id })}`, {
+                            scroll: false,
+                          })
+                        }
+                      />
+                    </AnimatedListItem>
+                  ) : null;
+                })}
+              </AnimatedList>
             </ul>
           </section>
         ))}

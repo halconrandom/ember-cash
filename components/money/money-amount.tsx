@@ -21,10 +21,11 @@
  */
 import { useTranslations } from "next-intl";
 
+import { NumberTicker } from "@/components/ui/number-ticker";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useFormat } from "@/lib/i18n/use-format";
 import { convert, isStale, otherCurrency } from "@/lib/money/convert";
-import type { Money } from "@/lib/money/money";
+import { money, type Money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
 import { useRate } from "./rate-provider";
@@ -52,6 +53,11 @@ type Props = {
   unitClassName?: string;
   /** Clases del sufijo ("/mes"); por defecto, el mismo estilo del importe. */
   suffixClassName?: string;
+  /**
+   * Number Ticker (solo kind="total"): el importe cuenta desde 0 al aparecer.
+   * Se pasa true solo en la primera carga de la pantalla (useFirstView).
+   */
+  ticker?: boolean;
 };
 
 export function MoneyAmount({
@@ -66,6 +72,7 @@ export function MoneyAmount({
   secondaryClassName,
   unitClassName,
   suffixClassName,
+  ticker,
 }: Props) {
   const { rate, status, now, displayCurrency } = useRate();
   const t = useTranslations("money");
@@ -77,8 +84,18 @@ export function MoneyAmount({
   const secondaryClass = cn("text-footnote text-ink-3 tabular-nums", secondaryClassName);
 
   /** Importe principal: número (y unidad COP más pequeña). */
-  const primary = (m: Money, extra?: string) => {
+  const primary = (m: Money, extra?: string, tick?: boolean) => {
     const { main, unit } = f.moneyParts(m);
+    const number =
+      tick !== undefined ? (
+        <NumberTicker
+          value={Number(m.amountMinor)}
+          format={(n) => f.moneyParts(money(BigInt(n), m.currency)).main}
+          animate={tick}
+        />
+      ) : (
+        main
+      );
     return (
       <span
         className={cn(
@@ -89,7 +106,7 @@ export function MoneyAmount({
         )}
       >
         {sign}
-        {main}
+        {number}
         {/* Espacio no separable real (no solo margen): el texto se lee bien. */}
         {unit && (
           <span className={cn("text-callout text-ink-3 font-normal", unitClassName)}>
@@ -108,7 +125,7 @@ export function MoneyAmount({
       : `${f.money(convert(value, other, rate), { approx: true })}${suffix ? ` ${suffix}` : ""}`;
     return (
       <span className={cn("inline-flex flex-col", className)}>
-        {primary(value)}
+        {primary(value, undefined, ticker)}
         <span className={cn(secondaryClass, dim)}>
           {staleTitle && !unavailable ? (
             <Tooltip content={staleTitle}>

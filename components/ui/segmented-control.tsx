@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * Control segmentado (COP/USD, Personal/Shared, tema). Grupo de radios con
- * flechas del teclado; la píldora activa se desliza con un spring crítico
- * (sin rebote). Los valores cambian al instante.
+ * Control segmentado (COP/USD, Personal/Shared, filtros, tema): las Tabs de
+ * Animate UI con TabsHighlight (spec §7). Grupo de radios con flechas del
+ * teclado; la píldora activa es un Highlight que se desliza con el resorte
+ * de la librería. Los valores cambian al instante (sin ticker).
  */
-import { motion } from "motion/react";
-import { useId, useRef } from "react";
+import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
+
+import { Highlight, HighlightBackground } from "./highlight";
 
 type Option<T extends string> = { value: T; label: string };
 
@@ -28,7 +30,6 @@ export function SegmentedControl<T extends string>({
   label,
   className,
 }: Props<T>) {
-  const groupId = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
 
   function onKeyDown(event: React.KeyboardEvent, index: number) {
@@ -54,37 +55,35 @@ export function SegmentedControl<T extends string>({
         className,
       )}
     >
-      {options.map((option, i) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            tabIndex={active ? 0 : -1}
-            onClick={() => onChange(option.value)}
-            onKeyDown={(e) => onKeyDown(e, i)}
-            className={cn(
-              "text-callout relative h-8 rounded-full px-4 font-semibold transition-colors duration-100",
-              active ? "text-ink" : "text-ink-2 hover:text-ink",
-            )}
-          >
-            {active && (
-              <motion.span
-                layoutId={`seg-thumb-${groupId}`}
-                aria-hidden
-                className="bg-seg-thumb shadow-card absolute inset-0 rounded-full"
-                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+      <Highlight value={value}>
+        {options.map((option, i) => {
+          const active = option.value === value;
+          return (
+            <button
+              key={option.value}
+              ref={(el) => {
+                refs.current[i] = el;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              tabIndex={active ? 0 : -1}
+              onClick={() => onChange(option.value)}
+              onKeyDown={(e) => onKeyDown(e, i)}
+              className={cn(
+                "text-callout relative h-8 rounded-full px-4 font-semibold transition-colors duration-100",
+                active ? "text-ink" : "text-ink-2 hover:text-ink",
+              )}
+            >
+              <HighlightBackground
+                show={active}
+                className="bg-seg-thumb shadow-card rounded-full"
               />
-            )}
-            <span className="relative">{option.label}</span>
-          </button>
-        );
-      })}
+              <span className="relative">{option.label}</span>
+            </button>
+          );
+        })}
+      </Highlight>
     </div>
   );
 }

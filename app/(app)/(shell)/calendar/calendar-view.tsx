@@ -7,8 +7,12 @@
  * pasaron sin confirmar, "Vencida". "Marcar como pagado" abre el modal con la
  * fecha real de pago y la cuenta: es lo único que crea la transacción.
  * "Reprogramar" mueve solo la ocurrencia elegida.
+ *
+ * Movimiento (spec §7): el contorno del día elegido se desliza entre celdas
+ * (layoutId) y el cambio de mes hace un fundido de 150 ms (CalendarMonthFade).
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
@@ -199,12 +203,22 @@ export function CalendarView({
               <div
                 key={cell.date}
                 className={cn(
-                  "border-border min-h-28 border-t border-l p-1.5",
+                  "border-border relative min-h-28 border-t border-l p-1.5",
                   !cell.inMonth && "bg-canvas",
                   isToday && "bg-ember-50",
-                  isSelected && "ring-ember-text ring-2 ring-inset",
                 )}
               >
+                {isSelected && (
+                  // El id lleva el mes: en el fundido hay dos meses montados
+                  // y el contorno no debe cruzar de uno al otro. Es absoluto,
+                  // así que no cambia el tamaño de la celda.
+                  <motion.span
+                    aria-hidden
+                    layoutId={`calendar-selected-day-${month}`}
+                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                    className="ring-ember-text pointer-events-none absolute inset-0 ring-2 ring-inset"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => pickDay(cell.date)}
@@ -407,6 +421,41 @@ export function CalendarView({
           )}
         </Card>
       </div>
+    </div>
+  );
+}
+
+/** Curva ease-out de la spec §7. */
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
+/**
+ * Fundido cruzado de 150 ms al cambiar de mes (spec §7). Los dos meses
+ * ocupan la misma celda (`grid-cols-1`), así la altura no se duplica y solo
+ * se anima la opacidad. AnimatePresence deja el mes que sale antes que el
+ * nuevo, así el nuevo queda encima y recibe los clics. El primer mes
+ * (también al volver a la pantalla) entra sin animar.
+ */
+export function CalendarMonthFade({
+  month,
+  children,
+}: {
+  month: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-1">
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={month}
+          className="col-start-1 row-start-1 min-w-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: EASE_OUT }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

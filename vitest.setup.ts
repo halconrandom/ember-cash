@@ -13,3 +13,24 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// jsdom no trae IntersectionObserver (lo usa useInView de motion en el Number
+// Ticker). Este reemplazo avisa de inmediato que el elemento está a la vista.
+if (typeof window !== "undefined" && !("IntersectionObserver" in window)) {
+  class IntersectionObserverStub {
+    constructor(private callback: IntersectionObserverCallback) {}
+    observe(target: Element) {
+      this.callback(
+        [{ isIntersecting: true, target, intersectionRatio: 1 } as IntersectionObserverEntry],
+        this as unknown as IntersectionObserver,
+      );
+    }
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  Object.defineProperty(window, "IntersectionObserver", { value: IntersectionObserverStub });
+  Object.defineProperty(globalThis, "IntersectionObserver", { value: IntersectionObserverStub });
+}

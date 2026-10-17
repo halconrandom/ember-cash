@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 
 import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
+import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-list";
 import { Badge } from "@/components/ui/chip";
 import { Icon } from "@/components/ui/icon";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -22,6 +23,7 @@ import type {
 } from "@/lib/dashboard/queries";
 import { goalPercent } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
+import { useFirstView } from "@/lib/motion/first-view";
 import { convert } from "@/lib/money/convert";
 import type { Money } from "@/lib/money/money";
 import { daysBetween } from "@/lib/recurring/schedule";
@@ -64,6 +66,8 @@ export function UpcomingCard({
 }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
+  // Animated List: entrada solo en la primera carga del dashboard.
+  const first = useFirstView();
   return (
     <DashboardCard href="/calendar" className="space-y-4">
       <Header title={t("upcoming")} detail={t("upcomingWindow")} />
@@ -71,27 +75,29 @@ export function UpcomingCard({
         <p className="text-body text-ink-2 py-6 text-center">{t("upcomingEmpty")}</p>
       ) : (
         <ul className="space-y-3">
-          {items.map((item) => {
-            const days = daysBetween(today, item.dueOn);
-            return (
-              <li key={item.occurrenceId} className="flex items-center gap-3">
-                <span className="bg-ember-50 text-ember-text rounded-control grid size-10 shrink-0 place-items-center">
-                  <Icon name={item.iconKey} size={20} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="text-body text-ink block truncate font-semibold">
-                    {item.name}
+          <AnimatedList animateOnMount={first}>
+            {items.map((item) => {
+              const days = daysBetween(today, item.dueOn);
+              return (
+                <AnimatedListItem key={item.occurrenceId} className="flex items-center gap-3">
+                  <span className="bg-ember-50 text-ember-text rounded-control grid size-10 shrink-0 place-items-center">
+                    <Icon name={item.iconKey} size={20} />
                   </span>
-                  <span className="text-footnote text-ink-3 flex flex-wrap items-center gap-1.5">
-                    {f.date(item.dueOn, "weekdayShort")}
-                    {item.state === "upcoming" && <span>· {t("inDays", { count: days })}</span>}
-                    <StateBadge state={item.state} />
+                  <span className="min-w-0 flex-1">
+                    <span className="text-body text-ink block truncate font-semibold">
+                      {item.name}
+                    </span>
+                    <span className="text-footnote text-ink-3 flex flex-wrap items-center gap-1.5">
+                      {f.date(item.dueOn, "weekdayShort")}
+                      {item.state === "upcoming" && <span>· {t("inDays", { count: days })}</span>}
+                      <StateBadge state={item.state} />
+                    </span>
                   </span>
-                </span>
-                <MoneyAmount value={item.amount} className="shrink-0 text-right" />
-              </li>
-            );
-          })}
+                  <MoneyAmount value={item.amount} className="shrink-0 text-right" />
+                </AnimatedListItem>
+              );
+            })}
+          </AnimatedList>
         </ul>
       )}
       {total > items.length && (

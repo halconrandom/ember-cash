@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import type { PayoffResult } from "@/lib/debts/payoff";
 import { useFormat } from "@/lib/i18n/use-format";
+import { useFirstView } from "@/lib/motion/first-view";
 import { shiftMonth } from "@/lib/transactions/dates";
 
 type Props = {
@@ -24,6 +25,9 @@ type Props = {
 
 export function PayoffTimeline({ plan, names, startMonth }: Props) {
   const t = useTranslations("debts");
+  // Las barras crecen solo en la primera carga; al cambiar de método
+  // (Avalanche/Snowball) se reacomodan con el resorte desde su ancho actual.
+  const first = useFirstView();
   const f = useFormat();
   // Eje: años completos desde hoy, mínimo dos.
   const axisMonths = 12 * Math.max(2, Math.ceil(plan.months / 12));
@@ -87,7 +91,7 @@ export function PayoffTimeline({ plan, names, startMonth }: Props) {
               <div className="mt-2 h-3.5">
                 <motion.div
                   className="bg-ember-fill h-full rounded-full"
-                  initial={{ width: 0 }}
+                  initial={first ? { width: 0 } : false}
                   animate={{ width: pct(d.months) }}
                   transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                 />

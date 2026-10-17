@@ -5,6 +5,8 @@
  * lista con filtro Todas / Mensuales / Anuales y los cobros de los próximos
  * 14 días. La franja de 7 días marca cuáles tienen cobro; no filtra la lista
  * (en el frame el día de hoy está activo y la lista muestra otros días).
+ * Las tarjetas y los cobros próximos son Animated Lists (entrada solo en la
+ * primera carga; lo que llega o se va se acomoda con `layout`).
  * Nada se registra solo: el cobro de hoy dice "Por pagar", uno pasado sin
  * confirmar dice "Vencida", y "Marcar como pagado" abre el modal con la fecha
  * real de pago y la cuenta.
@@ -16,11 +18,13 @@ import { useState, useTransition } from "react";
 import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
 import { TopbarSubtitle } from "@/components/shell/topbar-context";
+import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-list";
 import { Badge } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { IconName } from "@/components/ui/icon-registry";
 import { useToast } from "@/components/ui/toast";
 import type { AccountSummary } from "@/lib/accounts/queries";
@@ -30,6 +34,7 @@ import { convert, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 import type { AgendaItem, SubscriptionItem } from "@/lib/recurring/queries";
 import { daysBetween } from "@/lib/recurring/schedule";
+import { useEntrance, useFirstView } from "@/lib/motion/first-view";
 import { needsAction } from "@/lib/recurring/state";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
@@ -89,6 +94,10 @@ export function SubscriptionsView({
   const params = useSearchParams();
   const [filter, setFilter] = useState<Filter>("all");
   const [paying, setPaying] = useState<AgendaItem | null>(null);
+  // Animated List (spec §7): entrada solo en la primera carga; cambiar el
+  // filtro muestra la lista nueva sin animar.
+  const first = useFirstView();
+  const cardsEntrance = useEntrance(filter);
   const [, startTransition] = useTransition();
   const usable = status === "error" ? null : rate;
   const active = items.filter((item) => item.status === "active");
@@ -194,27 +203,15 @@ export function SubscriptionsView({
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-headline text-ink">{t("allTitle")}</h2>
-            <div
-              role="radiogroup"
-              aria-label={t("filterLabel")}
-              className="border-seg-border bg-seg-track inline-flex h-10 items-center rounded-full border p-1"
-            >
-              {(["all", "monthly", "yearly"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={filter === value}
-                  onClick={() => setFilter(value)}
-                  className={cn(
-                    "text-callout h-8 rounded-full px-4 font-semibold",
-                    filter === value ? "bg-surface text-ink shadow-card" : "text-ink-2",
-                  )}
-                >
-                  {t(`filter.${value}`)}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              label={t("filterLabel")}
+              value={filter}
+              onChange={setFilter}
+              options={(["all", "monthly", "yearly"] as const).map((value) => ({
+                value,
+                label: t(`filter.${value}`),
+              }))}
+            />
           </div>
 
           {items.length === 0 ? (
@@ -236,73 +233,76 @@ export function SubscriptionsView({
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              {visible.map((item) => {
-                // Cobro de hoy o vencido de esta suscripción (el más antiguo).
-                const pendingNow = upcoming.find(
-                  (event) => event.itemId === item.id && needsAction(event.state),
-                );
-                return (
-                  <article
-                    key={item.id}
-                    className="rounded-card border-card-edge bg-surface shadow-card relative border p-5"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openEdit(item.id)}
-                      className="flex w-full items-start gap-4 text-left"
+              <AnimatedList key={filter} animateOnMount={cardsEntrance}>
+                {visible.map((item) => {
+                  // Cobro de hoy o vencido de esta suscripción (el más antiguo).
+                  const pendingNow = upcoming.find(
+                    (event) => event.itemId === item.id && needsAction(event.state),
+                  );
+                  return (
+                    <AnimatedListItem
+                      as="article"
+                      key={item.id}
+                      className="rounded-card border-card-edge bg-surface shadow-card relative border p-5"
                     >
-                      <span className="bg-violet-tint text-violet grid size-12 shrink-0 place-items-center rounded-full">
-                        <Icon name={item.iconKey} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="text-headline text-ink block">{item.name}</span>
-                        {item.subtitle && (
-                          <span className="text-footnote text-ink-3 mt-0.5 block">
-                            {item.subtitle}
-                          </span>
-                        )}
-                        <span className="mt-3 flex flex-wrap items-center gap-2">
-                          <Badge tone="violet" size="sm">
-                            {frequencyLabel(item, t)}
-                          </Badge>
-                          {pendingNow && <StateBadge state={pendingNow.state} />}
-                          {item.status === "paused" ? (
-                            <Badge tone="warning" size="sm">
-                              {t("paused")}
-                            </Badge>
-                          ) : (
-                            item.nextDate && (
-                              <span className="text-footnote text-ink-2">
-                                {t("nextOn", { date: f.date(item.nextDate) })}
-                              </span>
-                            )
-                          )}
-                        </span>
-                      </span>
-                      <MoneyAmount value={item.amount} className="shrink-0 text-right" />
-                    </button>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                       <button
                         type="button"
-                        onClick={() => cancel(item)}
-                        className="text-footnote text-ink-3 hover:text-negative-text"
+                        onClick={() => openEdit(item.id)}
+                        className="flex w-full items-start gap-4 text-left"
                       >
-                        {t("cancel")}
+                        <span className="bg-violet-tint text-violet grid size-12 shrink-0 place-items-center rounded-full">
+                          <Icon name={item.iconKey} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="text-headline text-ink block">{item.name}</span>
+                          {item.subtitle && (
+                            <span className="text-footnote text-ink-3 mt-0.5 block">
+                              {item.subtitle}
+                            </span>
+                          )}
+                          <span className="mt-3 flex flex-wrap items-center gap-2">
+                            <Badge tone="violet" size="sm">
+                              {frequencyLabel(item, t)}
+                            </Badge>
+                            {pendingNow && <StateBadge state={pendingNow.state} />}
+                            {item.status === "paused" ? (
+                              <Badge tone="warning" size="sm">
+                                {t("paused")}
+                              </Badge>
+                            ) : (
+                              item.nextDate && (
+                                <span className="text-footnote text-ink-2">
+                                  {t("nextOn", { date: f.date(item.nextDate) })}
+                                </span>
+                              )
+                            )}
+                          </span>
+                        </span>
+                        <MoneyAmount value={item.amount} className="shrink-0 text-right" />
                       </button>
-                      {pendingNow && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon="check"
-                          onClick={() => setPaying(pendingNow)}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => cancel(item)}
+                          className="text-footnote text-ink-3 hover:text-negative-text"
                         >
-                          {t("markPaid")}
-                        </Button>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
+                          {t("cancel")}
+                        </button>
+                        {pendingNow && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon="check"
+                            onClick={() => setPaying(pendingNow)}
+                          >
+                            {t("markPaid")}
+                          </Button>
+                        )}
+                      </div>
+                    </AnimatedListItem>
+                  );
+                })}
+              </AnimatedList>
               <button
                 type="button"
                 onClick={openNew}
@@ -351,28 +351,30 @@ export function SubscriptionsView({
             <p className="text-body text-ink-2">{t("upcomingEmpty")}</p>
           ) : (
             <ul className="space-y-3">
-              {upcoming.map((item) => (
-                <li key={item.occurrenceId} className="flex items-start gap-3">
-                  <span aria-hidden className="bg-violet mt-2 size-2 shrink-0 rounded-full" />
-                  <span className="min-w-0 flex-1">
-                    <span className="text-body text-ink block font-semibold">{item.name}</span>
-                    <span className="text-footnote text-ink-3 flex flex-wrap items-center gap-2">
-                      {f.date(item.dueOn, "weekdayShort")}
-                      <StateBadge state={item.state} />
+              <AnimatedList animateOnMount={first}>
+                {upcoming.map((item) => (
+                  <AnimatedListItem key={item.occurrenceId} className="flex items-start gap-3">
+                    <span aria-hidden className="bg-violet mt-2 size-2 shrink-0 rounded-full" />
+                    <span className="min-w-0 flex-1">
+                      <span className="text-body text-ink block font-semibold">{item.name}</span>
+                      <span className="text-footnote text-ink-3 flex flex-wrap items-center gap-2">
+                        {f.date(item.dueOn, "weekdayShort")}
+                        <StateBadge state={item.state} />
+                      </span>
+                      {needsAction(item.state) && (
+                        <button
+                          type="button"
+                          onClick={() => setPaying(item)}
+                          className="text-callout text-ember-text mt-1 block font-semibold hover:underline"
+                        >
+                          {t("markPaid")}
+                        </button>
+                      )}
                     </span>
-                    {needsAction(item.state) && (
-                      <button
-                        type="button"
-                        onClick={() => setPaying(item)}
-                        className="text-callout text-ember-text mt-1 block font-semibold hover:underline"
-                      >
-                        {t("markPaid")}
-                      </button>
-                    )}
-                  </span>
-                  <MoneyAmount value={item.amount} className="shrink-0 text-right" />
-                </li>
-              ))}
+                    <MoneyAmount value={item.amount} className="shrink-0 text-right" />
+                  </AnimatedListItem>
+                ))}
+              </AnimatedList>
             </ul>
           )}
           <div className="border-border flex items-center justify-between gap-3 border-t pt-4">

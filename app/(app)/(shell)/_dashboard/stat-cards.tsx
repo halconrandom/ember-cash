@@ -7,7 +7,8 @@
  * Variación (DESIGN_SPEC §3): la flecha dice la dirección y el color si es
  * bueno o malo. Ingresos y balance que suben son verdes; gastos que bajan,
  * también. Sin datos el mes anterior, el distintivo lo dice en vez de un
- * porcentaje (no se divide por cero).
+ * porcentaje (no se divide por cero). Los importes cuentan desde 0 (Number
+ * Ticker) solo en la primera carga; después cambian al instante.
  */
 import { useTranslations } from "next-intl";
 
@@ -17,6 +18,7 @@ import { Icon } from "@/components/ui/icon";
 import type { IconName } from "@/components/ui/icon-registry";
 import { monthTotals, percentChange, type AggregateRow } from "@/lib/dashboard/aggregate";
 import { useFormat } from "@/lib/i18n/use-format";
+import { useFirstView } from "@/lib/motion/first-view";
 import type { Money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +36,8 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
   const t = useTranslations("dashboard");
   const f = useFormat();
   const { rate, status, displayCurrency } = useRate();
+  // Number Ticker solo en la primera carga del dashboard (spec §7).
+  const first = useFirstView();
   const usable = status === "error" ? null : rate;
   const current = monthTotals(rows, month, displayCurrency, usable);
   const previous = monthTotals(rows, previousMonth, displayCurrency, usable);
@@ -70,6 +74,7 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
           </div>
           <MoneyAmount
             kind="total"
+            ticker={first}
             value={value}
             primaryClassName="text-amount-xl text-white"
             unitClassName="text-white"
@@ -96,6 +101,7 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
       </div>
       <MoneyAmount
         kind="total"
+        ticker={first}
         value={value}
         primaryClassName="text-amount-xl"
         secondaryClassName="text-body text-ink-2"

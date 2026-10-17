@@ -5,8 +5,10 @@
  * mayor a menor, en lugar de donut). Cada barra usa el color de su categoría
  * (nunca naranja) y lleva el valor y el porcentaje al lado. La barra más
  * larga es la categoría mayor; las demás, en proporción a ella. Cada fila
- * abre Transacciones filtrada por esa categoría y ese mes.
+ * abre Transacciones filtrada por esa categoría y ese mes. Las barras se
+ * llenan en 0,5 s solo en la primera carga del dashboard (spec §7).
  */
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
@@ -16,6 +18,7 @@ import { Icon } from "@/components/ui/icon";
 import { CATEGORY_META } from "@/lib/categories";
 import { spendingByCategory, type AggregateRow } from "@/lib/dashboard/aggregate";
 import { useFormat } from "@/lib/i18n/use-format";
+import { useFirstView } from "@/lib/motion/first-view";
 import type { Money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +49,7 @@ export function CategoryCard({ rows, month }: { rows: AggregateRow[]; month: str
   const tc = useTranslations("categories");
   const f = useFormat();
   const { rate, status, displayCurrency } = useRate();
+  const first = useFirstView();
   const usable = status === "error" ? null : rate;
   const { slices, total, partial } = spendingByCategory(rows, month, displayCurrency, usable);
   const max = slices[0]?.amount.amountMinor ?? 0n;
@@ -89,9 +93,11 @@ export function CategoryCard({ rows, month }: { rows: AggregateRow[]; month: str
                     aria-label={t("shareLabel", { percent: s.percent })}
                     className="bg-track h-2 overflow-hidden rounded-full"
                   >
-                    <span
+                    <motion.span
                       className={cn("block h-full rounded-full", TONE_BAR[meta.tone])}
-                      style={{ width: `${width}%` }}
+                      initial={first ? { width: 0 } : false}
+                      animate={{ width: `${width}%` }}
+                      transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
                     />
                   </span>
                   <span className="text-body text-ink text-right font-semibold whitespace-nowrap tabular-nums">

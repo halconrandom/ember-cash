@@ -3,8 +3,9 @@
 /**
  * Tendencia de 6 meses (IVERN_FIXES §2): barras agrupadas de ingresos
  * (verde #177B52) y gastos (naranja gráfico), con leyenda, valor directo en
- * el mes elegido y tooltip al pasar el mouse. Las barras crecen una vez al
- * aparecer (sin animación si se pidió reducir movimiento). Abre Transacciones.
+ * el mes elegido y tooltip al pasar el mouse. Las barras crecen desde abajo
+ * solo en la primera carga del dashboard (sin animación si se pidió reducir
+ * movimiento). Abre Transacciones.
  */
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Tooltip } from "@/components/ui/tooltip";
 import { lastMonths, niceMax, trend, type AggregateRow } from "@/lib/dashboard/aggregate";
 import { useFormat } from "@/lib/i18n/use-format";
+import { useFirstView } from "@/lib/motion/first-view";
 import { scaleOf, type Money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +28,7 @@ export function TrendCard({ rows, month }: { rows: AggregateRow[]; month: string
   const t = useTranslations("dashboard");
   const f = useFormat();
   const reduce = useReducedMotion();
+  const first = useFirstView();
   const { rate, status, displayCurrency } = useRate();
   const usable = status === "error" ? null : rate;
   const months = lastMonths(month, 6);
@@ -120,7 +123,7 @@ export function TrendCard({ rows, month }: { rows: AggregateRow[]; month: string
                         <motion.div
                           className={cn("w-full origin-bottom rounded-t-md", bar.cls)}
                           style={{ height: `${height(bar.value)}%` }}
-                          initial={reduce ? false : { scaleY: 0 }}
+                          initial={reduce || !first ? false : { scaleY: 0 }}
                           animate={{ scaleY: 1 }}
                           transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
                         />

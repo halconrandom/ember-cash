@@ -2,6 +2,20 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.12.0] - 2026-10-17
+
+### Añadido (fase 12: animaciones)
+
+- Movimiento de la spec §7. `MotionConfig reducedMotion="user"` en los proveedores.
+- Solo en la primera carga de cada pantalla (`lib/motion/first-view.ts`): el Number Ticker de los totales, el llenado de barras y anillos, y la entrada de las listas. Al volver a la pantalla, todo aparece al instante.
+- Presión a escala 0.97 (botones y `.press-scale`). Con `prefers-reduced-motion` esa escala no se aplica.
+- Highlight (`layoutId`) en el ítem activo del sidebar, los controles segmentados y el contorno de la categoría elegida.
+- Modal: el velo se desvanece y la superficie escala de 0.96 a 1 con opacidad en 220 ms; el cierre recorre el mismo camino. Se cierra con Esc, el velo o la X.
+- Animated List en transacciones, suscripciones y próximos pagos. Una fila que llega o se va se acomoda con `layout`, sin revelar la lista de a una.
+- Sliding Number en la línea de conversión del modal de transacción: ruedan las cifras y el resto del texto queda fijo.
+- Calendario: el contorno del día elegido se desliza entre celdas (`layoutId` por mes, absoluto, sin cambiar el tamaño de la celda). Al cambiar de mes hay un fundido cruzado de 150 ms; los dos meses ocupan la misma celda para no duplicar la altura.
+- Con movimiento reducido no hay desplazamientos ni dibujado del anillo. El ticker y el Sliding Number muestran el valor final; la opacidad puede fundirse. Tests del calendario, del movimiento reducido y de abrir y cerrar el modal.
+
 ## [0.11.2] - 2026-10-17
 
 ### Cambiado

@@ -6,12 +6,12 @@
  * En pantallas angostas pasa a ser una franja superior con los mismos
  * elementos.
  */
-import { LayoutGroup } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { LogoTile } from "@/components/brand/logo";
+import { Highlight } from "@/components/ui/highlight";
 import { NavItem } from "@/components/ui/nav-item";
 
 import { isActive, NAV_ITEMS } from "./nav";
@@ -28,7 +28,11 @@ export function Sidebar({ userCard }: { userCard: React.ReactNode }) {
       </Link>
 
       <nav aria-label={t("nav.label")} className="lg:mt-[30px]">
-        <LayoutGroup id="sidebar-nav">
+        {/* La píldora sigue al puntero y vuelve a la ruta activa (Highlight, spec §7). */}
+        <Highlight
+          value={NAV_ITEMS.find((item) => isActive(item.href, pathname))?.href ?? null}
+          hover
+        >
           <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
             {NAV_ITEMS.map((item) => (
               <li key={item.href} className="shrink-0">
@@ -37,12 +41,11 @@ export function Sidebar({ userCard }: { userCard: React.ReactNode }) {
                   icon={item.icon}
                   label={t(`nav.${item.key}`)}
                   active={isActive(item.href, pathname)}
-                  layoutGroup="sidebar"
                 />
               </li>
             ))}
           </ul>
-        </LayoutGroup>
+        </Highlight>
       </nav>
 
       <div className="lg:mt-auto">{userCard}</div>
