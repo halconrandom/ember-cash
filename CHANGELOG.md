@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.1] - 2026-10-17
+
+### Cambiado
+
+- Desarrollo y producción usan el mismo proyecto de Supabase. El README ya no pide enlazar un proyecto y volver a enlazar otro.
+- `pnpm db:push` pide escribir el ref del proyecto enlazado antes de aplicar migraciones.
+- `pnpm db:seed:demo` se niega a correr contra ese proyecto. `supabase/seed.sql` aborta si se ejecuta.
+
 ## [0.14.0] - 2026-10-17
 
 ### Añadido (fase 14: producción, seguridad y respaldo)

@@ -78,18 +78,19 @@ pnpm dev                 # abre http://localhost:3000
 
 ## Supabase
 
-La CLI de Supabase está instalada como dependencia de desarrollo (`pnpm exec supabase ...`). El proyecto remoto se enlaza una vez con:
+La CLI de Supabase está instalada como dependencia de desarrollo (`pnpm exec supabase ...`). Desarrollo y producción usan el mismo proyecto. Se enlaza una vez y no se cambia de ref:
 
 ```bash
 pnpm exec supabase login
 pnpm exec supabase link --project-ref <ref-del-proyecto>
 ```
 
-| Comando         | Qué hace                                                                                  |
-| --------------- | ----------------------------------------------------------------------------------------- |
-| `pnpm db:push`  | Aplica las migraciones de `supabase/migrations/` al proyecto enlazado                     |
-| `pnpm db:types` | Regenera `lib/db/database.types.ts` desde el esquema remoto                               |
-| `pnpm test:rls` | Corre `supabase/tests/*.sql` en una transacción con ROLLBACK (no deja datos)             |
+| Comando             | Qué hace                                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm db:push`      | Pide el ref del proyecto enlazado y, si coincide, aplica las migraciones. No carga el seed                 |
+| `pnpm db:seed:demo` | Se niega a correr. Ese proyecto guarda los datos reales                                                     |
+| `pnpm db:types`     | Regenera `lib/db/database.types.ts` desde el esquema remoto                                                 |
+| `pnpm test:rls`     | Corre `supabase/tests/*.sql` en una transacción con ROLLBACK (no deja datos)                               |
 
 Reglas: una migración ya aplicada no se edita; los cambios van en una migración nueva. Después de cada migración, corre `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`.
 
@@ -134,36 +135,31 @@ Reglas: una migración ya aplicada no se edita; los cambios van en una migració
 
 ## Producción
 
-El proyecto de Supabase de producción es otro, distinto del de desarrollo. El que queda enlazado para el día a día es el de desarrollo (`supabase/.temp/project-ref`). No corras `pnpm db:push` contra producción si acabas de enlazar el de desarrollo, ni al revés.
+Desarrollo y producción usan el mismo proyecto de Supabase. El ref enlazado (`supabase/.temp/project-ref`) es ese proyecto. `pnpm db:push` escribe ahí las migraciones, por eso pide que escribas el ref antes de continuar. `pnpm db:seed:demo` se niega a correr contra él.
 
 ### Dónde va cada variable
 
-En Vercel: Project, Settings, Environment Variables. Márcalas en **Production**. En Preview puedes usar el proyecto de Supabase de desarrollo, para no escribir datos reales desde un deploy de prueba. Los cron solo corren en el deploy de producción.
+En Vercel: Project, Settings, Environment Variables, entorno **Production**. Los mismos tres valores de Supabase van en `.env.local`. Los cron solo corren en el deploy de producción.
 
 | Variable | Dónde se copia el valor | Dónde se pega |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase de **producción**, Project Settings, API, Project URL | Vercel, entorno Production |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | La misma pantalla, clave `anon` `public` | Vercel, entorno Production |
-| `SUPABASE_SERVICE_ROLE_KEY` | La misma pantalla, clave `service_role` (secreta) | Vercel, entorno Production. Nunca con prefijo `NEXT_PUBLIC_`. Nunca en el cliente |
-| `CRON_SECRET` | Lo generas tú: `openssl rand -hex 32`. No sale de Supabase | Vercel, entorno Production. Vercel lo envía solo en los cron, como `Authorization: Bearer <CRON_SECRET>` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase, Project Settings, API, Project URL | `.env.local` y Vercel, entorno Production |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | La misma pantalla, clave `anon` `public` | `.env.local` y Vercel, entorno Production |
+| `SUPABASE_SERVICE_ROLE_KEY` | La misma pantalla, clave `service_role` (secreta) | `.env.local` y Vercel, entorno Production. Nunca con prefijo `NEXT_PUBLIC_`. Nunca en el cliente |
+| `CRON_SECRET` | Lo generas tú: `openssl rand -hex 32`. No sale de Supabase | `.env.local` y Vercel, entorno Production. Vercel lo envía solo en los cron, como `Authorization: Bearer <CRON_SECRET>` |
 
-En la máquina local, `.env.local` sigue apuntando al proyecto de **desarrollo**. No pegues ahí las claves de producción.
+### Supabase
 
-### Supabase de producción
-
-1. Crea un proyecto nuevo en Supabase. No reutilices el de desarrollo.
-2. Authentication, URL Configuration: Site URL `https://<tu-dominio>`. En Redirect URLs agrega `https://<tu-dominio>/auth/callback` y `https://<tu-dominio>/auth/confirm`.
-3. Activa Google (el callback de Google es el de Supabase, `https://<ref>.supabase.co/auth/v1/callback`) y la plantilla del magic link apunta a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding`.
-4. Aplica las migraciones y vuelve a enlazar el proyecto de desarrollo:
+1. Authentication, URL Configuration: Site URL `https://<tu-dominio>`. En Redirect URLs agrega `https://<tu-dominio>/auth/callback`, `https://<tu-dominio>/auth/confirm`, `http://localhost:3000/auth/callback` y `http://localhost:3000/auth/confirm`.
+2. Activa Google (el callback de Google es el de Supabase, `https://<ref>.supabase.co/auth/v1/callback`) y la plantilla del magic link apunta a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding`.
+3. Con el proyecto ya enlazado, aplica las migraciones y comprueba el RLS:
 
 ```bash
-pnpm exec supabase link --project-ref <ref-de-produccion>
 pnpm db:push
 pnpm exec supabase db query --linked -f supabase/tests/rls_enabled.sql
-pnpm exec supabase link --project-ref <ref-de-desarrollo>
 ```
 
-`rls_enabled.sql` tiene que imprimir `OK: RLS activo en todas las tablas de public`. No deja datos.
+`pnpm db:push` no sigue hasta que escribes el ref del proyecto. `rls_enabled.sql` tiene que imprimir `OK: RLS activo en todas las tablas de public`. No deja datos.
 
 ### Vercel
 

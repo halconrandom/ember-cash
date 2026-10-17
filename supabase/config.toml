@@ -65,8 +65,9 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# Apagado a propósito. Desarrollo y producción son el mismo proyecto.
+# pnpm db:seed:demo se niega, y seed.sql aborta si alguien lo ejecuta.
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]
