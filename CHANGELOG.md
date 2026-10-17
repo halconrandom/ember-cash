@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.2.0] - 2026-10-16
+
+### Añadido (fase 2: auth y households)
+
+- Migración `0001_auth_households.sql`: `profiles` (con trigger que lo crea al registrarse), `households`, `household_members` y `household_invites` (solo se guarda el hash SHA-256 del token, vence a 7 días). RLS en todas las tablas, privilegios de columna recortados, `is_household_member` / `is_household_owner` SECURITY DEFINER, y RPC `create_household`, `accept_invite` (un solo uso, máximo 2 miembros vía `max_household_members()`) y `get_household_members`.
+- Columna `profiles.onboarded_at` para saber si el usuario terminó el onboarding (la opción "Usar solo yo" no deja rastro en otras tablas).
+- Migración `0002_revoke_handle_new_user.sql`: quita el permiso de ejecutar el trigger por RPC (lo señaló `supabase db advisors`).
+- Tests RLS en `supabase/tests/rls_households.sql` (`pnpm test:rls`) con usuarios A, B y C.
+- `/login` (Google y link mágico), `/auth/callback`, `/auth/confirm`, `/auth/signout`, `proxy.ts` que refresca la sesión, grupo protegido `(app)`, `/onboarding` y `/invite/[token]`. El owner genera links de invitación desde la página principal.
+- Tipos de la base en `lib/supabase/database.types.ts` (`pnpm db:types`) y scripts `db:push` y `test:rls`.
+- Tokens de diseño provisionales en `app/globals.css` y `components/provisional/` (los reemplaza la fase 4).
+
 ## [0.1.0] - 2026-10-16
 
 ### Añadido (fase 1: base del proyecto)

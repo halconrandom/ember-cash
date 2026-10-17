@@ -78,7 +78,27 @@ pnpm dev                 # abre http://localhost:3000
 
 ## Supabase
 
-La CLI de Supabase está instalada como dependencia de desarrollo, así que se usa con `pnpm exec supabase ...`. Las migraciones van en `supabase/migrations/` (por ahora vacía). Para una base local hace falta Docker: `pnpm exec supabase start`.
+La CLI de Supabase está instalada como dependencia de desarrollo (`pnpm exec supabase ...`). El proyecto remoto se enlaza una vez con:
+
+```bash
+pnpm exec supabase login
+pnpm exec supabase link --project-ref <ref-del-proyecto>
+```
+
+| Comando         | Qué hace                                                                                  |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm db:push`  | Aplica las migraciones de `supabase/migrations/` al proyecto enlazado                     |
+| `pnpm db:types` | Regenera `lib/supabase/database.types.ts` desde el esquema remoto                         |
+| `pnpm test:rls` | Corre `supabase/tests/rls_households.sql` en una transacción con ROLLBACK (no deja datos) |
+
+Reglas: una migración ya aplicada no se edita; los cambios van en una migración nueva. Después de cada migración, corre `pnpm db:types` y `pnpm test:rls`.
+
+### Auth
+
+- Login con Google y con link mágico por correo (`/login`).
+- `/auth/callback` recibe el retorno de Google; `/auth/confirm` recibe el link mágico (la plantilla de correo de Supabase debe apuntar a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding`).
+- `proxy.ts` (el antiguo middleware) refresca la sesión y manda a `/login` a quien no tenga sesión.
+- Después del primer login, `/onboarding` ofrece: usar la app solo, crear un household o unirse con una invitación (`/invite/<token>`).
 
 ## Endpoints
 

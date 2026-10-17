@@ -8,29 +8,39 @@ import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 import { getServerEnv } from "@/lib/env";
 
+import type { Database } from "./database.types";
+
 /** Crea un cliente de Supabase ligado a las cookies de la petición actual. */
 export async function createClient() {
+  // Marca el trabajo como "por petición": el cliente usa Date.now() y la
+  // sesión del usuario, así que nunca debe prerenderizarse (cacheComponents).
+  await connection();
   const env = getServerEnv();
   const cookieStore = await cookies();
 
-  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+  return createServerClient<Database>(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
+          } catch {
+            // En un Server Component no se pueden escribir cookies. Se ignora
+            // porque proxy.ts ya refresca la sesión en cada petición.
           }
-        } catch {
-          // En un Server Component no se pueden escribir cookies. Se ignora:
-          // el refresco de sesión se hará en el proxy cuando exista auth.
-        }
+        },
       },
     },
-  });
+  );
 }
