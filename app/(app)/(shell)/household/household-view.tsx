@@ -73,7 +73,7 @@ const TILE: Record<string, string> = {
 /** Color de la barra y del texto según el estado del presupuesto. */
 const BUDGET_TONE: Record<BudgetState, { bar: string; text: string }> = {
   ok: { bar: "bg-neutral-bar", text: "text-ink-2" },
-  near: { bar: "bg-amber", text: "text-amber-text" },
+  near: { bar: "bg-budget-warn-bar", text: "text-amber-text" },
   over: { bar: "bg-negative", text: "text-negative-text" },
 };
 

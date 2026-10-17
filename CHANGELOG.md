@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.11.2] - 2026-10-17
+
+### Cambiado
+
+- Token nuevo `--budget-warn-bar` para la barra ámbar del presupuesto compartido (de 80 % al límite): en claro #936316 (el mismo `amber-text`), en oscuro #FFB224 (el ámbar de siempre). Solo lo usa esa barra; los distintivos y demás usos del ámbar no cambian.
+- En claro, esa barra pasa de 2,72 a 4,38 contra su pista y da 5,20 contra la tarjeta. En oscuro sigue en 6,18 y 9,93.
+- Se quitó el test PENDIENTE. Los pares nuevos pasan con ≥3:1, y un test fija que las barras gris y roja no cambiaron (claro 4,34 y 3,29; oscuro 3,25 y 3,84 contra la pista).
+
 ## [0.11.1] - 2026-10-17
 
 ### Añadido

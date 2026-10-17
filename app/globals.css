@@ -83,6 +83,8 @@
   --track: #ebebf0;
   /* Barra de presupuesto en estado neutro (por debajo del 80 %). */
   --neutral-bar: #6d6d71;
+  /* Barra ámbar del presupuesto (80 % al límite): en claro, amber-text para llegar a 3:1 contra la pista. */
+  --budget-warn-bar: #936316;
   /* Barra de porcentaje pagado de deudas: ember-fill en claro (DESIGN_SPEC §1). */
   --debt-bar: #c6500b;
 
@@ -183,6 +185,7 @@
   --track: #3b3b40;
   /* La spec no da el gris neutro del presupuesto en oscuro: se usa text3. */
   --neutral-bar: #8a8a90;
+  --budget-warn-bar: #ffb224;
   /* Excepción (DESIGN_SPEC §1): en oscuro la barra de deudas usa el naranja
      gráfico, porque ember-fill sobre la pista #3B3B40 solo daba 2,41:1. */
   --debt-bar: #ff7a2e;
@@ -346,6 +349,7 @@
   --color-expense-bar: var(--expense-bar);
   --color-track: var(--track);
   --color-neutral-bar: var(--neutral-bar);
+  --color-budget-warn-bar: var(--budget-warn-bar);
   --color-debt-bar: var(--debt-bar);
   --color-member-a: var(--member-a);
   --color-member-a-on: var(--member-a-on);
