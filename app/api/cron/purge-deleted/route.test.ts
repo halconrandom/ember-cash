@@ -8,7 +8,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 const { GET } = await import("./route");
-const AUTH = { authorization: "Bearer test-cron-secret" };
+const AUTH = { authorization: "Bearer test-cron-secret-not-real-0000000000" };
 
 beforeEach(() => {
   lt.mockReset();

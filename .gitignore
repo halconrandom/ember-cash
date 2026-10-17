@@ -22,7 +22,16 @@
 
 # misc
 .DS_Store
+
+# llaves y credenciales (auditoría, fase 1): nunca al repositorio
 *.pem
+*.key
+*.p12
+*.pfx
+*service-account*.json
+*credentials*.json
+# respaldos exportados desde Ajustes (datos financieros)
+ember-cash-*.zip
 
 # debug
 npm-debug.log*

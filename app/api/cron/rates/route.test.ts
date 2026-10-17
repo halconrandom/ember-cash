@@ -7,7 +7,7 @@ vi.mock("@/lib/money/rates", () => ({ fetchAndStoreRate }));
 const { GET } = await import("./route");
 
 /** CRON_SECRET de vitest.config.mts. */
-const AUTH = { authorization: "Bearer test-cron-secret" };
+const AUTH = { authorization: "Bearer test-cron-secret-not-real-0000000000" };
 
 beforeEach(() => fetchAndStoreRate.mockReset());
 

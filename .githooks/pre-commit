@@ -1,0 +1,3 @@
+#!/bin/sh
+# Frena el commit si lleva secretos (ver scripts/pre-commit-secrets.mjs).
+exec node scripts/pre-commit-secrets.mjs

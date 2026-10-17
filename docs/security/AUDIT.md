@@ -34,7 +34,7 @@ No se encontraron secretos filtrados ni acceso entre hogares o usuarios distinto
 | M-03 | Media       | RLS (integridad) | Un miembro puede alterar repartos, liquidaciones y aportes del otro                 | 3    |
 | M-04 | Media       | Rate limiting    | Sin límites en exportación, acciones de escritura e invitaciones                    | 4    |
 | B-01 | Baja        | Fugas            | Cabecera `X-Powered-By: Next.js`                                                    | 2    |
-| B-02 | Baja        | Secretos         | `CRON_SECRET` acepta un valor de 1 carácter                                         | 1    |
+| B-02 | Baja        | Secretos         | `CRON_SECRET` acepta un valor de 1 carácter (corregido en 0.14.5)                   | 1    |
 | B-03 | Baja        | Rate limiting    | Varias peticiones a la vez a las fuentes de la tasa cuando está vieja               | 4    |
 | B-04 | Baja        | Validación       | `createInviteLink` sin zod y con el origen tomado de `x-forwarded-host`             | 3    |
 | B-05 | Baja        | Cabeceras        | `img-src` permite `*.googleusercontent.com` sin uso                                 | 5    |
@@ -139,6 +139,8 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 - **Corrección (fase 2):** `poweredByHeader: false` y un test.
 
 ### B-02. `CRON_SECRET` acepta un valor de 1 carácter (Baja)
+
+**Estado: corregido en 0.14.5 (fase 1).** `CRON_SECRET` exige al menos 32 caracteres (`lib/env-server.ts`), con tests.
 
 - **Dónde:** `lib/env-server.ts:16`, `CRON_SECRET: z.string().min(1)`.
 - **Cómo se explota:** si alguien configura un secreto corto en Vercel, `/api/cron/*` se puede adivinar por fuerza bruta (por ejemplo, forzar `purge-deleted` o consultas a las fuentes de la tasa). La comparación ya es en tiempo constante.
@@ -270,6 +272,18 @@ Hay que revisarlos a mano en las fases 4 y 6:
 | `/dev/design-system`                 | Cerrado en producción             | `app/dev/design-system/page.tsx:18` llama a `notFound()` en producción.                                                                                                                                                                                                                                                                 |
 | Cabeceras presentes                  | Sí                                | Medido en `next start`: `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `Referrer-Policy: strict-origin-when-cross-origin`, COOP, CORP, HSTS de 2 años, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` y `frame-src 'none'`.                                                                                |
 | Storage                              | No se usa                         | No hay buckets ni llamadas a `storage` en el código.                                                                                                                                                                                                                                                                                    |
+
+## Fase 1: secretos (0.14.5)
+
+En la fase 0 no apareció ningún secreto real: ni en el historial, ni en el bundle, ni en `NEXT_PUBLIC_*`, ni en la caché del service worker. **No hay llaves que rotar.** La fase 1 corrigió B-02 y agregó verificaciones automáticas para que no aparezcan en el futuro:
+
+| Verificación                       | Dónde                                                                                         | Qué frena                                                                                                                                                                                                                                                                |
+| ---------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Validación del entorno al arrancar | `lib/env.ts` (`assertNoSecretsInPublicEnv` y el `refine` de la anon key), `lib/env-server.ts` | Una `NEXT_PUBLIC_*` llamada como un secreto (`SERVICE_ROLE`, `SECRET`, `PRIVATE`, `PASSWORD`) o con una llave de servidor de Supabase. También una anon key que sea la service role y un `CRON_SECRET` de menos de 32 caracteres. `pnpm dev` y `pnpm build` se detienen. |
+| Chequeo del bundle                 | `scripts/check-client-bundle.mjs`, dentro de `pnpm build`                                     | El valor real de la service role o de `CRON_SECRET`, JWT con rol `service_role`, `sb_secret_`, PEM, AWS, Stripe o GitHub en `.next/static` o `public/`. El deploy de Vercel falla.                                                                                       |
+| Frontera servidor/cliente          | `lib/security/server-boundary.test.ts`                                                        | Un archivo `"use client"` que importe `env-server`, `supabase/admin`, `supabase/server`, `money/rates` o `recurring/cron`.                                                                                                                                               |
+| Hook de pre-commit                 | `.githooks/pre-commit` y `scripts/pre-commit-secrets.mjs` (lo activa `pnpm install`)          | Archivos `.env*` (salvo `.env.example`), `*.pem`, `*.key`, `*.p12` o `*.pfx`, y líneas agregadas con secretos.                                                                                                                                                           |
+| `.gitignore`                       | raíz                                                                                          | Además de `.env*` y `*.pem`: `*.key`, `*.p12`, `*.pfx`, credenciales JSON y los ZIP de respaldo exportados.                                                                                                                                                              |
 
 ## Lo que queda para ti (se completa en la fase 6)
 

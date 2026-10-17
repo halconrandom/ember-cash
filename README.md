@@ -77,10 +77,17 @@ Abre [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_SUPABASE_URL`      | cliente y servidor              | URL de tu proyecto de Supabase                                                                                           |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor              | Clave pública (`anon`)                                                                                                   |
 | `SUPABASE_SERVICE_ROLE_KEY`     | **solo servidor**               | Nunca con prefijo `NEXT_PUBLIC_` ni en el cliente                                                                        |
-| `CRON_SECRET`                   | **solo servidor**               | Genera uno con `openssl rand -hex 32`                                                                                    |
+| `CRON_SECRET`                   | **solo servidor**               | Al menos 32 caracteres. Genera uno con `openssl rand -hex 32`                                                            |
 | `TEST_DATABASE_URL`             | solo los tests de base de datos | Postgres **local** (`localhost`), base que termine en `_test`. Ver [Pruebas de base de datos](#pruebas-de-base-de-datos) |
 
 La app valida estas variables al arrancar y te dice cuáles faltan.
+
+Al validar, la app también se detiene si alguna variable `NEXT_PUBLIC_*` lleva un secreto (por su nombre o porque contiene una llave de servidor de Supabase), porque todo lo que empieza con `NEXT_PUBLIC_` termina en el navegador.
+
+### Protección contra secretos
+
+- `pnpm build` revisa, después de compilar, que nada de lo que descarga el navegador (`.next/static` y `public/`) contenga la service role, `CRON_SECRET` ni otros patrones de llaves (`scripts/check-client-bundle.mjs`). Si encuentra algo, el build falla y Vercel no publica.
+- Al hacer `pnpm install`, el script `prepare` activa un hook de pre-commit (`.githooks/pre-commit`) que frena el commit si lleva archivos `.env*` (salvo `.env.example`), llaves (`*.pem`, `*.key`) o secretos en las líneas agregadas.
 
 ### Base de datos
 

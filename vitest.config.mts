@@ -20,7 +20,7 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
       SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
-      CRON_SECRET: "test-cron-secret",
+      CRON_SECRET: "test-cron-secret-not-real-0000000000",
     },
   },
 });

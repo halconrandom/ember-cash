@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.5] - 2026-10-17
+
+### Seguridad (auditoría, fase 1: secretos)
+
+- No hay llaves que rotar: la fase 0 no encontró ningún secreto real en el historial, el bundle, `NEXT_PUBLIC_*` ni la caché del service worker.
+- `CRON_SECRET` exige al menos 32 caracteres (B-02). La variable de Vercel tiene que cumplirlo o el build falla. El README pide `openssl rand -hex 32` (64 caracteres).
+- La validación del entorno se detiene si alguna `NEXT_PUBLIC_*` se llama como un secreto o contiene una llave de servidor de Supabase (JWT `service_role` o `sb_secret_`), y si la anon key es en realidad la service role. El error nombra la variable sin mostrar su valor.
+- `pnpm build` corre `scripts/check-client-bundle.mjs`: busca en `.next/static` y `public/` el valor real de la service role y de `CRON_SECRET` y patrones de llaves. Si encuentra algo, el build falla y Vercel no publica.
+- Hook de pre-commit sin dependencias nuevas (`.githooks/pre-commit`, activado por `prepare` al hacer `pnpm install`). Frena archivos `.env*` (salvo `.env.example`), llaves y líneas con secretos.
+- `.gitignore`: `*.key`, `*.p12`, `*.pfx`, credenciales JSON y los ZIP de respaldo.
+- Tests: detector de secretos, validación del entorno (nombres, valores, largo de `CRON_SECRET`, que el error no muestre el valor) y frontera servidor/cliente. Se comprobó a mano que el hook y el chequeo del bundle fallan con un secreto falso.
+
 ## [0.14.4] - 2026-10-17
 
 ### Corregido (auditoría, fase 0.5: A-01)
