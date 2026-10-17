@@ -7,7 +7,7 @@
  */
 import { timingSafeEqual } from "node:crypto";
 
-import { getServerEnv } from "@/lib/env";
+import { getServerEnv } from "@/lib/env-server";
 import { fetchAndStoreRate } from "@/lib/money/rates";
 
 /** Compara el encabezado con el secreto en tiempo constante. */

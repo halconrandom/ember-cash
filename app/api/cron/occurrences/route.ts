@@ -7,7 +7,7 @@
  */
 import { timingSafeEqual } from "node:crypto";
 
-import { getServerEnv } from "@/lib/env";
+import { getServerEnv } from "@/lib/env-server";
 import { runOccurrencesCron } from "@/lib/recurring/cron";
 
 /** Compara el encabezado con el secreto en tiempo constante. */

@@ -4,7 +4,11 @@
  * El texto lo pone quien muestra el error, en el idioma del usuario.
  */
 
-/** Códigos que lanzan las funciones de 0001_auth_households.sql. */
+/**
+ * Códigos de las funciones SQL de households.
+ * accept_invite (0013) los devuelve en jsonb. not_authenticated sigue
+ * lanzando excepción, porque sin sesión no hay a quién contarle el intento.
+ */
 export const HOUSEHOLD_ERROR_CODES = [
   "not_authenticated",
   "invite_invalid",
@@ -12,6 +16,7 @@ export const HOUSEHOLD_ERROR_CODES = [
   "invite_expired",
   "already_member",
   "household_full",
+  "invite_rate_limited",
 ] as const;
 
 export type HouseholdErrorKey = (typeof HOUSEHOLD_ERROR_CODES)[number] | "generic";

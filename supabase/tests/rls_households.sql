@@ -81,7 +81,7 @@ select set_config('request.jwt.claims',
 
 do $$
 begin
-  if public.accept_invite('token-uno') <> current_setting('test.hid')::uuid then
+  if (public.accept_invite('token-uno') ->> 'household_id') <> current_setting('test.hid') then
     raise exception 'FALLO: accept_invite devolvió otro household';
   end if;
 
@@ -161,35 +161,21 @@ begin
   update public.profiles set display_name = 'hackeado'
   where id = '00000000-0000-4000-a000-00000000000a';
 
-  -- Un token ya usado no sirve otra vez.
-  begin
-    perform public.accept_invite('token-uno');
-    raise exception 'FALLO: se reutilizó un token';
-  exception when raise_exception then
-    if sqlerrm <> 'invite_used' then
-      raise exception 'FALLO: reutilizar token dio "%" en vez de invite_used', sqlerrm;
-    end if;
-  end;
+  -- Un token ya usado no sirve otra vez. accept_invite devuelve el código
+  -- (no lanza): así el intento queda guardado para el límite.
+  if (public.accept_invite('token-uno') ->> 'error') is distinct from 'invite_used' then
+    raise exception 'FALLO: reutilizar token no dio invite_used';
+  end if;
 
   -- Con un token válido, el household está lleno (máximo 2).
-  begin
-    perform public.accept_invite('token-dos');
-    raise exception 'FALLO: entró un tercer miembro';
-  exception when raise_exception then
-    if sqlerrm <> 'household_full' then
-      raise exception 'FALLO: tercer miembro dio "%" en vez de household_full', sqlerrm;
-    end if;
-  end;
+  if (public.accept_invite('token-dos') ->> 'error') is distinct from 'household_full' then
+    raise exception 'FALLO: el tercer miembro no dio household_full';
+  end if;
 
   -- Un token inexistente se rechaza.
-  begin
-    perform public.accept_invite('no-existe');
-    raise exception 'FALLO: se aceptó un token inexistente';
-  exception when raise_exception then
-    if sqlerrm <> 'invite_invalid' then
-      raise exception 'FALLO: token inexistente dio "%" en vez de invite_invalid', sqlerrm;
-    end if;
-  end;
+  if (public.accept_invite('no-existe') ->> 'error') is distinct from 'invite_invalid' then
+    raise exception 'FALLO: token inexistente no dio invite_invalid';
+  end if;
 
   -- C no puede crear invitaciones para el household de A.
   begin
@@ -237,14 +223,9 @@ select set_config('request.jwt.claims',
 
 do $$
 begin
-  begin
-    perform public.accept_invite('token-vencido');
-    raise exception 'FALLO: se aceptó una invitación vencida';
-  exception when raise_exception then
-    if sqlerrm <> 'invite_expired' then
-      raise exception 'FALLO: invitación vencida dio "%" en vez de invite_expired', sqlerrm;
-    end if;
-  end;
+  if (public.accept_invite('token-vencido') ->> 'error') is distinct from 'invite_expired' then
+    raise exception 'FALLO: invitación vencida no dio invite_expired';
+  end if;
 end $$;
 
 reset role;

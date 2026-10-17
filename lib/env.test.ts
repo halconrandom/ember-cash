@@ -1,7 +1,8 @@
 // Tests de la validación de variables de entorno.
 import { describe, expect, it } from "vitest";
 
-import { EnvError, getPublicEnv, getServerEnv } from "./env";
+import { getServerEnv } from "./env-server";
+import { EnvError, getPublicEnv } from "./env";
 
 /** Conjunto completo y válido de variables para partir en cada test. */
 const valid = {

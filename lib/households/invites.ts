@@ -26,6 +26,22 @@ export function buildInviteUrl(origin: string, token: string): string {
 }
 
 /**
+ * Interpreta el jsonb de accept_invite. Si ok es false, error es el código
+ * (invite_invalid, invite_rate_limited, ...). Una forma inesperada se trata
+ * como fallo sin código, y quien llama usa el mensaje genérico.
+ */
+export function readInviteResult(data: unknown): { ok: boolean; error: string | null } {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return { ok: false, error: null };
+  }
+  const row = data as { ok?: unknown; error?: unknown };
+  return {
+    ok: row.ok === true,
+    error: typeof row.error === "string" ? row.error : null,
+  };
+}
+
+/**
  * Extrae el token de lo que el usuario pegue: el link completo
  * (https://.../invite/<token>) o solo el token. Devuelve null si no parece
  * un token válido.

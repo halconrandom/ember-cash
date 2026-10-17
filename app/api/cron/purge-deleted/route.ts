@@ -7,7 +7,7 @@
  */
 import { timingSafeEqual } from "node:crypto";
 
-import { getServerEnv } from "@/lib/env";
+import { getServerEnv } from "@/lib/env-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function authorized(header: string | null, secret: string): boolean {

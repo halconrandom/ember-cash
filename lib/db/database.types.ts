@@ -525,6 +525,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      invite_accept_attempts: {
+        Row: {
+          attempted_at: string;
+          id: number;
+          user_id: string;
+        };
+        Insert: {
+          attempted_at?: string;
+          id?: never;
+          user_id: string;
+        };
+        Update: {
+          attempted_at?: string;
+          id?: never;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -904,7 +922,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      accept_invite: { Args: { p_token: string }; Returns: string };
+      accept_invite: { Args: { p_token: string }; Returns: Json };
       create_household: { Args: { p_name: string }; Returns: string };
       dashboard_totals: {
         Args: { p_from: string; p_household_id: string; p_to: string };

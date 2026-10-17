@@ -1,13 +1,12 @@
 /**
- * Validación de variables de entorno con zod.
+ * Variables de entorno públicas (las que Next puede incrustar en el cliente).
  *
- * - `getPublicEnv()`: variables NEXT_PUBLIC_* que pueden llegar al navegador.
- * - `getServerEnv()`: todas las variables, incluidas las secretas. Solo se
- *   puede llamar en el servidor; en el navegador lanza un error para evitar
- *   que SUPABASE_SERVICE_ROLE_KEY o CRON_SECRET terminen en el cliente.
+ * Las secretas están en lib/env-server.ts. Este archivo no las nombra: el
+ * cliente de Supabase del navegador solo importa getPublicEnv().
  *
- * La validación completa se ejecuta al arrancar desde next.config.ts, así que
- * `pnpm dev` y `pnpm build` fallan de inmediato si falta alguna variable.
+ * La validación completa (públicas y secretas) corre al arrancar desde
+ * next.config.ts, así que `pnpm dev` y `pnpm build` fallan de inmediato si
+ * falta alguna.
  */
 import { z } from "zod";
 
@@ -17,14 +16,7 @@ export const publicEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
 });
 
-/** Variables de servidor: nunca deben enviarse al navegador. */
-export const serverEnvSchema = publicEnvSchema.extend({
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  CRON_SECRET: z.string().min(1),
-});
-
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
-export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 /** Origen de las variables: normalmente `process.env`. */
 type EnvSource = Record<string, string | undefined>;
@@ -91,14 +83,4 @@ export function getPublicEnv(): PublicEnv {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
-}
-
-/** Devuelve todas las variables validadas. Solo para código de servidor. */
-export function getServerEnv(source: EnvSource = process.env): ServerEnv {
-  if (typeof window !== "undefined") {
-    throw new EnvError(
-      "[Ember Cash] getServerEnv() se llamó en el navegador. Las variables secretas solo existen en el servidor.",
-    );
-  }
-  return parseEnv(serverEnvSchema, source);
 }

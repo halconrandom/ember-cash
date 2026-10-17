@@ -20,8 +20,8 @@ import "./globals.css";
 
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { Providers } from "@/components/providers";
-import { DEFAULT_LOCALE, DEFAULT_TIME_ZONE, LOCALE_SCRIPT } from "@/lib/i18n/config";
-import { THEME_SCRIPT } from "@/lib/theme/constants";
+import { DEFAULT_LOCALE, DEFAULT_TIME_ZONE } from "@/lib/i18n/config";
+import { BOOT_SCRIPT } from "@/lib/security/headers";
 
 // Inter se expone como --font-sans, que usa la utilidad `font-sans` de Tailwind.
 const inter = Inter({
@@ -69,7 +69,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT + LOCALE_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
         <RegisterServiceWorker />

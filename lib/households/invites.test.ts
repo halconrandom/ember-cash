@@ -6,6 +6,7 @@ import {
   extractInviteToken,
   generateInviteToken,
   hashInviteToken,
+  readInviteResult,
 } from "./invites";
 
 describe("invites", () => {
@@ -42,5 +43,17 @@ describe("invites", () => {
     expect(extractInviteToken("")).toBeNull();
     expect(extractInviteToken("hola")).toBeNull();
     expect(extractInviteToken("https://ember.cash/invite/corto")).toBeNull();
+  });
+
+  it("lee el jsonb de accept_invite", () => {
+    expect(readInviteResult({ ok: true, household_id: "abc" })).toEqual({
+      ok: true,
+      error: null,
+    });
+    expect(readInviteResult({ ok: false, error: "invite_rate_limited" })).toEqual({
+      ok: false,
+      error: "invite_rate_limited",
+    });
+    expect(readInviteResult(null)).toEqual({ ok: false, error: null });
   });
 });

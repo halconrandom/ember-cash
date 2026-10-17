@@ -11,6 +11,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getPublicEnv } from "@/lib/env";
+import { contentSecurityPolicy } from "@/lib/security/headers";
 
 import type { Database } from "@/lib/db/types";
 
@@ -36,7 +37,27 @@ export function isPublicPath(
 
 export async function updateSession(request: NextRequest) {
   const env = getPublicEnv();
-  let response = NextResponse.next({ request });
+  // Nonce por petición. Next lo copia a sus scripts si la CSP va en la request.
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = contentSecurityPolicy({
+    nonce,
+    isDev: process.env.NODE_ENV !== "production",
+    supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+  });
+
+  // Next solo reenvía headers si se pasan en `request.headers` de
+  // NextResponse.next (ver la guía de CSP). Se clonan aquí, no se muta el
+  // request: al refrescar cookies hay que reconstruir el header que ve el render.
+  const continueWith = () => {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("Content-Security-Policy", csp);
+    requestHeaders.set("x-nonce", nonce);
+    const res = NextResponse.next({ request: { headers: requestHeaders } });
+    res.headers.set("Content-Security-Policy", csp);
+    return res;
+  };
+
+  let response = continueWith();
 
   const supabase = createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -50,7 +71,7 @@ export async function updateSession(request: NextRequest) {
           // Las cookies nuevas se copian a la petición (para que las lean los
           // Server Components de esta misma petición) y a la respuesta.
           for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
-          response = NextResponse.next({ request });
+          response = continueWith();
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, options);
           }
@@ -74,6 +95,7 @@ export async function updateSession(request: NextRequest) {
     loginUrl.search = "";
     if (pathname !== "/") loginUrl.searchParams.set("next", pathname + search);
     const redirect = NextResponse.redirect(loginUrl);
+    redirect.headers.set("Content-Security-Policy", csp);
     // Conserva las cookies que Supabase haya limpiado o renovado.
     for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
     return redirect;

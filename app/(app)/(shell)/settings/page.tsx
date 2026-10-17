@@ -1,7 +1,10 @@
 /**
- * Ajustes: apariencia (tema e idioma, guardados en el perfil), cuenta y
- * créditos. Los créditos incluyen la atribución que exige la licencia
- * gratuita de Flaticon (DESIGN_SPEC §6).
+ * Ajustes: apariencia (tema e idioma, guardados en el perfil), cuenta,
+ * respaldo y créditos.
+ *
+ * Acerca de lleva la atribución de la licencia gratuita de Flaticon
+ * (DESIGN_SPEC §6): "designed by {autor} from Flaticon", con enlace.
+ * Uicons es de Flaticon, así que el autor y el sitio son Flaticon.
  */
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -55,15 +58,38 @@ export default async function SettingsPage() {
         </form>
       </Card>
 
+      <Card className="space-y-3">
+        <CardTitle>{t("backup")}</CardTitle>
+        <p className="text-body text-ink-2">{t("backupBody")}</p>
+        <p className="text-body text-ink-2">{t("backupRestore")}</p>
+        {/* <a>, no Link: un prefetch no debe disparar la descarga. */}
+        <a
+          href="/settings/export"
+          className="border-border bg-surface text-body text-ink hover:bg-surface2 inline-flex min-h-11 items-center rounded-full border px-6 font-semibold transition-colors duration-100"
+        >
+          {t("exportCsv")}
+        </a>
+      </Card>
+
       <Card className="space-y-2">
         <CardTitle>{t("about")}</CardTitle>
         <p className="text-body text-ink-2">
           {t.rich("attribution", {
-            link: (chunks) => (
+            author: (chunks) => (
               <a
                 href="https://www.flaticon.com/uicons"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
+                className="text-ember-text font-medium underline-offset-4 hover:underline"
+              >
+                {chunks}
+              </a>
+            ),
+            site: (chunks) => (
+              <a
+                href="https://www.flaticon.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-ember-text font-medium underline-offset-4 hover:underline"
               >
                 {chunks}

@@ -2,6 +2,22 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.0] - 2026-10-17
+
+### Añadido (fase 14: producción, seguridad y respaldo)
+
+- README con la lista de variables de producción (Vercel, entorno Production, proyecto de Supabase distinto al de desarrollo) y los tres cron de `vercel.json`: tasas a las 13:00 UTC, borrado definitivo a las 13:30 y ocurrencias a las 13:45.
+- `supabase/tests/rls_enabled.sql` falla si alguna tabla de `public` no tiene RLS, o si `anon` o `authenticated` tienen `BYPASSRLS`. Se corre con `pnpm test:rls` y, ya enlazado el proyecto de producción, con `pnpm exec supabase db query --linked -f supabase/tests/rls_enabled.sql`.
+- Cabeceras de seguridad (nosniff, DENY, referrer, Permissions-Policy, COOP, CORP, HSTS) y CSP por petición: scripts con nonce y el hash del arranque de tema, sin `unsafe-inline` en scripts.
+- Aceptar una invitación admite 8 intentos por persona cada 15 minutos (`invite_rate_limited`). El intento se guarda aunque el enlace no sirva.
+- Ajustes, Acerca de: atribución "Uicons designed by Flaticon from Flaticon", con enlaces, como pide la licencia gratuita.
+- Ajustes, Respaldo: botón Exportar CSV. Descarga un ZIP con un CSV por tabla (montos en unidades menores). El texto de la pantalla y el `README.txt` del archivo explican cómo restaurar. No hay importación automática.
+
+### Cambiado
+
+- `getServerEnv()` vive en `lib/env-server.ts`. El módulo que importa el cliente no nombra la service role ni `CRON_SECRET`.
+- `accept_invite` devuelve jsonb. Un enlace inválido ya no lanza excepción: si lo hiciera, la base desharía el conteo del límite.
+
 ## [0.13.0] - 2026-10-17
 
 ### Añadido (fase 13: responsive, PWA y accesibilidad)

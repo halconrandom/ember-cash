@@ -152,6 +152,7 @@
     "invite_expired": "Esta invitación venció. Pide un enlace nuevo.",
     "already_member": "Ya eres miembro de este hogar.",
     "household_full": "Este hogar ya tiene el máximo de miembros.",
+    "invite_rate_limited": "Demasiados intentos. Espera unos minutos y vuelve a probar el enlace.",
     "generic": "No se pudo completar la acción. Intenta de nuevo.",
     "onlyAdminCanInvite": "Solo quien administra el hogar puede invitar.",
     "inviteFailed": "No se pudo crear la invitación. Intenta de nuevo."
@@ -287,7 +288,11 @@
     "account": "Cuenta",
     "signOut": "Cerrar sesión",
     "about": "Acerca de",
-    "attribution": "Íconos diseñados por <link>Flaticon</link> (Uicons) de flaticon.com."
+    "attribution": "Íconos Uicons diseñados por <author>Flaticon</author> de <site>Flaticon</site>.",
+    "backup": "Respaldo",
+    "backupBody": "Descarga un ZIP con un CSV por tabla. Los montos son enteros en unidades menores (pesos en COP, centavos en USD) y cada fila lleva su moneda.",
+    "exportCsv": "Exportar CSV",
+    "backupRestore": "No hay importación automática. Para restaurar, conserva los identificadores y vuelve a cargar las filas en este orden: perfiles, hogares, miembros, salidas, cuentas, metas, deudas, recurrentes, movimientos, repartos, aportes, pagos, vencimientos, presupuestos y liquidaciones. Si el archivo trae TRUNCATED.txt, la descarga quedó incompleta. El respaldo de todo el proyecto está en Supabase, en Database y luego Backups."
   },
   "languages": {
     "es": "Español",
@@ -359,7 +364,7 @@
       "focus-ring": "anillo de foco"
     },
     "icons": "Íconos (Uicons de Flaticon: regular rounded, solid rounded)",
-    "iconsAttribution": "Íconos diseñados por Flaticon (Uicons) de flaticon.com. La licencia gratuita exige atribución visible.",
+    "iconsAttribution": "Íconos Uicons diseñados por Flaticon de Flaticon. La licencia gratuita exige esta atribución visible.",
     "typeScale": "Escala tipográfica (Inter, mínimo 12 px)",
     "typeDisplay": "Display 40 / Bold",
     "typeAmountXl": "Amount XL 32 / Bold",

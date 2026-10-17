@@ -10,7 +10,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 
-import { getServerEnv } from "@/lib/env";
+import { getServerEnv } from "@/lib/env-server";
 
 import type { Database } from "@/lib/db/types";
 

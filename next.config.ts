@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
-import { getServerEnv } from "./lib/env";
+import { getServerEnv } from "./lib/env-server";
+import { securityHeaders } from "./lib/security/static-headers";
 
 // Valida las variables de entorno al arrancar (`pnpm dev`, `pnpm build`,
 // `pnpm start`). Si falta alguna, el proceso se detiene con un mensaje que
@@ -11,6 +12,11 @@ getServerEnv();
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // Cabeceras estáticas en todas las rutas. La CSP va en proxy.ts porque
+  // lleva un nonce distinto en cada petición.
+  async headers() {
+    return [{ source: "/(.*)", headers: securityHeaders() }];
+  },
   turbopack: {
     rules: {
       // Procesa los CSS con Tailwind v4 bajo Turbopack.

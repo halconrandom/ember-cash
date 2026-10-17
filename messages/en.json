@@ -152,6 +152,7 @@
     "invite_expired": "This invitation has expired. Ask for a new link.",
     "already_member": "You're already a member of this household.",
     "household_full": "This household already has the maximum number of members.",
+    "invite_rate_limited": "Too many attempts. Wait a few minutes and try the link again.",
     "generic": "Couldn't complete the action. Try again.",
     "onlyAdminCanInvite": "Only the household admin can invite.",
     "inviteFailed": "Couldn't create the invitation. Try again."
@@ -287,7 +288,11 @@
     "account": "Account",
     "signOut": "Sign out",
     "about": "About",
-    "attribution": "Icons designed by <link>Flaticon</link> (Uicons) from flaticon.com."
+    "attribution": "Uicons designed by <author>Flaticon</author> from <site>Flaticon</site>.",
+    "backup": "Backup",
+    "backupBody": "Downloads a ZIP with one CSV per table. Amounts are integers in minor units (pesos for COP, cents for USD) and each row keeps its currency.",
+    "exportCsv": "Export CSV",
+    "backupRestore": "There is no automatic import. To restore, keep the identifiers and load the rows again in this order: profiles, households, members, departures, accounts, goals, debts, recurring items, transactions, splits, contributions, payments, occurrences, budgets and settlements. If the file includes TRUNCATED.txt, the download is incomplete. A full project backup lives in Supabase, under Database then Backups."
   },
   "languages": {
     "es": "Español",
@@ -359,7 +364,7 @@
       "focus-ring": "focus ring"
     },
     "icons": "Icons (Uicons by Flaticon: regular rounded, solid rounded)",
-    "iconsAttribution": "Icons designed by Flaticon (Uicons) from flaticon.com. Free licence requires visible attribution.",
+    "iconsAttribution": "Uicons designed by Flaticon from Flaticon. The free licence requires this visible attribution.",
     "typeScale": "Type scale (Inter, min 12 px)",
     "typeDisplay": "Display 40 / Bold",
     "typeAmountXl": "Amount XL 32 / Bold",

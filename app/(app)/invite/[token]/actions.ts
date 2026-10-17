@@ -9,6 +9,7 @@ import { getTranslations } from "next-intl/server";
 
 import { requireUser } from "@/lib/auth/session";
 import { householdErrorKey } from "@/lib/households/errors";
+import { readInviteResult } from "@/lib/households/invites";
 import { createClient } from "@/lib/supabase/server";
 
 export type AcceptState = { error: string | null };
@@ -18,12 +19,16 @@ export async function acceptInvite(_prev: AcceptState, formData: FormData): Prom
   const token = String(formData.get("token") ?? "");
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("accept_invite", { p_token: token });
+  const { data, error } = await supabase.rpc("accept_invite", { p_token: token });
+
+  // not_authenticated sigue llegando como excepción de Postgres. El resto
+  // llega en el jsonb, para que el intento quede guardado (ver 0013).
+  const result = error ? { ok: false, error: error.message } : readInviteResult(data);
 
   // Si ya era miembro, no es un error para el usuario: lo llevamos adentro.
-  if (error && error.message !== "already_member") {
+  if (!result.ok && result.error !== "already_member") {
     const t = await getTranslations("householdErrors");
-    return { error: t(householdErrorKey(error)) };
+    return { error: t(householdErrorKey({ message: result.error ?? "" })) };
   }
   redirect("/");
 }
