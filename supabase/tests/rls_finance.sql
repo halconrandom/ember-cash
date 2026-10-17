@@ -15,6 +15,7 @@
 --   metas    3...01 compartida, 3...02 A personal
 --   deuda    4...01 A;  recurrente 5...01 compartido;  presupuesto 6...01 compartido
 --   sección 7: transacciones 2...07 y 2...08 (compartidas)
+--   sección 8: transferencias 2...09 (compartida) y 2...0a (personal), gasto 2...0b
 -- =============================================================================
 begin;
 
@@ -370,6 +371,65 @@ select pg_temp.expect_error($q$insert into public.debt_payments (debt_id, paid_o
   '23514', 'pago de deuda con desglose que no suma falla');
 select pg_temp.expect_error($q$insert into public.debt_payments (debt_id, paid_on, amount_minor) values ('40000000-0000-4000-8000-000000000001', current_date, 100000)$q$,
   '23514', 'pago de deuda sin desglose falla');
+
+-- =============================================================================
+-- 8. Transferencias: no llevan repartos ni se les exige que sumen
+-- =============================================================================
+select pg_temp.login('00000000-0000-4000-b000-00000000000a');
+
+select pg_temp.expect_ok(format($q$
+  set constraints all deferred;
+  insert into public.transactions (id, household_id, account_id, kind, description, amount_minor,
+    currency, occurred_on, transfer_to_account_id)
+  values ('20000000-0000-4000-8000-000000000009', %L, '10000000-0000-4000-8000-000000000002',
+    'transfer', 'A la cuenta de A', 50000, 'COP', current_date, '10000000-0000-4000-8000-000000000001');
+  set constraints all immediate$q$, current_setting('test.h')),
+  'transferencia compartida sin repartos pasa');
+
+select pg_temp.expect_ok($q$
+  set constraints all deferred;
+  insert into public.transactions (id, account_id, kind, description, amount_minor, currency,
+    occurred_on, transfer_to_account_id)
+  values ('20000000-0000-4000-8000-00000000000a', '10000000-0000-4000-8000-000000000001',
+    'transfer', 'A la cuenta de la casa', 20000, 'COP', current_date, '10000000-0000-4000-8000-000000000002');
+  set constraints all immediate$q$,
+  'transferencia personal sin repartos pasa');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  insert into public.transaction_splits values
+    ('20000000-0000-4000-8000-000000000009', '00000000-0000-4000-b000-00000000000a', 25000),
+    ('20000000-0000-4000-8000-000000000009', '00000000-0000-4000-b000-00000000000b', 25000);
+  set constraints all immediate$q$,
+  '23514', 'transferencia compartida con repartos falla (aunque sumen)', 'transfer_has_splits');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  insert into public.transaction_splits values
+    ('20000000-0000-4000-8000-00000000000a', '00000000-0000-4000-b000-00000000000a', 20000);
+  set constraints all immediate$q$,
+  '23514', 'transferencia personal con repartos falla', 'transfer_has_splits');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  update public.transactions
+  set kind = 'transfer', category_key = null,
+      transfer_to_account_id = '10000000-0000-4000-8000-000000000001'
+  where id = '20000000-0000-4000-8000-000000000007';
+  set constraints all immediate$q$,
+  '23514', 'convertir en transferencia un gasto con repartos falla', 'transfer_has_splits');
+
+select pg_temp.expect_error(format($q$
+  set constraints all deferred;
+  insert into public.transactions (id, household_id, account_id, kind, category_key, description,
+    amount_minor, currency, occurred_on, paid_by)
+  values ('20000000-0000-4000-8000-00000000000b', %L, '10000000-0000-4000-8000-000000000002',
+    'expense', 'leisure', 'Cine', 60000, 'COP', current_date, '00000000-0000-4000-b000-00000000000a');
+  insert into public.transaction_splits values
+    ('20000000-0000-4000-8000-00000000000b', '00000000-0000-4000-b000-00000000000a', 30000),
+    ('20000000-0000-4000-8000-00000000000b', '00000000-0000-4000-b000-00000000000b', 20000);
+  set constraints all immediate$q$, current_setting('test.h')),
+  '23514', 'gasto compartido sigue exigiendo que los repartos sumen', 'splits_sum_mismatch');
 
 select set_config('role', 'postgres', true);
 select 'OK: todas las pruebas RLS de finanzas pasaron' as resultado;

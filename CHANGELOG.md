@@ -2,6 +2,13 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.3.2] - 2026-10-16
+
+### Cambiado
+
+- Migración `0005_transfer_splits.sql`: el trigger diferido de repartos excluye las transferencias (`kind = 'transfer'`). Una transferencia, personal o compartida, no lleva repartos ni se le exige que sumen; si trae repartos falla con `transfer_has_splits`. El trigger de `transactions` ahora también se dispara al cambiar `kind`.
+- Tests: transferencia sin repartos pasa (compartida y personal), con repartos falla, convertir en transferencia un gasto con repartos falla y el gasto compartido sigue exigiendo que los repartos sumen.
+
 ## [0.3.1] - 2026-10-16
 
 ### Añadido
