@@ -27,18 +27,18 @@ Está pensada para uso real en Colombia: maneja **pesos (COP) y dólares (USD)**
 
 ## Características
 
-| | |
-|---|---|
-| **Transacciones** | Ingresos, gastos y transferencias entre cuentas, con categorías, notas y deshacer al borrar. |
-| **Hogar compartido** | Gastos a partes iguales, balance entre miembros y liquidación total o parcial. Quien se une después no debe lo anterior. |
-| **Dos monedas** | COP y USD sin perder precisión: cada monto se guarda en su moneda original y solo se convierte para mostrarlo. |
-| **Deudas** | Interés nominal o efectivo anual, y un simulador de pago por avalancha o bola de nieve. |
-| **Ahorros** | Metas con aportes y estado claro: en camino, atrasada o casi lista. |
-| **Suscripciones y calendario** | Pagos recurrentes con vencimientos. Nada se da por pagado hasta que tú lo confirmas. |
-| **Presupuestos** | Límites por categoría y mes, con aviso al acercarte al tope. |
-| **Panel** | Balance del mes, categorías, tendencia de 6 meses y próximos pagos de un vistazo. |
-| **PWA** | Se instala en el celular y funciona con barra inferior y bottom sheets en móvil. |
-| **Respaldo** | Exporta todos tus datos en CSV desde Ajustes. |
+|                                |                                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| **Transacciones**              | Ingresos, gastos y transferencias entre cuentas, con categorías, notas y deshacer al borrar.                             |
+| **Hogar compartido**           | Gastos a partes iguales, balance entre miembros y liquidación total o parcial. Quien se une después no debe lo anterior. |
+| **Dos monedas**                | COP y USD sin perder precisión: cada monto se guarda en su moneda original y solo se convierte para mostrarlo.           |
+| **Deudas**                     | Interés nominal o efectivo anual, y un simulador de pago por avalancha o bola de nieve.                                  |
+| **Ahorros**                    | Metas con aportes y estado claro: en camino, atrasada o casi lista.                                                      |
+| **Suscripciones y calendario** | Pagos recurrentes con vencimientos. Nada se da por pagado hasta que tú lo confirmas.                                     |
+| **Presupuestos**               | Límites por categoría y mes, con aviso al acercarte al tope.                                                             |
+| **Panel**                      | Balance del mes, categorías, tendencia de 6 meses y próximos pagos de un vistazo.                                        |
+| **PWA**                        | Se instala en el celular y funciona con barra inferior y bottom sheets en móvil.                                         |
+| **Respaldo**                   | Exporta todos tus datos en CSV desde Ajustes.                                                                            |
 
 ## Principios de diseño
 
@@ -72,12 +72,13 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 ### Variables de entorno
 
-| Variable | Dónde se usa | Notas |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | cliente y servidor | URL de tu proyecto de Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor | Clave pública (`anon`) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **solo servidor** | Nunca con prefijo `NEXT_PUBLIC_` ni en el cliente |
-| `CRON_SECRET` | **solo servidor** | Genera uno con `openssl rand -hex 32` |
+| Variable                        | Dónde se usa                    | Notas                                                                                                                    |
+| ------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | cliente y servidor              | URL de tu proyecto de Supabase                                                                                           |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor              | Clave pública (`anon`)                                                                                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **solo servidor**               | Nunca con prefijo `NEXT_PUBLIC_` ni en el cliente                                                                        |
+| `CRON_SECRET`                   | **solo servidor**               | Genera uno con `openssl rand -hex 32`                                                                                    |
+| `TEST_DATABASE_URL`             | solo los tests de base de datos | Postgres **local** (`localhost`), base que termine en `_test`. Ver [Pruebas de base de datos](#pruebas-de-base-de-datos) |
 
 La app valida estas variables al arrancar y te dice cuáles faltan.
 
@@ -91,15 +92,56 @@ pnpm db:push
 
 > Usa un proyecto de Supabase que sea tuyo. Nunca ejecutes datos de ejemplo ni pruebas destructivas contra una base con datos reales.
 
+### Pruebas de base de datos
+
+Los tests SQL (`supabase/tests`) corren **solo contra un Postgres local**, nunca contra Supabase. Crean usuarios y filas de prueba, y la base de pruebas se borra y se crea de nuevo en cada corrida. El script se detiene sin conectarse si `TEST_DATABASE_URL` no apunta a `localhost`, `127.0.0.1` o `::1`, si menciona Supabase o si el nombre de la base no termina en `_test`.
+
+`supabase/tests/local-bootstrap.sql` imita lo que Supabase trae de fábrica (roles `anon`, `authenticated` y `service_role`, el esquema `auth` con `auth.users` y `auth.uid()`, y los permisos por defecto), así las migraciones se aplican tal cual. No hace falta Docker.
+
+**Mac (Homebrew)**
+
+```bash
+brew install postgresql@17
+brew services start postgresql@17      # o, sin dejarlo como servicio:
+# LC_ALL="en_US.UTF-8" /opt/homebrew/opt/postgresql@17/bin/pg_ctl -D /opt/homebrew/var/postgresql@17 start
+```
+
+Homebrew crea un superusuario con tu usuario de macOS, sin contraseña, así que la URL no lleva credenciales:
+
+```bash
+TEST_DATABASE_URL=postgresql://localhost:5432/ember_cash_test
+```
+
+**Windows**
+
+1. Instala PostgreSQL 17 con el instalador de [postgresql.org/download/windows](https://www.postgresql.org/download/windows/) o con `winget install PostgreSQL.PostgreSQL.17`. Anota la contraseña del usuario `postgres` que pide el instalador.
+2. El script busca `psql` en el `PATH` y en `C:\Program Files\PostgreSQL\17\bin`. Si está en otra carpeta, define `PSQL` con la ruta completa a `psql.exe`.
+3. La URL lleva ese usuario y su contraseña:
+
+```bash
+TEST_DATABASE_URL=postgresql://postgres:TU_CONTRASEÑA@localhost:5432/ember_cash_test
+```
+
+**Crear la base y correr los tests**
+
+Pon `TEST_DATABASE_URL` en `.env.local` (no es un secreto de producción; ese archivo no se sube a git) o pásala en la misma línea. No hace falta crear la base a mano: el script la borra si existe, la crea, aplica `local-bootstrap.sql` y todas las migraciones, y luego corre los tests. El usuario de la URL necesita permiso para crear bases (el de Homebrew y `postgres` en Windows lo tienen).
+
+```bash
+pnpm test:rls          # cada archivo de tests por separado
+pnpm test:db:fresh     # todos los tests juntos en una sola transacción
+```
+
+Si prefieres crearla tú: `createdb ember_cash_test` (o `CREATE DATABASE ember_cash_test;` en `psql`).
+
 ## Scripts
 
-| Comando | Qué hace |
-|---|---|
-| `pnpm dev` | Servidor de desarrollo |
-| `pnpm build` | Compilación de producción |
-| `pnpm check` | Lint, tipos y tests unitarios |
-| `pnpm test:rls` | Pruebas de políticas RLS |
-| `pnpm test:db:fresh` | Recrea una base local de prueba y valida migraciones |
+| Comando              | Qué hace                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm dev`           | Servidor de desarrollo                                                                                                               |
+| `pnpm build`         | Compilación de producción                                                                                                            |
+| `pnpm check`         | Lint, tipos y tests unitarios                                                                                                        |
+| `pnpm test:rls`      | Tests SQL y de RLS contra el Postgres **local** de pruebas (cada archivo por separado)                                               |
+| `pnpm test:db:fresh` | Borra y crea de nuevo **solo** la base local de pruebas (`TEST_DATABASE_URL`), aplica las migraciones y corre todos los tests juntos |
 
 ## Arquitectura
 
@@ -125,7 +167,7 @@ La interfaz está en español e inglés. Los textos viven en `messages/es.json` 
 
 ## Contribuir
 
-Es un proyecto personal, pero las ideas y los reportes son bienvenidos: abre un *issue* describiendo qué esperabas y qué pasó. Si propones código, corre antes `pnpm check`.
+Es un proyecto personal, pero las ideas y los reportes son bienvenidos: abre un _issue_ describiendo qué esperabas y qué pasó. Si propones código, corre antes `pnpm check`.
 
 ## Créditos
 

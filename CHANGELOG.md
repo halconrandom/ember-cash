@@ -2,6 +2,22 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.4] - 2026-10-17
+
+### Corregido (auditoría, fase 0.5: A-01)
+
+- Los tests de base de datos ya no tocan el proyecto real de Supabase.
+  - `scripts/db-tests.mjs` corre con `psql` contra `TEST_DATABASE_URL`, nunca con `supabase db query --linked`.
+  - `scripts/db-test-url.mts` aborta con un mensaje claro si falta la variable, si el host no es `localhost`, `127.0.0.1` o `::1`, si la URL menciona Supabase o si la base no termina en `_test`.
+  - `pnpm test:db:fresh` borra y crea de nuevo solo esa base local. Antes borraba las tablas de `public` en producción dentro de una transacción con ROLLBACK.
+- README: la descripción de `test:db:fresh` decía "base local" y no lo era. Ahora hay una sección "Pruebas de base de datos" con la instalación de Postgres 17 en Mac (Homebrew) y Windows y cómo crear la base de pruebas. CLAUDE.md: probar las migraciones en local antes de `db:push`.
+
+### Añadido
+
+- `supabase/tests/local-bootstrap.sql`: roles `anon`, `authenticated` y `service_role`, el esquema `auth` con `auth.users` y `auth.uid()` (lee `request.jwt.claim.sub` o `request.jwt.claims`), y los permisos por defecto de Supabase en `public`. Las migraciones se aplican tal cual, sin Docker.
+- `TEST_DATABASE_URL` en `.env.example`.
+- Tests de la guardia de la URL. Contra Postgres 17 local pasan los 9 archivos SQL, por separado (`test:rls`) y juntos (`test:db:fresh`).
+
 ## [0.14.3] - 2026-10-17
 
 ### Añadido

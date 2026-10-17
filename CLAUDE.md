@@ -22,7 +22,7 @@
 
 - `pnpm check` (lint, typecheck y tests) debe pasar antes de cada commit.
 - La CLI de Supabase se usa con `pnpm exec supabase ...`.
-- Base de datos: nunca editar una migración ya aplicada; crear una nueva. Después de cada migración: `pnpm db:push`, `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`. Toda tabla nueva lleva RLS y tests en `supabase/tests/`. Los tipos de la base se importan desde `lib/db/types.ts`.
+- Base de datos: nunca editar una migración ya aplicada; crear una nueva. Antes de `pnpm db:push`, prueba la migración en local con `pnpm test:rls` y `pnpm test:db:fresh` (Postgres local de `TEST_DATABASE_URL`; nunca contra Supabase, que es el proyecto real). Después: `pnpm db:push` y `pnpm db:types`. Toda tabla nueva lleva RLS y tests en `supabase/tests/`. Los tipos de la base se importan desde `lib/db/types.ts`.
 - Dinero: todo importe es `*_minor` (entero en unidades menores) en la moneda original de la fila, con su columna `currency`; la conversión se hace al leer con `exchange_rates`. Nunca floats.
 - En código, el dinero es `Money` de `lib/money` (`amountMinor: bigint`): sumar con `add`/`sum`, convertir con `convert`/`totalIn`, mostrar con `<MoneyAmount>` o `formatMoney`, leer inputs con `parseMoney`. Nada de `number` para importes.
 - Scope: toda consulta de finanzas recibe el scope (`getScope()` de `lib/scope/server.ts`; Personal por defecto, cookie `ec-scope`). Personal = `household_id` nulo; hogar = ese `household_id`.

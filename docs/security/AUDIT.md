@@ -56,6 +56,17 @@ No se encontraron secretos filtrados ni acceso entre hogares o usuarios distinto
 
 ### A-01. Los tests de base de datos corren contra el proyecto real (Alta)
 
+**Estado: corregido en 0.14.4 (fase 0.5).**
+
+- `scripts/db-tests.mjs` ya no usa la CLI de Supabase ni `--linked`: corre `psql` contra `TEST_DATABASE_URL`.
+- `scripts/db-test-url.mts` aborta antes de conectarse si el host no es `localhost`, `127.0.0.1` o `::1`, si la URL menciona Supabase o si la base no termina en `_test`. Tiene tests en `scripts/db-test-url.test.ts`.
+- `supabase/tests/local-bootstrap.sql` imita lo de Supabase que usan las migraciones.
+- `--fresh` borra y crea de nuevo solo esa base local.
+- README y CLAUDE.md corregidos.
+- Resultado en Postgres 17 local: los 9 archivos de tests pasan por separado y juntos.
+
+Lo que sigue describe el problema original.
+
 - **Dónde:**
   - `scripts/db-tests.mjs:33` ejecuta cada archivo con `supabase db query --linked`.
   - `scripts/db-tests.mjs:61-78` (modo `--fresh`) hace `drop table public.<cada tabla> cascade`, borra las funciones y el trigger `on_auth_user_created` de `auth.users`, vuelve a aplicar las migraciones y corre todos los tests. Todo dentro de una transacción que termina en `ROLLBACK`.
