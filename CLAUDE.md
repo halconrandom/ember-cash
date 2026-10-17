@@ -26,3 +26,12 @@
 - Dinero: todo importe es `*_minor` (entero en unidades menores) en la moneda original de la fila, con su columna `currency`; la conversión se hace al leer con `exchange_rates`. Nunca floats.
 - Una transacción compartida y sus repartos se escriben en la misma transacción de base de datos (la suma se valida al hacer COMMIT); las personales y las transferencias no llevan repartos.
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.
+
+## UI
+
+- Colores, tamaños y radios solo con los tokens de `app/globals.css` (utilidades `bg-surface`, `text-ink-2`, `text-body`, `rounded-card`...). Nada de hex sueltos ni de la variante `dark:`: el tema oscuro sale de los tokens.
+- Íconos solo con `<Icon name="...">` (`components/ui/icon.tsx`). Si hace falta uno nuevo, agrégalo al registro con su equivalente de lucide-react.
+- Un solo botón primario (ember-fill) por pantalla. El naranja es marca y acción; nunca categoría, miembro ni estado.
+- Texto de 12 px como mínimo; montos con `tabular-nums`; nunca truncar montos ni fechas.
+- Borrados reversibles: toast con Undo. Irreversibles: `HoldToDeleteButton` o `TwoStepDeleteButton`.
+- Compara con `/dev/design-system` y los frames de `docs/design/` antes de dar una pantalla por terminada.

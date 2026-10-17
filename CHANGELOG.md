@@ -2,6 +2,26 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.4.0] - 2026-10-16
+
+### Añadido (fase 4: sistema de diseño y shell)
+
+- Tokens de la spec (claro y oscuro) como variables CSS y tema de Tailwind: colores, escala tipográfica Inter (mínimo 12 px, tracking por tamaño), radios, sombras. Los valores que la spec no lista (toast, deshabilitado, control segmentado) se muestrearon de `19-states.png` / `20-states-dark.png`.
+- Tema claro/oscuro/sistema por clase, sin parpadeo (script inline + cookie), sincronizado con `profiles.theme`; selector en Settings.
+- `prefers-reduced-motion` (MotionConfig y CSS), `prefers-reduced-transparency` y `prefers-contrast: more`. Anillo de foco único de 2 px con offset 2 (#BD490A / #FF9552).
+- `@flaticon/flaticon-uicons` 3.3.1 y componente `<Icon>` como único punto de acceso, con equivalencias en lucide-react.
+- Shell según `01-dashboard.png`: sidebar de 248 px con nombres visibles, topbar de 72 px, tarjeta de usuario con engranaje. Rutas vacías: Dashboard, Transactions, Savings, Debts, Subscriptions, Calendar, Household y Settings.
+- Primitivas con todos sus estados: botones, campos, chips y badges, control segmentado, filas, navegación, estado vacío, skeleton, toast con Undo (6 s, pausa con hover/foco), tooltip, chip de tasa de cambio y borrado irreversible (mantener 2 s con puntero o teclado, y dos pasos).
+- `/dev/design-system` (solo en desarrollo) con todo en claro y oscuro.
+- Tests: contraste de tokens (port de `docs/contrast.py`, leyendo `globals.css`), tamaño mínimo de 12 px, registro de íconos, borrado irreversible, toast y `cn` con la escala tipográfica.
+- Logo del paquete `docs/design/logos` como componente y favicon (`app/icon.svg`).
+- Frames de diseño, logos, `contrast.py` y `pal.py` en `docs/`.
+
+### Cambiado
+
+- La UI del household (fase 2) pasa de la página principal a `/household`; login, onboarding e invitación usan las primitivas nuevas. Se eliminan `components/provisional/`.
+- `cn` se configura con la escala tipográfica propia para no descartar tamaños al combinarlos con colores.
+
 ## [0.3.2] - 2026-10-16
 
 ### Cambiado

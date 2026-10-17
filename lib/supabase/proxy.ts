@@ -14,9 +14,20 @@ import { getPublicEnv } from "@/lib/env";
 
 import type { Database } from "@/lib/db/types";
 
-/** Rutas que no requieren sesión. Las APIs manejan su propia autenticación. */
-export function isPublicPath(pathname: string): boolean {
-  return pathname === "/login" || pathname.startsWith("/auth/") || pathname.startsWith("/api/");
+/**
+ * Rutas que no requieren sesión. Las APIs manejan su propia autenticación.
+ * /dev/* (design system) solo existe fuera de producción.
+ */
+export function isPublicPath(
+  pathname: string,
+  env: string | undefined = process.env.NODE_ENV,
+): boolean {
+  return (
+    pathname === "/login" ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/api/") ||
+    (env !== "production" && pathname.startsWith("/dev/"))
+  );
 }
 
 export async function updateSession(request: NextRequest) {

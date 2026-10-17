@@ -16,4 +16,9 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/invite/abc")).toBe(false);
     expect(isPublicPath("/login-falso")).toBe(false);
   });
+
+  it("deja ver /dev solo fuera de producción", () => {
+    expect(isPublicPath("/dev/design-system", "development")).toBe(true);
+    expect(isPublicPath("/dev/design-system", "production")).toBe(false);
+  });
 });

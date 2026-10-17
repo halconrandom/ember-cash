@@ -1,195 +1,484 @@
+/*
+ * Estilos globales y tokens de diseño de Ember Cash.
+ *
+ * Fuente de verdad: docs/DESIGN_SPEC.md (v3, con IVERN_FIXES aplicado).
+ * Los valores que la spec no lista (toast, deshabilitado, control segmentado)
+ * se muestrearon de docs/design/19-states.png y 20-states-dark.png.
+ *
+ * - Tokens claro en `:root, .light`, oscuro en `.dark`. El tema se aplica con
+ *   una clase en <html> (ver lib/theme). Las clases también sirven para
+ *   forzar un tema en una zona (la página /dev/design-system muestra ambos).
+ * - Los componentes usan SOLO estas variables (no la variante `dark:` de
+ *   Tailwind), para que los temas anidados funcionen.
+ * - lib/design/contrast.test.ts lee este archivo y falla si algún par de
+ *   tokens baja del ratio de la spec.
+ */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* -------------------------------------------------------------------------- */
+/* Tokens: claro                                                              */
+/* -------------------------------------------------------------------------- */
+:root,
+.light {
+  color-scheme: light;
+
+  /* Superficies y texto */
+  --canvas: #f5f5f7;
+  --surface: #ffffff;
+  --surface2: #f5f5f7;
+  --border: #e8e8ed;
+  --divider: #f0f0f4;
+  --text: #1d1d1f;
+  --text2: #56565c;
+  --text3: #6d6d71;
+
+  /* Marca. ember-fill lleva texto blanco; ember (gráfico) nunca es texto. */
+  --ember-fill: #c6500b;
+  --ember-press: #af470a;
+  --ember-text: #bd490a;
+  --ember: #f26b1d;
+  --ember-50: #fff3eb;
+  --ember-100: #ffe4d2;
+  --ember-200: #ffcba8;
+  --hero-start: #c84f00;
+  --hero-end: #b24509;
+
+  /* Estados y categorías: texto sobre su tinte, gráfico para barras y puntos */
+  --positive-text: #177b52;
+  --positive: #1ea26c;
+  --positive-tint: #e6f6ee;
+  --negative-text: #c03c41;
+  --negative: #e5484d;
+  --negative-tint: #fdecec;
+  --info-text: #3069c7;
+  --info: #3b82f6;
+  --info-tint: #e8f0fe;
+  --violet-text: #784fd4;
+  --violet: #8b5cf6;
+  --violet-tint: #f0eafe;
+  --amber-text: #936316;
+  --amber: #c2821c;
+  --amber-tint: #fef3dc;
+  --pink-text: #b23f68;
+  --pink: #ec5a8f;
+  --pink-tint: #fff4f8;
+  --teal-text: #0b7468;
+  --teal: #0f9e8e;
+  --teal-tint: #e3f5f2;
+  --olive-text: #566f14;
+  --olive: #6f8f1e;
+  --olive-tint: #eef3dd;
+  --slate-text: #475569;
+  --slate: #64748b;
+  --slate-tint: #eef1f6;
+
+  /* Gráficos */
+  --income-bar: #177b52;
+  --expense-bar: #f26b1d;
+  --track: #ebebf0;
+  /* Barra de presupuesto en estado neutro (por debajo del 80 %). */
+  --neutral-bar: #6d6d71;
+
+  /* Miembros del household (A = ink, B = slate). Nunca naranja. */
+  --member-a: #1d1d1f;
+  --member-a-on: #ffffff;
+  --member-b: #5f6b85;
+  --member-b-on: #ffffff;
+
+  /* Acciones destructivas: "Press again to confirm" (blanco encima 5.99). */
+  --danger-fill: #b3363b;
+
+  /* Foco: 2 px, offset 2 (ver regla :focus-visible más abajo). */
+  --focus-ring: #bd490a;
+
+  /* Controles (muestreados de 19-states.png) */
+  --control-muted: #e8e8ed;
+  --control-muted-text: #8e8e93;
+  --seg-track: #e8e8ed;
+  --seg-thumb: #ffffff;
+  --seg-border: transparent;
+  /* Hover sobre canvas (sidebar). Sobre tarjetas se usa surface2. */
+  --hover-canvas: #ebebf0;
+
+  /* Toast y tooltip: oscuros en ambos temas (muestreados). */
+  --toast-bg: #2c2c30;
+  --toast-border: #3b3b40;
+  --toast-text: #ffffff;
+  --toast-action: #ffb27a;
+  --toast-icon: #7de3b0;
+
+  /* Materiales y elevación (claro: sombra; oscuro: borde de 1 px) */
+  --scrim: rgba(0, 0, 0, 0.32);
+  --card-border: transparent;
+  --elev-card: 0 1px 2px rgba(29, 29, 31, 0.04), 0 8px 24px rgba(29, 29, 31, 0.04);
+  --elev-pop: 0 24px 64px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tokens: oscuro (sobre surface #171719, canvas #0B0B0D)                     */
+/* -------------------------------------------------------------------------- */
+.dark {
+  color-scheme: dark;
+
+  --canvas: #0b0b0d;
+  --surface: #171719;
+  --surface2: #212125;
+  --border: #2a2a30;
+  --divider: #242429;
+  --text: #f5f5f7;
+  --text2: #a1a1a8;
+  --text3: #8a8a90;
+
+  /* ember-fill, ember-press y el degradado del hero no cambian. */
+  --ember-fill: #c6500b;
+  --ember-press: #af470a;
+  --ember-text: #ff9552;
+  --ember: #ff7a2e;
+  --ember-50: #2b1a10;
+  /* La spec no define ember-100/200 en oscuro: se usa ember-50. */
+  --ember-100: #2b1a10;
+  --ember-200: #2b1a10;
+  --hero-start: #c84f00;
+  --hero-end: #b24509;
+
+  /* En oscuro el mismo tono sirve de texto y de gráfico. */
+  --positive-text: #3dd68c;
+  --positive: #3dd68c;
+  --positive-tint: #12271e;
+  --negative-text: #ff6369;
+  --negative: #ff6369;
+  --negative-tint: #2d1618;
+  --info-text: #5b9bff;
+  --info: #5b9bff;
+  --info-tint: #15223c;
+  --violet-text: #a78bfa;
+  --violet: #a78bfa;
+  --violet-tint: #231c3d;
+  --amber-text: #ffb224;
+  --amber: #ffb224;
+  --amber-tint: #2e230e;
+  --pink-text: #ff7aa8;
+  --pink: #ff7aa8;
+  --pink-tint: #2e1620;
+  --teal-text: #2dd4bf;
+  --teal: #2dd4bf;
+  --teal-tint: #0f2b28;
+  --olive-text: #a3c94a;
+  --olive: #a3c94a;
+  --olive-tint: #1f2610;
+  --slate-text: #a8b3c7;
+  --slate: #a8b3c7;
+  --slate-tint: #23262d;
+
+  --income-bar: #a6ebcb;
+  --expense-bar: #ff7a2e;
+  --track: #3b3b40;
+  /* La spec no da el gris neutro del presupuesto en oscuro: se usa text3. */
+  --neutral-bar: #8a8a90;
+
+  --member-a: #e8e8ed;
+  --member-a-on: #1d1d1f;
+  --member-b: #a7b1cc;
+  --member-b-on: #101114;
+
+  --danger-fill: #b3363b;
+  --focus-ring: #ff9552;
+
+  --control-muted: #26262b;
+  --control-muted-text: #6e6e76;
+  --seg-track: #171719;
+  --seg-thumb: #26262b;
+  --seg-border: #2a2a30;
+  --hover-canvas: #212125;
+
+  --toast-bg: #2c2c30;
+  --toast-border: #3b3b40;
+  --toast-text: #ffffff;
+  --toast-action: #ffb27a;
+  --toast-icon: #7de3b0;
+
+  --scrim: rgba(0, 0, 0, 0.5);
+  --card-border: #2a2a30;
+  --elev-card: 0 0 #0000;
+  --elev-pop: 0 0 #0000;
+}
+
+/* Variables de shadcn/ui apuntando a los tokens. Se declaran en cada ámbito
+   para que un `.dark` anidado recalcule los valores. */
+:root,
+.light,
+.dark {
+  --background: var(--canvas);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--ember-fill);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface2);
+  --muted-foreground: var(--text3);
+  --accent: var(--surface2);
+  --accent-foreground: var(--text);
+  --destructive: var(--negative-text);
+  --input: var(--border);
+  --ring: var(--focus-ring);
+  --radius: 12px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Preferencias del sistema                                                   */
+/* -------------------------------------------------------------------------- */
+
+/* Más contraste: bordes visibles en controles, tarjetas y separadores. */
+@media (prefers-contrast: more) {
+  :root,
+  .light {
+    --border: #6d6d71;
+    --divider: #6d6d71;
+    --card-border: #6d6d71;
+    --seg-border: #6d6d71;
+  }
+  .dark {
+    --border: #8a8a90;
+    --divider: #8a8a90;
+    --card-border: #8a8a90;
+    --seg-border: #8a8a90;
+  }
+}
+
+/* Menos transparencia: velos más opacos y capas flotantes sólidas. */
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  .light {
+    --scrim: rgba(0, 0, 0, 0.6);
+  }
+  .dark {
+    --scrim: rgba(0, 0, 0, 0.75);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tema de Tailwind                                                           */
+/* -------------------------------------------------------------------------- */
 @theme inline {
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-sans);
+
+  /* Colores (utilidades bg-*, text-*, border-*) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* Tokens provisionales de Ember Cash (ver bloque más abajo). */
-  --color-primary-press: var(--primary-press);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-border: var(--border);
+  --color-divider: var(--divider);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text2);
+  --color-ink-3: var(--text3);
+  --color-ember-fill: var(--ember-fill);
+  --color-ember-press: var(--ember-press);
   --color-ember-text: var(--ember-text);
-  --color-text2: var(--text2);
+  --color-ember: var(--ember);
+  --color-ember-50: var(--ember-50);
+  --color-ember-100: var(--ember-100);
+  --color-ember-200: var(--ember-200);
+  --color-hero-start: var(--hero-start);
+  --color-hero-end: var(--hero-end);
   --color-positive: var(--positive);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-positive-text: var(--positive-text);
+  --color-positive-tint: var(--positive-tint);
+  --color-negative: var(--negative);
+  --color-negative-text: var(--negative-text);
+  --color-negative-tint: var(--negative-tint);
+  --color-info: var(--info);
+  --color-info-text: var(--info-text);
+  --color-info-tint: var(--info-tint);
+  --color-violet: var(--violet);
+  --color-violet-text: var(--violet-text);
+  --color-violet-tint: var(--violet-tint);
+  --color-amber: var(--amber);
+  --color-amber-text: var(--amber-text);
+  --color-amber-tint: var(--amber-tint);
+  --color-pink: var(--pink);
+  --color-pink-text: var(--pink-text);
+  --color-pink-tint: var(--pink-tint);
+  --color-teal: var(--teal);
+  --color-teal-text: var(--teal-text);
+  --color-teal-tint: var(--teal-tint);
+  --color-olive: var(--olive);
+  --color-olive-text: var(--olive-text);
+  --color-olive-tint: var(--olive-tint);
+  --color-slate: var(--slate);
+  --color-slate-text: var(--slate-text);
+  --color-slate-tint: var(--slate-tint);
+  --color-income-bar: var(--income-bar);
+  --color-expense-bar: var(--expense-bar);
+  --color-track: var(--track);
+  --color-neutral-bar: var(--neutral-bar);
+  --color-member-a: var(--member-a);
+  --color-member-a-on: var(--member-a-on);
+  --color-member-b: var(--member-b);
+  --color-member-b-on: var(--member-b-on);
+  --color-danger-fill: var(--danger-fill);
+  --color-focus-ring: var(--focus-ring);
+  --color-control-muted: var(--control-muted);
+  --color-control-muted-text: var(--control-muted-text);
+  --color-seg-track: var(--seg-track);
+  --color-seg-thumb: var(--seg-thumb);
+  --color-seg-border: var(--seg-border);
+  --color-hover-canvas: var(--hover-canvas);
+  --color-toast-bg: var(--toast-bg);
+  --color-toast-border: var(--toast-border);
+  --color-toast-text: var(--toast-text);
+  --color-toast-action: var(--toast-action);
+  --color-toast-icon: var(--toast-icon);
+  --color-card-edge: var(--card-border);
+
+  /* Elevación */
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
+
+  /* Radios: 12 controles, 16 filas internas, 20 tarjetas, 28 modal */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-control: 12px;
+  --radius-row: 16px;
+  --radius-card: 20px;
+  --radius-modal: 28px;
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+/* Escala tipográfica (DESIGN_SPEC §2). Mínimo 12 px; tracking por tamaño. */
+@theme {
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.022em;
+  --text-display--font-weight: 700;
+  --text-amount-xl: 2rem;
+  --text-amount-xl--line-height: 1.1;
+  --text-amount-xl--letter-spacing: -0.018em;
+  --text-amount-xl--font-weight: 700;
+  --text-title1: 1.625rem;
+  --text-title1--line-height: 1.2;
+  --text-title1--letter-spacing: -0.018em;
+  --text-title1--font-weight: 700;
+  --text-title2: 1.375rem;
+  --text-title2--line-height: 1.2;
+  --text-title2--letter-spacing: -0.011em;
+  --text-title2--font-weight: 700;
+  --text-amount-l: 1.5rem;
+  --text-amount-l--line-height: 1.1;
+  --text-amount-l--letter-spacing: -0.011em;
+  --text-amount-l--font-weight: 700;
+  /* Nombre de la marca en el sidebar: 18 px medido en 01-dashboard.png. */
+  --text-brand: 1.125rem;
+  --text-brand--line-height: 1.2;
+  --text-brand--letter-spacing: -0.011em;
+  --text-brand--font-weight: 700;
+  --text-headline: 1rem;
+  --text-headline--line-height: 1.4;
+  --text-headline--letter-spacing: -0.004em;
+  --text-headline--font-weight: 600;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.4;
+  --text-body--letter-spacing: -0.001em;
+  --text-callout: 0.8125rem;
+  --text-callout--line-height: 1.4;
+  --text-callout--letter-spacing: -0.001em;
+  --text-footnote: 0.75rem;
+  --text-footnote--line-height: 1.4;
+  --text-footnote--letter-spacing: 0;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--letter-spacing: 0.06em;
+  --text-caption--font-weight: 600;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
+  /* Curva ease-out de la spec */
+  --ease-out-ember: cubic-bezier(0.23, 1, 0.32, 1);
 
-/*
- * Tokens PROVISIONALES de Ember Cash (fase 2), tomados de docs/DESIGN_SPEC.md
- * con las correcciones de docs/IVERN_FIXES.md. Sobrescriben los valores
- * neutros de shadcn. La fase 4 los reemplaza por el sistema de diseño final.
- * El tema sigue la preferencia del sistema (profiles.theme = 'system').
- */
-:root {
-  --background: #f5f5f7; /* canvas */
-  --foreground: #1d1d1f; /* text */
-  --card: #ffffff; /* surface */
-  --card-foreground: #1d1d1f;
-  --popover: #ffffff;
-  --popover-foreground: #1d1d1f;
-  --primary: #c6500b; /* ember-fill: blanco encima 4.61:1 */
-  --primary-press: #af470a; /* ember-press */
-  --primary-foreground: #ffffff;
-  --secondary: #f5f5f7; /* surface2 */
-  --secondary-foreground: #1d1d1f;
-  --muted: #f5f5f7;
-  --muted-foreground: #6d6d71; /* text3 */
-  --accent: #f5f5f7;
-  --accent-foreground: #1d1d1f;
-  --text2: #56565c;
-  --ember-text: #bd490a; /* enlaces y anillo de foco */
-  --destructive: #c03c41; /* negative text */
-  --positive: #177b52; /* positive text */
-  --border: #e8e8ed;
-  --input: #e8e8ed;
-  --ring: #bd490a; /* foco: 2 px ember-text */
-  --card-border: transparent;
-  --card-shadow: 0 1px 2px rgba(29, 29, 31, 0.04), 0 8px 24px rgba(29, 29, 31, 0.04);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0b0d;
-    --foreground: #f5f5f7;
-    --card: #171719;
-    --card-foreground: #f5f5f7;
-    --popover: #171719;
-    --popover-foreground: #f5f5f7;
-    --secondary: #212125;
-    --secondary-foreground: #f5f5f7;
-    --muted: #212125;
-    --muted-foreground: #8a8a90;
-    --accent: #212125;
-    --accent-foreground: #f5f5f7;
-    --text2: #a1a1a8;
-    --ember-text: #ff9552;
-    --destructive: #ff6369;
-    --positive: #3dd68c;
-    --border: #2a2a30;
-    --input: #2a2a30;
-    --ring: #ff9552;
-    /* En oscuro no hay sombra: la tarjeta lleva borde de 1 px. */
-    --card-border: #2a2a30;
-    --card-shadow: none;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
   }
+  --animate-spin-slow: spin 1.2s linear infinite;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Base                                                                       */
+/* -------------------------------------------------------------------------- */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    @apply border-border;
   }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply bg-canvas text-body text-ink;
+  }
+  /* Cualquier zona con tema forzado pinta su propio fondo y texto. */
+  .light,
+  .dark {
+    color: var(--text);
+  }
+
+  /* Anillo de foco único: 2 px ember-text, offset 2 px. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Capa flotante translúcida (popovers, modal). Sólida si se pide menos
+   transparencia. */
+.material {
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .material {
+    background: var(--surface);
+    backdrop-filter: none;
+  }
+}
+
+/* Movimiento reducido: sin brillo animado, sin escalas al presionar. Las
+   animaciones de `motion` se reducen con <MotionConfig reducedMotion="user">. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-spin-slow {
+    animation: none;
+  }
+  .press-scale:active {
+    transform: none;
   }
 }

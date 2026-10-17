@@ -6,7 +6,8 @@
  */
 import { useState, useTransition } from "react";
 
-import { ui } from "@/components/provisional/styles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 
 import { createInviteLink } from "./actions";
 
@@ -39,33 +40,34 @@ export function InviteLink({ householdId }: { householdId: string }) {
 
   return (
     <div className="space-y-3">
-      <button type="button" className={ui.primaryButton} onClick={generate} disabled={pending}>
+      <Button icon="user-add" onClick={generate} disabled={pending}>
         {pending ? "Generando..." : url ? "Generar otro link" : "Generar link de invitación"}
-      </button>
+      </Button>
 
       {url && (
         <div className="space-y-2">
-          <label htmlFor="invite-url" className={ui.label}>
+          <label htmlFor="invite-url" className="text-callout text-ink-2 block font-semibold">
             Link de invitación
           </label>
           <div className="flex gap-2">
-            <input
-              id="invite-url"
-              readOnly
-              value={url}
-              className={`${ui.input} font-mono text-xs`}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-            <button type="button" className={ui.secondaryButton} onClick={copy}>
+            <div className="min-w-0 flex-1">
+              <Input
+                id="invite-url"
+                readOnly
+                value={url}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+            </div>
+            <Button variant="secondary" size="lg" onClick={copy}>
               {copied ? "Copiado" : "Copiar"}
-            </button>
+            </Button>
           </div>
-          <p className={ui.helper}>Sirve una sola vez y vence en 7 días.</p>
+          <p className="text-footnote text-ink-3">Sirve una sola vez y vence en 7 días.</p>
         </div>
       )}
 
       {error && (
-        <p role="alert" className={ui.error}>
+        <p role="alert" className="text-callout text-negative-text">
           {error}
         </p>
       )}

@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { ui } from "@/components/provisional/styles";
+import { Button } from "@/components/ui/button";
 
 import { acceptInvite, type AcceptState } from "./actions";
 
@@ -19,15 +19,18 @@ export function AcceptInvite({ token }: { token: string }) {
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="token" value={token} />
-      <button type="submit" className={ui.primaryButton} disabled={pending}>
+      <Button type="submit" icon="check" disabled={pending}>
         {pending ? "Aceptando..." : "Aceptar invitación"}
-      </button>
+      </Button>
       {state.error && (
         <div className="space-y-2">
-          <p role="alert" className={ui.error}>
+          <p role="alert" className="text-callout text-negative-text">
             {state.error}
           </p>
-          <Link href="/" className={ui.link}>
+          <Link
+            href="/"
+            className="text-body text-ember-text font-medium underline-offset-4 hover:underline"
+          >
             Ir al inicio
           </Link>
         </div>

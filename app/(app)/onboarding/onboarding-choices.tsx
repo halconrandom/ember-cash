@@ -6,9 +6,11 @@
  */
 import { useActionState } from "react";
 
-import { ui } from "@/components/provisional/styles";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
 
-import { createHousehold, goToInvite, chooseAlone, type FormState } from "./actions";
+import { chooseAlone, createHousehold, goToInvite, type FormState } from "./actions";
 
 const initial: FormState = { error: null };
 
@@ -19,77 +21,62 @@ export function OnboardingChoices() {
 
   return (
     <div className="space-y-4">
-      {/* Opción 1: usar solo */}
-      <section className={`${ui.card} space-y-3`}>
-        <h2 className={ui.headline}>Usar solo yo</h2>
-        <p className={ui.body2}>Tus finanzas personales, sin compartir con nadie.</p>
+      <Card className="space-y-3">
+        <CardTitle>Usar solo yo</CardTitle>
+        <p className="text-body text-ink-2">Tus finanzas personales, sin compartir con nadie.</p>
         <form action={aloneAction}>
-          <button type="submit" className={ui.secondaryButton} disabled={alonePending}>
+          <Button type="submit" variant="secondary" icon="user" disabled={alonePending}>
             {alonePending ? "Guardando..." : "Usar solo yo"}
-          </button>
+          </Button>
         </form>
         <ErrorText message={aloneState.error} />
-      </section>
+      </Card>
 
-      {/* Opción 2: crear household */}
-      <section className={`${ui.card} space-y-3`}>
-        <h2 className={ui.headline}>Crear household</h2>
-        <p className={ui.body2}>Comparte gastos con otra persona. Tú serás el owner.</p>
-        <form action={createAction} className="space-y-3">
-          <div>
-            <label htmlFor="household-name" className={ui.label}>
-              Nombre del household
-            </label>
-            <input
-              id="household-name"
-              name="name"
-              required
-              maxLength={80}
-              placeholder="Casa"
-              className={`${ui.input} mt-1.5`}
-              aria-invalid={createState.error ? true : undefined}
-            />
-          </div>
-          <button type="submit" className={ui.primaryButton} disabled={createPending}>
+      <Card className="space-y-3">
+        <CardTitle>Crear household</CardTitle>
+        <p className="text-body text-ink-2">Comparte gastos con otra persona. Tú serás el owner.</p>
+        <form action={createAction} className="space-y-4">
+          <Field
+            label="Nombre del household"
+            name="name"
+            required
+            maxLength={80}
+            placeholder="Casa"
+            error={createState.error}
+          />
+          <Button type="submit" icon="plus" disabled={createPending}>
             {createPending ? "Creando..." : "Crear household"}
-          </button>
+          </Button>
         </form>
-        <ErrorText message={createState.error} />
-      </section>
+      </Card>
 
-      {/* Opción 3: unirse con invitación */}
-      <section className={`${ui.card} space-y-3`}>
-        <h2 className={ui.headline}>Unirme con una invitación</h2>
-        <p className={ui.body2}>Pega el link que te compartió el owner del household.</p>
-        <form action={joinAction} className="space-y-3">
-          <div>
-            <label htmlFor="invite" className={ui.label}>
-              Link de invitación
-            </label>
-            <input
-              id="invite"
-              name="invite"
-              required
-              placeholder="https://.../invite/..."
-              className={`${ui.input} mt-1.5`}
-              aria-invalid={joinState.error ? true : undefined}
-            />
-          </div>
-          <button type="submit" className={ui.secondaryButton} disabled={joinPending}>
+      <Card className="space-y-3">
+        <CardTitle>Unirme con una invitación</CardTitle>
+        <p className="text-body text-ink-2">
+          Pega el link que te compartió el owner del household.
+        </p>
+        <form action={joinAction} className="space-y-4">
+          <Field
+            label="Link de invitación"
+            name="invite"
+            required
+            placeholder="https://.../invite/..."
+            error={joinState.error}
+          />
+          <Button type="submit" variant="secondary" disabled={joinPending}>
             Continuar
-          </button>
+          </Button>
         </form>
-        <ErrorText message={joinState.error} />
-      </section>
+      </Card>
     </div>
   );
 }
 
-/** Mensaje de error accesible bajo cada opción. */
+/** Mensaje de error accesible bajo una opción sin campo. */
 function ErrorText({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className={ui.error}>
+    <p role="alert" className="text-callout text-negative-text">
       {message}
     </p>
   );

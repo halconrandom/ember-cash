@@ -8,7 +8,8 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { ui } from "@/components/provisional/styles";
+import { Card } from "@/components/ui/card";
+import { CenteredPage } from "@/components/ui/centered-page";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -24,15 +25,15 @@ const ERRORS: Record<string, string> = {
 
 export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className={`${ui.card} w-full max-w-sm`}>
-        <h1 className={ui.title}>Ember Cash</h1>
-        <p className={`${ui.body2} mt-1`}>Inicia sesión para continuar.</p>
+    <CenteredPage className="max-w-sm">
+      <Card>
+        <h1 className="text-title2 text-ink">Inicia sesión</h1>
+        <p className="text-body text-ink-2 mt-1">Tus finanzas, claras y en un solo lugar.</p>
         <Suspense fallback={null}>
           <LoginContent searchParams={searchParams} />
         </Suspense>
-      </div>
-    </main>
+      </Card>
+    </CenteredPage>
   );
 }
 

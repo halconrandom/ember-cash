@@ -2,7 +2,7 @@
 
 App web de finanzas personales (después iOS). Next.js (App Router), TypeScript estricto, Tailwind, shadcn/ui, Supabase y Vitest.
 
-El diseño está en [docs/DESIGN_SPEC.md](docs/DESIGN_SPEC.md) y [docs/IVERN_FIXES.md](docs/IVERN_FIXES.md).
+El diseño está en [docs/DESIGN_SPEC.md](docs/DESIGN_SPEC.md) y [docs/IVERN_FIXES.md](docs/IVERN_FIXES.md); los frames de referencia y los logos, en [docs/design/](docs/design/).
 
 ## Requisitos
 
@@ -99,6 +99,14 @@ Reglas: una migración ya aplicada no se edita; los cambios van en una migració
 - `/auth/callback` recibe el retorno de Google; `/auth/confirm` recibe el link mágico (la plantilla de correo de Supabase debe apuntar a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding`).
 - `proxy.ts` (el antiguo middleware) refresca la sesión y manda a `/login` a quien no tenga sesión.
 - Después del primer login, `/onboarding` ofrece: usar la app solo, crear un household o unirse con una invitación (`/invite/<token>`).
+
+## Sistema de diseño
+
+- Tokens claro y oscuro en [app/globals.css](app/globals.css), expuestos como utilidades de Tailwind (`bg-surface`, `text-ink-2`, `text-headline`, `rounded-card`...). Los componentes usan solo estos tokens, no la variante `dark:`.
+- Tema por clase en `<html>` (`light` / `dark`), resuelto antes de pintar desde la cookie `ec-theme` y guardado en `profiles.theme` (Settings > Appearance).
+- Primitivas en [components/ui/](components/ui/); íconos solo con `<Icon name="...">` ([components/ui/icon-registry.ts](components/ui/icon-registry.ts) permite cambiar a lucide-react).
+- `/dev/design-system` (solo en desarrollo) muestra todo en claro y oscuro para comparar con `docs/design/10-design-system.png`, `19-states.png` y `20-states-dark.png`.
+- `lib/design/contrast.test.ts` (port de `docs/contrast.py`) falla si algún par de tokens baja del ratio de la spec.
 
 ## Endpoints
 

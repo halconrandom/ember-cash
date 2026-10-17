@@ -9,6 +9,7 @@ export default defineConfig({
     environment: "node",
     include: ["**/*.test.{ts,tsx}"],
     exclude: ["node_modules", ".next"],
+    setupFiles: ["./vitest.setup.ts"],
     // Valores falsos para que los módulos que validan el entorno se puedan
     // importar en los tests sin un .env.local. No son secretos reales.
     env: {

@@ -1,0 +1,156 @@
+/**
+ * Registro de íconos: el único lugar donde se decide qué glifo corresponde a
+ * cada nombre. Las pantallas usan <Icon name="..."> y nunca importan Uicons
+ * ni lucide-react directamente.
+ *
+ * - `uicon`: nombre en Flaticon Uicons (regular rounded, `fi-rr-*`).
+ * - `lucide`: equivalente de lucide-react (DESIGN_SPEC §6, fallback).
+ * Solo están los íconos que usa la spec (lista de §6 más `trash`, que aparece
+ * en el borrado irreversible de 19-states.png).
+ *
+ * Para cambiar toda la app a lucide-react, cambia ICON_SET a "lucide".
+ */
+import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowRight,
+  ArrowUp,
+  Bell,
+  Bike,
+  Calendar,
+  CalendarClock,
+  Car,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Cloud,
+  CreditCard,
+  Dumbbell,
+  Ellipsis,
+  FileText,
+  Flag,
+  Flame,
+  GraduationCap,
+  HandCoins,
+  Heart,
+  House,
+  Info,
+  Landmark,
+  Laptop,
+  Layers,
+  LayoutGrid,
+  Music,
+  Newspaper,
+  Palette,
+  PiggyBank,
+  Plane,
+  Play,
+  Plus,
+  Receipt,
+  RefreshCw,
+  Repeat,
+  Search,
+  Settings,
+  ShoppingCart,
+  Smartphone,
+  Sparkles,
+  Target,
+  Ticket,
+  Trash2,
+  TrendingUp,
+  Umbrella,
+  User,
+  UserPlus,
+  Users,
+  Wallet,
+  Wifi,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+
+/** Proveedor activo. "uicons" es el de la spec; "lucide" es el respaldo. */
+export const ICON_SET: "uicons" | "lucide" = "uicons";
+
+type Entry = { uicon: string; lucide: LucideIcon };
+
+/** Íconos de uso general (variante regular rounded). */
+export const ICONS = {
+  "angle-small-down": { uicon: "angle-small-down", lucide: ChevronDown },
+  "angle-small-left": { uicon: "angle-small-left", lucide: ChevronLeft },
+  "angle-small-right": { uicon: "angle-small-right", lucide: ChevronRight },
+  apps: { uicon: "apps", lucide: LayoutGrid },
+  "arrow-small-down": { uicon: "arrow-small-down", lucide: ArrowDown },
+  "arrow-small-right": { uicon: "arrow-small-right", lucide: ArrowRight },
+  "arrow-small-up": { uicon: "arrow-small-up", lucide: ArrowUp },
+  "arrows-repeat": { uicon: "arrows-repeat", lucide: Repeat },
+  bank: { uicon: "bank", lucide: Landmark },
+  bell: { uicon: "bell", lucide: Bell },
+  calendar: { uicon: "calendar", lucide: Calendar },
+  "calendar-clock": { uicon: "calendar-clock", lucide: CalendarClock },
+  "car-side": { uicon: "car-side", lucide: Car },
+  "chart-line-up": { uicon: "chart-line-up", lucide: TrendingUp },
+  check: { uicon: "check", lucide: Check },
+  clock: { uicon: "clock", lucide: Clock },
+  cloud: { uicon: "cloud", lucide: Cloud },
+  "credit-card": { uicon: "credit-card", lucide: CreditCard },
+  "cross-small": { uicon: "cross-small", lucide: X },
+  "dumbbell-horizontal": { uicon: "dumbbell-horizontal", lucide: Dumbbell },
+  exchange: { uicon: "exchange", lucide: ArrowLeftRight },
+  "file-invoice-dollar": { uicon: "file-invoice-dollar", lucide: FileText },
+  flag: { uicon: "flag", lucide: Flag },
+  "graduation-cap": { uicon: "graduation-cap", lucide: GraduationCap },
+  heart: { uicon: "heart", lucide: Heart },
+  home: { uicon: "home", lucide: House },
+  info: { uicon: "info", lucide: Info },
+  laptop: { uicon: "laptop", lucide: Laptop },
+  layers: { uicon: "layers", lucide: Layers },
+  "menu-dots": { uicon: "menu-dots", lucide: Ellipsis },
+  mobile: { uicon: "mobile", lucide: Smartphone },
+  motorcycle: { uicon: "motorcycle", lucide: Bike },
+  music: { uicon: "music", lucide: Music },
+  newspaper: { uicon: "newspaper", lucide: Newspaper },
+  palette: { uicon: "palette", lucide: Palette },
+  "piggy-bank": { uicon: "piggy-bank", lucide: PiggyBank },
+  plane: { uicon: "plane", lucide: Plane },
+  play: { uicon: "play", lucide: Play },
+  plus: { uicon: "plus", lucide: Plus },
+  receipt: { uicon: "receipt", lucide: Receipt },
+  refresh: { uicon: "refresh", lucide: RefreshCw },
+  "sack-dollar": { uicon: "sack-dollar", lucide: HandCoins },
+  search: { uicon: "search", lucide: Search },
+  settings: { uicon: "settings", lucide: Settings },
+  "shopping-cart": { uicon: "shopping-cart", lucide: ShoppingCart },
+  sparkles: { uicon: "sparkles", lucide: Sparkles },
+  target: { uicon: "target", lucide: Target },
+  ticket: { uicon: "ticket", lucide: Ticket },
+  trash: { uicon: "trash", lucide: Trash2 },
+  "umbrella-beach": { uicon: "umbrella-beach", lucide: Umbrella },
+  user: { uicon: "user", lucide: User },
+  "user-add": { uicon: "user-add", lucide: UserPlus },
+  users: { uicon: "users", lucide: Users },
+  wallet: { uicon: "wallet", lucide: Wallet },
+  wifi: { uicon: "wifi", lucide: Wifi },
+} as const satisfies Record<string, Entry>;
+
+/** Íconos que la spec usa también en variante sólida (nav activa, logo). */
+export const SOLID_ICONS = {
+  apps: { uicon: "apps", lucide: LayoutGrid },
+  calendar: { uicon: "calendar", lucide: Calendar },
+  "car-side": { uicon: "car-side", lucide: Car },
+  "credit-card": { uicon: "credit-card", lucide: CreditCard },
+  flame: { uicon: "flame", lucide: Flame },
+  heart: { uicon: "heart", lucide: Heart },
+  home: { uicon: "home", lucide: House },
+  "menu-dots": { uicon: "menu-dots", lucide: Ellipsis },
+  "piggy-bank": { uicon: "piggy-bank", lucide: PiggyBank },
+  receipt: { uicon: "receipt", lucide: Receipt },
+  refresh: { uicon: "refresh", lucide: RefreshCw },
+  "shopping-cart": { uicon: "shopping-cart", lucide: ShoppingCart },
+  ticket: { uicon: "ticket", lucide: Ticket },
+  users: { uicon: "users", lucide: Users },
+} as const satisfies Record<string, Entry>;
+
+export type IconName = keyof typeof ICONS;
+export type SolidIconName = keyof typeof SOLID_ICONS;

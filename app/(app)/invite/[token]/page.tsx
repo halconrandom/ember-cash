@@ -7,7 +7,8 @@
  */
 import { Suspense } from "react";
 
-import { ui } from "@/components/provisional/styles";
+import { Card } from "@/components/ui/card";
+import { CenteredPage } from "@/components/ui/centered-page";
 
 import { AcceptInvite } from "./accept-invite";
 
@@ -15,16 +16,18 @@ type Params = Promise<{ token: string }>;
 
 export default function InvitePage({ params }: { params: Params }) {
   return (
-    <div className={`${ui.card} w-full max-w-md space-y-4 self-start`}>
-      <h1 className={ui.title}>Invitación</h1>
-      <p className={ui.body2}>
-        Te invitaron a un household de Ember Cash. Al aceptar, compartirás con esa persona los datos
-        del household.
-      </p>
-      <Suspense fallback={null}>
-        <AcceptInviteFromParams params={params} />
-      </Suspense>
-    </div>
+    <CenteredPage>
+      <Card className="space-y-4">
+        <h1 className="text-title2 text-ink">Invitación</h1>
+        <p className="text-body text-ink-2">
+          Te invitaron a un household de Ember Cash. Al aceptar, compartirás con esa persona los
+          datos del household.
+        </p>
+        <Suspense fallback={null}>
+          <AcceptInviteFromParams params={params} />
+        </Suspense>
+      </Card>
+    </CenteredPage>
   );
 }
 
