@@ -134,7 +134,7 @@ Es un proyecto personal, pero las ideas y los reportes son bienvenidos: abre un 
 
 ## Licencia
 
-Define aquí la licencia que prefieras (por ejemplo MIT) y añade el archivo `LICENSE`.
+[MIT](LICENSE). Puedes usar, copiar y modificar el código, manteniendo el aviso de copyright.
 
 ---
 
