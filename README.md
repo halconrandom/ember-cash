@@ -128,4 +128,4 @@ Reglas: una migración ya aplicada no se edita; los cambios van en una migració
 
 - `GET /api/health` responde `{ "ok": true }`.
 - `GET /api/cron/rates` actualiza la tasa (requiere `CRON_SECRET`).
-- `GET /api/cron/purge-deleted` borra de forma definitiva las transacciones marcadas como borradas hace más de un día (requiere `CRON_SECRET`).
+- `GET /api/cron/purge-deleted` borra de forma definitiva las transacciones y deudas marcadas como borradas hace más de un día (requiere `CRON_SECRET`).

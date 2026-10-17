@@ -57,9 +57,14 @@ export function goalStatus({
   return savedMinor * BigInt(total) >= targetMinor * BigInt(elapsed) ? "onTrack" : "behind";
 }
 
-/** Porcentaje entero (hacia abajo) de lo ahorrado sobre el objetivo, entre 0 y 100. */
+/**
+ * Porcentaje entero de lo ahorrado (o pagado) sobre el objetivo, redondeado
+ * al más cercano como en los frames (6,8 de 12 → 57 %). Nunca muestra 100 %
+ * si todavía no se completó (99,6 % → 99 %), ni menos de 0.
+ */
 export function goalPercent(savedMinor: bigint, targetMinor: bigint): number {
-  if (targetMinor <= 0n) return 0;
-  const p = (savedMinor * 100n) / targetMinor;
-  return Number(p > 100n ? 100n : p < 0n ? 0n : p);
+  if (targetMinor <= 0n || savedMinor <= 0n) return 0;
+  if (savedMinor >= targetMinor) return 100;
+  const rounded = (savedMinor * 200n + targetMinor) / (targetMinor * 2n);
+  return Number(rounded >= 100n ? 99n : rounded);
 }

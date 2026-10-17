@@ -1,8 +1,9 @@
 /**
  * GET /api/cron/purge-deleted
  * Cron diario (vercel.json), protegido con CRON_SECRET. Borra de forma
- * definitiva las transacciones marcadas como borradas hace más de un día (por
- * ejemplo, si el usuario cerró la pestaña antes de que venciera el toast).
+ * definitiva las transacciones y deudas marcadas como borradas hace más de un
+ * día (por ejemplo, si el usuario cerró la pestaña antes de que venciera el
+ * toast).
  */
 import { timingSafeEqual } from "node:crypto";
 
@@ -21,10 +22,10 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { error, count } = await createAdminClient()
-    .from("transactions")
-    .delete({ count: "exact" })
-    .lt("deleted_at", cutoff);
-  if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
-  return Response.json({ ok: true, purged: count ?? 0 });
+  const admin = createAdminClient();
+  const tx = await admin.from("transactions").delete({ count: "exact" }).lt("deleted_at", cutoff);
+  if (tx.error) return Response.json({ ok: false, error: tx.error.message }, { status: 500 });
+  const debts = await admin.from("debts").delete({ count: "exact" }).lt("deleted_at", cutoff);
+  if (debts.error) return Response.json({ ok: false, error: debts.error.message }, { status: 500 });
+  return Response.json({ ok: true, purged: (tx.count ?? 0) + (debts.count ?? 0) });
 }

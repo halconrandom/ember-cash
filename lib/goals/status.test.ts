@@ -56,8 +56,11 @@ describe("goalStatus", () => {
 });
 
 describe("goalPercent y daysBetween", () => {
-  it("porcentaje entero hacia abajo, entre 0 y 100", () => {
-    expect(goalPercent(6_800_000n, 12_000_000n)).toBe(56);
+  it("porcentaje entero al más cercano, entre 0 y 100", () => {
+    expect(goalPercent(6_800_000n, 12_000_000n)).toBe(57);
+    expect(goalPercent(1_700_000n, 4_900_000n)).toBe(35);
+    expect(goalPercent(996n, 1_000n)).toBe(99);
+    expect(goalPercent(4n, 1_000n)).toBe(0);
     expect(goalPercent(64_000n, 120_000n)).toBe(53);
     expect(goalPercent(2_000_000n, 1_000_000n)).toBe(100);
     expect(goalPercent(5n, 0n)).toBe(0);

@@ -23,10 +23,14 @@ describe("GET /api/cron/purge-deleted", () => {
   });
 
   it("borra las transacciones marcadas antes de hace 24 h", async () => {
-    lt.mockResolvedValue({ error: null, count: 3 });
+    lt.mockResolvedValueOnce({ error: null, count: 3 }).mockResolvedValueOnce({
+      error: null,
+      count: 1,
+    });
     const before = Date.now();
     const res = await GET(new Request("http://x/api/cron/purge-deleted", { headers: AUTH }));
-    expect(await res.json()).toEqual({ ok: true, purged: 3 });
+    // 3 transacciones + 1 deuda.
+    expect(await res.json()).toEqual({ ok: true, purged: 4 });
     const [column, cutoff] = lt.mock.calls[0];
     expect(column).toBe("deleted_at");
     expect(before - new Date(cutoff).getTime()).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000 - 1000);

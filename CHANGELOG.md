@@ -2,6 +2,20 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.8.0] - 2026-10-17
+
+### Añadido (fase 8: deudas)
+
+- Pantalla Deudas (04/14-debts.png): resumen (saldo total, mínimos mensuales, interés del mes, fecha libre de deudas), lista ordenable por vencimiento, saldo o interés, con saldo, tasa, pago mínimo, porcentaje pagado, próximo vencimiento (en rojo si faltan 10 días o menos) y "original" para deudas en otra moneda.
+- Crear y editar deudas (moneda, principal original, tasa anual EA o nominal, pago mínimo, día de pago). Registrar pagos separa interés (estimado y editable) y capital, y puede crear la transacción vinculada.
+- `lib/debts/payoff.ts`: simulador puro (avalancha y bola de nieve, pago extra opcional, presupuesto con efecto bola de nieve). Tasa mensual (1 + EA)^(1/12) − 1 o nominal/12, guardada con 12 decimales; interés redondeado a la unidad menor con mitades lejos de cero; aritmética entera. Detecta cuando los pagos no cubren los intereses y no entra en bucle. Tests con casos verificados a mano.
+- Gráfica "Plan de pago" con selector avalancha / bola de nieve y tarjeta "Paga X extra al mes" (meses e interés ahorrados; monto sugerido editable).
+- Borrado irreversible: mantener 2 s (puntero o Enter/Espacio) o dos pasos, con 6 s para deshacer (deleted_at) y borrado definitivo al vencer; el cron de purga también limpia deudas.
+
+### Cambiado
+
+- Los porcentajes de progreso se redondean al más cercano, como en los frames (6,8 de 12 → 57 %), sin mostrar 100 % antes de completar.
+
 ## [0.7.0] - 2026-10-17
 
 ### Añadido (fase 7: ahorros)

@@ -1,0 +1,468 @@
+"use client";
+
+/**
+ * Contenido de Deudas (04-debts.png). Todo se muestra en la moneda elegida:
+ * las deudas en otra moneda se convierten con la tasa más reciente y llevan
+ * su "original" debajo. El plan de pago se simula en la moneda elegida
+ * (lib/debts/payoff.ts); si falta la tasa y hay monedas mezcladas, no se
+ * simula y se explica por qué.
+ */
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
+
+import { MoneyAmount } from "@/components/money/money-amount";
+import { useRate } from "@/components/money/rate-provider";
+import { TopbarSubtitle } from "@/components/shell/topbar-context";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/chip";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icon";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import type { CurrencyCode } from "@/lib/db/types";
+import { isDueSoon, nextDueDate } from "@/lib/debts/dates";
+import {
+  monthlyInterest,
+  monthlyRateScaled,
+  simulatePayoff,
+  type PayoffMethod,
+} from "@/lib/debts/payoff";
+import type { DebtSummary } from "@/lib/debts/queries";
+import { goalPercent } from "@/lib/goals/status";
+import { useFormat } from "@/lib/i18n/use-format";
+import { convert, type Rate } from "@/lib/money/convert";
+import { add, money, type Money } from "@/lib/money/money";
+import { withFilters } from "@/lib/transactions/filters";
+import { cn } from "@/lib/utils";
+
+import { ExtraPaymentCard } from "./extra-payment-card";
+import { PayoffTimeline } from "./payoff-timeline";
+
+type SortKey = "due" | "balance" | "interest";
+
+/** Importe en la moneda elegida, o null si no se puede convertir. */
+function toDisplay(m: Money, to: CurrencyCode, rate: Rate | null): Money | null {
+  if (m.currency === to) return m;
+  return rate ? convert(m, to, rate) : null;
+}
+
+export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: string }) {
+  const t = useTranslations("debts");
+  const f = useFormat();
+  const { rate, status, displayCurrency } = useRate();
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [sort, setSort] = useState<SortKey>("due");
+  const [method, setMethod] = useState<PayoffMethod>("avalanche");
+  const usable = status === "error" ? null : rate;
+  const active = debts.filter((d) => d.balance.amountMinor > 0n);
+
+  // Deudas en la moneda elegida (null si alguna no se puede convertir).
+  const converted = useMemo(() => {
+    const list = active.map((d) => {
+      const balance = toDisplay(d.balance, displayCurrency, usable);
+      const min = toDisplay(d.minPayment, displayCurrency, usable);
+      return balance && min ? { d, balance, min } : null;
+    });
+    return list.every(Boolean) ? (list as { d: DebtSummary; balance: Money; min: Money }[]) : null;
+  }, [active, displayCurrency, usable]);
+
+  const plan = useMemo(() => {
+    if (!converted) return null;
+    return simulatePayoff({
+      debts: converted.map(({ d, balance, min }) => ({
+        id: d.id,
+        balanceMinor: balance.amountMinor,
+        aprBps: d.aprBps,
+        aprKind: d.aprKind,
+        minPaymentMinor: min.amountMinor,
+      })),
+      method,
+      startMonth: today.slice(0, 7),
+    });
+  }, [converted, method, today]);
+
+  if (debts.length === 0) {
+    return (
+      <>
+        <TopbarSubtitle text={t("subtitleNoRate", { count: 0 })} />
+        <EmptyState
+          icon="credit-card"
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
+          actions={
+            <Button
+              icon="plus"
+              onClick={() =>
+                router.push(`${pathname}${withFilters(params, { debt: "new" })}`, { scroll: false })
+              }
+            >
+              {t("addDebt")}
+            </Button>
+          }
+        />
+      </>
+    );
+  }
+
+  const zero = money(0n, displayCurrency);
+  const totals = converted
+    ? {
+        remaining: converted.reduce((s, x) => add(s, x.balance), zero),
+        minimums: converted.reduce((s, x) => add(s, x.min), zero),
+        interest: converted.reduce(
+          (s, x) =>
+            add(
+              s,
+              money(
+                monthlyInterest(x.balance.amountMinor, monthlyRateScaled(x.d.aprBps, x.d.aprKind)),
+                displayCurrency,
+              ),
+            ),
+          zero,
+        ),
+      }
+    : null;
+  // Porcentaje pagado de todo (sobre lo original, en la moneda elegida).
+  const paidPct = (() => {
+    let paid = zero;
+    let original = zero;
+    for (const d of debts) {
+      const p = toDisplay(d.paid, displayCurrency, usable);
+      const o = toDisplay(d.original, displayCurrency, usable);
+      if (!p || !o) return null;
+      paid = add(paid, p);
+      original = add(original, o);
+    }
+    return goalPercent(paid.amountMinor, original.amountMinor);
+  })();
+
+  const sorted = [...active].sort((a, b) => {
+    if (sort === "balance") {
+      const ab =
+        toDisplay(a.balance, displayCurrency, usable)?.amountMinor ?? a.balance.amountMinor;
+      const bb =
+        toDisplay(b.balance, displayCurrency, usable)?.amountMinor ?? b.balance.amountMinor;
+      return ab < bb ? 1 : ab > bb ? -1 : 0;
+    }
+    if (sort === "interest") return b.aprBps - a.aprBps;
+    const ad = a.dueDay ? nextDueDate(a.dueDay, today) : "9999";
+    const bd = b.dueDay ? nextDueDate(b.dueDay, today) : "9999";
+    return ad.localeCompare(bd);
+  });
+  const methodLabel = t(method).toLowerCase();
+
+  return (
+    <div className="space-y-6">
+      <TopbarSubtitle
+        text={
+          paidPct === null
+            ? t("subtitleNoRate", { count: active.length })
+            : t("subtitle", { count: active.length, percent: paidPct })
+        }
+      />
+
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard icon="sack-dollar" label={t("totalRemaining")}>
+          {totals ? (
+            <MoneyAmount
+              kind="total"
+              value={totals.remaining}
+              primaryClassName="text-amount-l"
+              secondaryClassName="text-body text-ink-2"
+            />
+          ) : (
+            <Unavailable />
+          )}
+        </StatCard>
+        <StatCard icon="calendar-clock" label={t("monthlyMinimums")}>
+          {totals ? (
+            <MoneyAmount
+              kind="total"
+              value={totals.minimums}
+              primaryClassName="text-amount-l"
+              secondaryClassName="text-body text-ink-2"
+            />
+          ) : (
+            <Unavailable />
+          )}
+        </StatCard>
+        <StatCard icon="chart-line-up" label={t("interestThisMonth")} tone="negative">
+          {totals ? (
+            <MoneyAmount
+              kind="total"
+              value={totals.interest}
+              primaryClassName="text-amount-l"
+              secondaryClassName="text-body text-ink-2"
+            />
+          ) : (
+            <Unavailable />
+          )}
+        </StatCard>
+        <StatCard icon="flag" label={t("debtFreeDate")} tone="positive">
+          {plan?.ok ? (
+            <>
+              <p className="text-amount-l text-ink capitalize">
+                {plan.months === 0 ? "—" : f.date(`${plan.debtFreeMonth}-01`, "shortMonthYear")}
+              </p>
+              <p className="text-body text-ink-2">
+                {t("debtFreeIn", { months: plan.months, method: methodLabel })}
+              </p>
+            </>
+          ) : plan ? (
+            <>
+              <p className="text-amount-l text-negative-text">{t("neverPaysOff")}</p>
+              <p className="text-body text-ink-2">{t("neverPaysOffHint")}</p>
+            </>
+          ) : (
+            <Unavailable />
+          )}
+        </StatCard>
+      </div>
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Card className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle className="text-title2">{t("yourDebts")}</CardTitle>
+            <SegmentedControl<SortKey>
+              label={t("sortLabel")}
+              options={[
+                { value: "due", label: t("sortDue") },
+                { value: "balance", label: t("sortBalance") },
+                { value: "interest", label: t("sortInterest") },
+              ]}
+              value={sort}
+              onChange={setSort}
+            />
+          </div>
+          <ul className="space-y-4">
+            {sorted.map((d) => (
+              <li key={d.id}>
+                <DebtRow debt={d} today={today} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-title2">{t("payoffTitle")}</CardTitle>
+              <SegmentedControl<PayoffMethod>
+                label={t("methodLabel")}
+                options={[
+                  { value: "avalanche", label: t("avalanche") },
+                  { value: "snowball", label: t("snowball") },
+                ]}
+                value={method}
+                onChange={setMethod}
+              />
+            </div>
+            {!converted ? (
+              <p className="text-body text-ink-2">{t("timelineUnavailable")}</p>
+            ) : plan && !plan.ok ? (
+              <p className="text-body text-negative-text">{t("timelineNever")}</p>
+            ) : plan && plan.ok && plan.months > 0 ? (
+              <PayoffTimeline
+                plan={plan}
+                names={Object.fromEntries(active.map((d) => [d.id, d.name]))}
+                startMonth={today.slice(0, 7)}
+              />
+            ) : null}
+          </Card>
+          {converted && plan?.ok && plan.months > 0 && (
+            <ExtraPaymentCard
+              currency={displayCurrency}
+              minimums={totals!.minimums}
+              input={{
+                debts: converted.map(({ d, balance, min }) => ({
+                  id: d.id,
+                  balanceMinor: balance.amountMinor,
+                  aprBps: d.aprBps,
+                  aprKind: d.aprKind,
+                  minPaymentMinor: min.amountMinor,
+                })),
+                method,
+                startMonth: today.slice(0, 7),
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Unavailable() {
+  const t = useTranslations("money");
+  return <p className="text-body text-ink-3">{t("rateUnavailable")}</p>;
+}
+
+function StatCard({
+  icon,
+  label,
+  tone = "ember",
+  children,
+}: {
+  icon: "sack-dollar" | "calendar-clock" | "chart-line-up" | "flag";
+  label: string;
+  tone?: "ember" | "negative" | "positive";
+  children: React.ReactNode;
+}) {
+  const tile =
+    tone === "negative"
+      ? "bg-negative-tint text-negative-text"
+      : tone === "positive"
+        ? "bg-positive-tint text-positive-text"
+        : "bg-ember-50 text-ember-text";
+  return (
+    <Card className="space-y-2">
+      <p className="text-body text-ink-2 flex items-center gap-2">
+        <span className={cn("grid size-7 place-items-center rounded-sm", tile)}>
+          <Icon name={icon} size={16} />
+        </span>
+        {label}
+      </p>
+      {children}
+    </Card>
+  );
+}
+
+/** Una deuda (fila de "Tus deudas"). */
+function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
+  const t = useTranslations("debts");
+  const f = useFormat();
+  const { rate, status, displayCurrency } = useRate();
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const usable = status === "error" ? null : rate;
+  const differs = debt.balance.currency !== displayCurrency;
+  const dim = status === "updating" && differs ? "opacity-60" : "";
+  const shown = (m: Money) => toDisplay(m, displayCurrency, usable) ?? m;
+
+  const due = debt.dueDay ? nextDueDate(debt.dueDay, today) : null;
+  const soon = due ? isDueSoon(due, today) : false;
+  const percent = goalPercent(debt.paid.amountMinor, debt.original.amountMinor);
+  /** "1.700.000 de 4.900.000" en COP (unidad compartida); con símbolo en USD. */
+  const pair = (paid: Money, total: Money) =>
+    paid.currency === "COP"
+      ? t("paidPair", { paid: f.amount(paid), total: f.amount(total) })
+      : t("paidPair", { paid: f.money(paid), total: f.money(total) });
+  const open = (key: "debt" | "pay") =>
+    router.push(`${pathname}${withFilters(params, { [key]: debt.id })}`, { scroll: false });
+
+  return (
+    <article className="rounded-row bg-surface2 p-5">
+      <div className="flex flex-wrap items-start gap-3">
+        <span className="rounded-control bg-surface text-ember-text grid size-10 shrink-0 place-items-center">
+          <Icon name={debt.iconKey} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-headline text-ink">{debt.name}</h3>
+          {debt.subtitle && <p className="text-callout text-ink-2">{debt.subtitle}</p>}
+        </div>
+        {due ? (
+          <Badge
+            tone={soon ? "negative" : "neutral"}
+            className={cn(!soon && "bg-surface text-ink")}
+          >
+            <Icon name="calendar" size={14} />
+            {t("due", { date: f.date(due) })}
+          </Badge>
+        ) : (
+          <Badge tone="neutral" className="bg-surface">
+            {t("noDueDay")}
+          </Badge>
+        )}
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-[1.1fr_0.6fr_1.1fr_1.5fr]">
+        <Stat label={t("remaining")}>
+          <AmountText value={shown(debt.balance)} className={dim} />
+          {differs && usable && (
+            <p className="text-callout text-ink-3 tabular-nums">
+              {t("original", { amount: f.money(debt.balance) })}
+            </p>
+          )}
+        </Stat>
+        <Stat label={t("apr")}>
+          <p className="text-body text-ink font-semibold tabular-nums">
+            {f.number(debt.aprBps / 100, 1)}%
+          </p>
+          <p className="text-callout text-ink-2">
+            {debt.aprKind === "EA" ? t("aprEA") : t("aprNominal")}
+          </p>
+        </Stat>
+        <Stat label={t("minPayment")}>
+          <AmountText value={shown(debt.minPayment)} className={dim} />
+          {differs && usable && (
+            <p className="text-callout text-ink-3 tabular-nums">
+              {t("original", { amount: f.money(debt.minPayment) })}
+            </p>
+          )}
+        </Stat>
+        <Stat label={t("paidOff")}>
+          <p className="text-body text-positive-text font-semibold tabular-nums">{percent}%</p>
+          <p className={cn("text-callout text-ink-2 whitespace-nowrap tabular-nums", dim)}>
+            {pair(shown(debt.paid), shown(debt.original))}
+          </p>
+        </Stat>
+      </dl>
+
+      {/* Barra de "pagado" en verde, como en el frame. */}
+      <div className="bg-track mt-4 h-1.5 overflow-hidden rounded-full" aria-hidden>
+        <div className="bg-positive h-full rounded-full" style={{ width: `${percent}%` }} />
+      </div>
+      <ProgressBarLabel percent={percent} />
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          variant="soft"
+          size="sm"
+          icon="plus"
+          onClick={() => open("pay")}
+          aria-label={t("recordPaymentFor", { name: debt.name })}
+        >
+          {t("recordPayment")}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => open("debt")}
+          aria-label={t("editDebt", { name: debt.name })}
+        >
+          {t("edit")}
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+/** Texto accesible del porcentaje pagado (la barra es decorativa). */
+function ProgressBarLabel({ percent }: { percent: number }) {
+  const t = useTranslations("debts");
+  return <span className="sr-only">{`${t("paidOff")}: ${percent}%`}</span>;
+}
+
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-caption text-ink-2 uppercase">{label}</dt>
+      <dd className="mt-1">{children}</dd>
+    </div>
+  );
+}
+
+function AmountText({ value, className }: { value: Money; className?: string }) {
+  const f = useFormat();
+  const { main, unit } = f.moneyParts(value);
+  return (
+    <p className={cn("text-body text-ink font-semibold whitespace-nowrap tabular-nums", className)}>
+      {main}
+      {unit && <span className="text-ink-3 font-normal">{` ${unit}`}</span>}
+    </p>
+  );
+}
