@@ -42,13 +42,18 @@ export type PageConfig = {
   title: NavKey;
   subtitle?: "calendarSubtitle";
   month?: boolean;
-  action?: "addTransaction";
+  /** Acción principal: texto (clave de messages) y parámetro de URL que abre su modal. */
+  action?: { label: "transactions.add" | "savings.newGoal"; param: "tx" | "goal" };
 };
 
 export const PAGE_TITLES: Record<string, PageConfig> = {
   "/": { title: "dashboard", month: true },
-  "/transactions": { title: "transactions", month: true, action: "addTransaction" },
-  "/savings": { title: "savings" },
+  "/transactions": {
+    title: "transactions",
+    month: true,
+    action: { label: "transactions.add", param: "tx" },
+  },
+  "/savings": { title: "savings", action: { label: "savings.newGoal", param: "goal" } },
   "/debts": { title: "debts" },
   "/subscriptions": { title: "subscriptions" },
   "/calendar": { title: "calendar", subtitle: "calendarSubtitle", month: true },

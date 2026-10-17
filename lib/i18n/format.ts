@@ -16,6 +16,8 @@ export function formatNumber(value: number, locale: Locale, fractionDigits = 0):
 const DATE_STYLES = {
   /** "16 de oct" / "Oct 16" */
   short: { month: "short", day: "numeric" },
+  /** "oct de 2026" / "Oct 2026" */
+  shortMonthYear: { month: "short", year: "numeric" },
   /** "octubre de 2026" / "October 2026" */
   monthYear: { month: "long", year: "numeric" },
   /** "sáb, 17 de oct" / "Sat, Oct 17" */

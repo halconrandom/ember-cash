@@ -17,7 +17,7 @@ type Props = {
   onClose: () => void;
   title: string;
   closeLabel: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
 };

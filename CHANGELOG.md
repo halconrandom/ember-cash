@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.7.0] - 2026-10-17
+
+### Añadido (fase 7: ahorros)
+
+- Pantalla Ahorros (03/13-savings.png): tarjetas de total ahorrado, aportes mensuales y progreso total; una tarjeta por meta con anillo de progreso, ahorrado, objetivo, equivalente, mensual, restante y fecha objetivo; tarjeta punteada para crear. Subtítulo con el número de metas y el progreso total; "Nueva meta" en la topbar.
+- Crear y editar metas (nombre, ícono, objetivo y moneda, fecha objetivo y aporte mensual opcionales) y registrar aportes en la moneda de la meta, opcionalmente vinculados a una transacción.
+- `lib/goals/status.ts`: estado calculado (nunca guardado). "Casi lista" con 95 % o más; si no, se compara lo ahorrado con lo esperado en línea recta entre started_on y target_date. Tests para cada estado, fechas pasadas, sin fecha y fechas invertidas.
+- Reglas de moneda: una meta en otra moneda se muestra convertida con "original US$ 640,00 de US$ 1.200,00"; en la misma moneda, con "≈" en la otra. Sin tasa, el original queda como principal.
+- Archivar meta con toast y Deshacer; estados vacío, cargando y error.
+- Primitivas: anillo y barra de progreso, campo de fecha compartido; `<MoneyAmount>` acepta sufijo ("/mes") y tamaño de la línea secundaria.
+- Validación zod de metas y aportes (sin retiros: el aporte debe ser mayor que 0 y no futuro).
+
 ## [0.6.0] - 2026-10-17
 
 ### Añadido (fase 6: transacciones)

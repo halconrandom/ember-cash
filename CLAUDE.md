@@ -27,6 +27,7 @@
 - En código, el dinero es `Money` de `lib/money` (`amountMinor: bigint`): sumar con `add`/`sum`, convertir con `convert`/`totalIn`, mostrar con `<MoneyAmount>` o `formatMoney`, leer inputs con `parseMoney`. Nada de `number` para importes.
 - Scope: toda consulta de finanzas recibe el scope (`getScope()` de `lib/scope/server.ts`; Personal por defecto, cookie `ec-scope`). Personal = `household_id` nulo; hogar = ese `household_id`.
 - Las transacciones se guardan con la RPC `save_transaction` (rehace los repartos de las compartidas). Borrar es suave (`deleted_at`) con toast y Deshacer; las listas excluyen las borradas.
+- El estado de una meta (Al día / Atrasada / Casi lista) se calcula con `lib/goals/status.ts`; nunca se guarda.
 - Una transacción compartida y sus repartos se escriben en la misma transacción de base de datos (la suma se valida al hacer COMMIT); las personales y las transferencias no llevan repartos.
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.
 

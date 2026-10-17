@@ -18,6 +18,7 @@ import { useRef, useState, useTransition } from "react";
 import { AccountCreateForm } from "@/components/accounts/account-create-form";
 import { useRate } from "@/components/money/rate-provider";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
@@ -462,55 +463,5 @@ export function TransactionModal({
         </form>
       )}
     </Modal>
-  );
-}
-
-/**
- * Fecha con el formato del frame ("vie, 16 de oct de 2026"): el texto se ve
- * formateado y un <input type="date"> transparente encima abre el selector
- * nativo (accesible con teclado).
- */
-function DateField({
-  label,
-  value,
-  onChange,
-  error,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error: string | null;
-}) {
-  const f = useFormat();
-  const display = value ? f.date(value, "weekdayDateYear") : "";
-  return (
-    <div className="space-y-2">
-      <label htmlFor="tx-date" className="text-callout text-ink-2 block font-semibold">
-        {label}
-      </label>
-      <div
-        className={cn(
-          "rounded-control bg-surface2 relative flex h-11 items-center gap-3 border px-4",
-          error ? "border-negative border-[1.5px]" : "border-transparent",
-        )}
-      >
-        <Icon name="calendar" className="text-ink-2" />
-        <span className="text-body text-ink flex-1">{display}</span>
-        <Icon name="angle-small-down" size={18} className="text-ink-2" />
-        <input
-          id="tx-date"
-          type="date"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          aria-invalid={error ? true : undefined}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        />
-      </div>
-      {error && (
-        <p role="alert" className="text-callout text-negative-text">
-          {error}
-        </p>
-      )}
-    </div>
   );
 }

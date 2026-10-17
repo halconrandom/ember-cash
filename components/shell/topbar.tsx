@@ -38,14 +38,16 @@ export function Topbar() {
         <LiveRateChip />
         {page?.month && <MonthSelector />}
         <DisplayCurrencyToggle />
-        {page?.action === "addTransaction" && (
+        {page?.action && (
           <Button
             icon="plus"
             onClick={() =>
-              router.push(`${pathname}${withFilters(params, { tx: "new" })}`, { scroll: false })
+              router.push(`${pathname}${withFilters(params, { [page.action!.param]: "new" })}`, {
+                scroll: false,
+              })
             }
           >
-            {t("transactions.add")}
+            {t(page.action.label)}
           </Button>
         )}
       </div>

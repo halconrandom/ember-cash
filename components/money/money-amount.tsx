@@ -36,6 +36,8 @@ type Props = {
   sign?: "+" | "-";
   /** Verde (ingresos). */
   positive?: boolean;
+  /** Texto después del importe y de su equivalente ("/mes"). */
+  suffix?: string;
   /**
    * Si el monto está dentro de un elemento clicable (una fila-botón), el
    * tooltip se abre con el hover de la fila y no agrega otro foco.
@@ -44,6 +46,8 @@ type Props = {
   className?: string;
   /** Clases del importe principal (tamaño de la escala tipográfica). */
   primaryClassName?: string;
+  /** Clases de la línea secundaria (por defecto Footnote 12). */
+  secondaryClassName?: string;
 };
 
 export function MoneyAmount({
@@ -51,9 +55,11 @@ export function MoneyAmount({
   kind = "row",
   sign,
   positive,
+  suffix,
   insideInteractive,
   className,
   primaryClassName,
+  secondaryClassName,
 }: Props) {
   const { rate, status, now, displayCurrency } = useRate();
   const t = useTranslations("money");
@@ -62,7 +68,7 @@ export function MoneyAmount({
   const unavailable = status === "error" || !rate;
   const dim = status === "updating" ? "opacity-60" : "";
   const staleTitle = rate && isStale(rate, now) ? t("rateFrom", { date: f.date(rate.asOf) }) : null;
-  const secondaryClass = "text-footnote text-ink-3 tabular-nums";
+  const secondaryClass = cn("text-footnote text-ink-3 tabular-nums", secondaryClassName);
 
   /** Importe principal: número (y unidad COP más pequeña). */
   const primary = (m: Money, extra?: string) => {
@@ -80,6 +86,7 @@ export function MoneyAmount({
         {main}
         {/* Espacio no separable real (no solo margen): el texto se lee bien. */}
         {unit && <span className="text-callout text-ink-3 font-normal">{` ${unit}`}</span>}
+        {suffix && <span>{`\u00A0${suffix}`}</span>}
       </span>
     );
   };
@@ -88,7 +95,7 @@ export function MoneyAmount({
     const other = otherCurrency(value.currency);
     const convertedText = unavailable
       ? t("rateUnavailable")
-      : f.money(convert(value, other, rate), { approx: true });
+      : `${f.money(convert(value, other, rate), { approx: true })}${suffix ? ` ${suffix}` : ""}`;
     return (
       <span className={cn("inline-flex flex-col", className)}>
         {primary(value)}
