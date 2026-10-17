@@ -1,174 +1,145 @@
+<div align="center">
+
+<img src="public/icons/icon-192.png" alt="Ember Cash" width="88" height="88" />
+
 # Ember Cash
 
-App web de finanzas personales (después iOS). Next.js (App Router), TypeScript estricto, Tailwind, shadcn/ui, Supabase y Vitest.
+**Las finanzas del hogar, claras y compartidas.**
+Gastos, deudas, ahorros y suscripciones en un solo lugar, para ti o para dos.
 
-El diseño está en [docs/DESIGN_SPEC.md](docs/DESIGN_SPEC.md) y [docs/IVERN_FIXES.md](docs/IVERN_FIXES.md); los frames de referencia y los logos, en [docs/design/](docs/design/).
+[![Next.js](https://img.shields.io/badge/Next.js-App%20Router-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20Postgres-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Idiomas](https://img.shields.io/badge/idiomas-ES%20%7C%20EN-C6500B)](#idiomas)
 
-## Requisitos
+[Demo](https://cash.halcon.dev) · [Características](#características) · [Empezar](#empezar-en-local) · [Arquitectura](#arquitectura)
 
-- **Node.js 24 LTS** (mínimo 20.9). El archivo `.nvmrc` fija la versión 24.
-- **pnpm** (la versión exacta está en `packageManager` de `package.json`).
-- **Git**.
+</div>
 
-## Puesta en marcha en Mac
+---
 
-```bash
-# 1. Instalar Node 24 (con nvm; o descárgalo de https://nodejs.org)
-brew install nvm         # o sigue https://github.com/nvm-sh/nvm
-nvm install 24 && nvm use 24
+## Qué es
 
-# 2. Activar pnpm (viene con Node a través de corepack)
-corepack enable pnpm
-pnpm -v
+Ember Cash es una app web para llevar las cuentas de la casa sin hojas de cálculo. Cada persona tiene su espacio personal y, si quiere, comparte un **hogar** con su pareja o con quien viva: los gastos compartidos se reparten solos y el balance de quién debe a quién siempre está al día.
 
-# 3. Instalar dependencias
-pnpm install
+Está pensada para uso real en Colombia: maneja **pesos (COP) y dólares (USD)** a la vez, con la tasa de cambio oficial del día.
 
-# 4. Crear el archivo de entorno y completar los valores
-cp .env.example .env.local
+## Características
 
-# 5. Correr la app
-pnpm dev                 # abre http://localhost:3000
-```
+| | |
+|---|---|
+| **Transacciones** | Ingresos, gastos y transferencias entre cuentas, con categorías, notas y deshacer al borrar. |
+| **Hogar compartido** | Gastos a partes iguales, balance entre miembros y liquidación total o parcial. Quien se une después no debe lo anterior. |
+| **Dos monedas** | COP y USD sin perder precisión: cada monto se guarda en su moneda original y solo se convierte para mostrarlo. |
+| **Deudas** | Interés nominal o efectivo anual, y un simulador de pago por avalancha o bola de nieve. |
+| **Ahorros** | Metas con aportes y estado claro: en camino, atrasada o casi lista. |
+| **Suscripciones y calendario** | Pagos recurrentes con vencimientos. Nada se da por pagado hasta que tú lo confirmas. |
+| **Presupuestos** | Límites por categoría y mes, con aviso al acercarte al tope. |
+| **Panel** | Balance del mes, categorías, tendencia de 6 meses y próximos pagos de un vistazo. |
+| **PWA** | Se instala en el celular y funciona con barra inferior y bottom sheets en móvil. |
+| **Respaldo** | Exporta todos tus datos en CSV desde Ajustes. |
 
-## Puesta en marcha en Windows (PowerShell)
+## Principios de diseño
 
-```powershell
-# 1. Instalar Node 24 LTS
-winget install OpenJS.NodeJS.LTS
-# (o usa nvm-windows: https://github.com/coreybutler/nvm-windows  ->  nvm install 24; nvm use 24)
+- **Claridad antes que adorno.** Sin brillos decorativos ni animaciones gratuitas.
+- **Accesible.** Contraste verificado con tests (WCAG), objetivos táctiles de 44 px y respeto a `prefers-reduced-motion`.
+- **Dinero exacto.** Montos enteros en unidades menores (`bigint`), nunca decimales flotantes.
+- **Tus datos, tu hogar.** Cada fila está protegida con Row Level Security en la base de datos.
 
-# 2. Activar pnpm (abre PowerShell como administrador para este paso)
-corepack enable pnpm
-# Si corepack falla:  npm install -g pnpm
-pnpm -v
+## Stack
 
-# 3. Instalar dependencias
-pnpm install
+- **Framework:** Next.js (App Router) con TypeScript estricto
+- **Interfaz:** Tailwind CSS, shadcn/ui y `motion`
+- **Datos y auth:** Supabase (Auth + Postgres con RLS)
+- **Idiomas:** next-intl, español (por defecto) e inglés
+- **Despliegue:** Vercel, con tareas programadas para tasas, borrado definitivo y vencimientos
+- **Pruebas:** Vitest y pruebas SQL contra Postgres para RLS y reglas de dinero
 
-# 4. Crear el archivo de entorno y completar los valores
-copy .env.example .env.local
+## Empezar en local
 
-# 5. Correr la app
-pnpm dev                 # abre http://localhost:3000
-```
-
-## Variables de entorno
-
-| Variable                        | Dónde se usa       | Descripción                                                    |
-| ------------------------------- | ------------------ | -------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | cliente y servidor | URL del proyecto de Supabase                                   |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor | Anon key pública de Supabase                                   |
-| `SUPABASE_SERVICE_ROLE_KEY`     | **solo servidor**  | Llave con permisos totales. Nunca en el cliente                |
-| `CRON_SECRET`                   | **solo servidor**  | Secreto para autenticar los cron jobs (`openssl rand -hex 32`) |
-
-`lib/env.ts` las valida con zod al arrancar. Si falta alguna, `pnpm dev` se detiene y dice cuál falta. `.env.local` está ignorado por git; solo `.env.example` se versiona.
-
-## Scripts
-
-| Comando                             | Qué hace                                                   |
-| ----------------------------------- | ---------------------------------------------------------- |
-| `pnpm dev`                          | Servidor de desarrollo                                     |
-| `pnpm build` / `pnpm start`         | Build y servidor de producción                             |
-| `pnpm check`                        | Lint + typecheck + tests (debe pasar antes de cada commit) |
-| `pnpm lint`                         | ESLint                                                     |
-| `pnpm typecheck`                    | `tsc --noEmit`                                             |
-| `pnpm test` / `pnpm test:watch`     | Vitest                                                     |
-| `pnpm format` / `pnpm format:check` | Prettier                                                   |
-
-## Supabase
-
-La CLI de Supabase está instalada como dependencia de desarrollo (`pnpm exec supabase ...`). Desarrollo y producción usan el mismo proyecto. Se enlaza una vez y no se cambia de ref:
+Necesitas **Node.js 20+**, **pnpm** y un proyecto de Supabase.
 
 ```bash
-pnpm exec supabase login
-pnpm exec supabase link --project-ref <ref-del-proyecto>
+git clone https://github.com/halconrandom/ember-cash.git
+cd ember-cash
+pnpm install
+cp .env.example .env.local   # completa tus valores
+pnpm dev
 ```
 
-| Comando             | Qué hace                                                                                                    |
-| ------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `pnpm db:push`      | Pide el ref del proyecto enlazado y, si coincide, aplica las migraciones. No carga el seed                 |
-| `pnpm db:seed:demo` | Se niega a correr. Ese proyecto guarda los datos reales                                                     |
-| `pnpm db:types`     | Regenera `lib/db/database.types.ts` desde el esquema remoto                                                 |
-| `pnpm test:rls`     | Corre `supabase/tests/*.sql` en una transacción con ROLLBACK (no deja datos)                               |
+Abre [http://localhost:3000](http://localhost:3000).
 
-Reglas: una migración ya aplicada no se edita; los cambios van en una migración nueva. Después de cada migración, corre `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`.
+### Variables de entorno
 
-### Auth
+| Variable | Dónde se usa | Notas |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | cliente y servidor | URL de tu proyecto de Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor | Clave pública (`anon`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **solo servidor** | Nunca con prefijo `NEXT_PUBLIC_` ni en el cliente |
+| `CRON_SECRET` | **solo servidor** | Genera uno con `openssl rand -hex 32` |
 
-- Login con Google y con link mágico por correo (`/login`).
-- `/auth/callback` recibe el retorno de Google; `/auth/confirm` recibe el link mágico (la plantilla de correo de Supabase debe apuntar a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding`).
-- `proxy.ts` (el antiguo middleware) refresca la sesión y manda a `/login` a quien no tenga sesión.
-- Después del primer login, `/onboarding` ofrece: usar la app solo, crear un household o unirse con una invitación (`/invite/<token>`).
+La app valida estas variables al arrancar y te dice cuáles faltan.
 
-## Sistema de diseño
+### Base de datos
 
-- Tokens claro y oscuro en [app/globals.css](app/globals.css), expuestos como utilidades de Tailwind (`bg-surface`, `text-ink-2`, `text-headline`, `rounded-card`...). Los componentes usan solo estos tokens, no la variante `dark:`.
-- Tema por clase en `<html>` (`light` / `dark`), resuelto antes de pintar desde la cookie `ec-theme` y guardado en `profiles.theme` (Settings > Appearance).
-- Primitivas en [components/ui/](components/ui/); íconos solo con `<Icon name="...">` ([components/ui/icon-registry.ts](components/ui/icon-registry.ts) permite cambiar a lucide-react).
-- `/dev/design-system` (solo en desarrollo) muestra todo en claro y oscuro para comparar con `docs/design/10-design-system.png`, `19-states.png` y `20-states-dark.png`.
-- `lib/design/contrast.test.ts` (port de `docs/contrast.py`) falla si algún par de tokens baja del ratio de la spec.
-
-## Idiomas
-
-- next-intl con español (`es`, por defecto) e inglés (`en`). Textos en [messages/es.json](messages/es.json) y [messages/en.json](messages/en.json).
-- Sin prefijos en la URL: el idioma sale de la cookie `ec-locale` y se guarda en `profiles.locale` (Ajustes > Apariencia > Idioma).
-- Formatos en [lib/i18n/format.ts](lib/i18n/format.ts): números y fechas según el idioma; dinero según la spec (COP sin decimales, USD con 2).
-
-## Dinero y tasa de cambio
-
-- [lib/money](lib/money/): `Money` con `bigint`, formato exacto (COP sin decimales, USD con 2), parseo del input y conversión con redondeo de mitades lejos de cero.
-- La tasa USD/COP se guarda en `exchange_rates`. `GET /api/cron/rates` (con `Authorization: Bearer $CRON_SECRET`) trae la TRM oficial de datos.gov.co y, si falla, usa open.er-api.com. Si las dos fallan no escribe nada.
-- [vercel.json](vercel.json) programa el cron todos los días a las 13:00 UTC (8:00 en Bogotá). Para correrlo a mano en local:
-
-  ```bash
-  curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/rates
-  ```
-
-## Endpoints
-
-- `GET /api/health` responde `{ "ok": true }`.
-- `GET /api/cron/rates` actualiza la tasa (requiere `CRON_SECRET`).
-- `GET /api/cron/occurrences` materializa los vencimientos (requiere `CRON_SECRET`).
-- `GET /api/cron/purge-deleted` borra de forma definitiva las transacciones y deudas marcadas como borradas hace más de un día (requiere `CRON_SECRET`).
-- `GET /settings/export` (con sesión) descarga un ZIP de CSV con los datos visibles para esa cuenta.
-
-## Producción
-
-Desarrollo y producción usan el mismo proyecto de Supabase. El ref enlazado (`supabase/.temp/project-ref`) es ese proyecto. `pnpm db:push` escribe ahí las migraciones, por eso pide que escribas el ref antes de continuar. `pnpm db:seed:demo` se niega a correr contra él.
-
-### Dónde va cada variable
-
-En Vercel: Project, Settings, Environment Variables, entorno **Production**. Los mismos tres valores de Supabase van en `.env.local`. Los cron solo corren en el deploy de producción.
-
-| Variable | Dónde se copia el valor | Dónde se pega |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase, Project Settings, API, Project URL | `.env.local` y Vercel, entorno Production |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | La misma pantalla, clave `anon` `public` | `.env.local` y Vercel, entorno Production |
-| `SUPABASE_SERVICE_ROLE_KEY` | La misma pantalla, clave `service_role` (secreta) | `.env.local` y Vercel, entorno Production. Nunca con prefijo `NEXT_PUBLIC_`. Nunca en el cliente |
-| `CRON_SECRET` | Lo generas tú: `openssl rand -hex 32`. No sale de Supabase | `.env.local` y Vercel, entorno Production. Vercel lo envía solo en los cron, como `Authorization: Bearer <CRON_SECRET>` |
-
-### Supabase
-
-1. Authentication, URL Configuration: Site URL `https://<tu-dominio>`. En Redirect URLs agrega `https://<tu-dominio>/auth/callback`, `https://<tu-dominio>/auth/confirm`, `http://localhost:3000/auth/callback` y `http://localhost:3000/auth/confirm`.
-2. Activa Google (el callback de Google es el de Supabase, `https://<ref>.supabase.co/auth/v1/callback`) y la plantilla del magic link apunta a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding`.
-3. Con el proyecto ya enlazado, aplica las migraciones y comprueba el RLS:
+Las migraciones están en `supabase/migrations`. Enlaza tu proyecto con la CLI de Supabase y aplícalas:
 
 ```bash
 pnpm db:push
-pnpm exec supabase db query --linked -f supabase/tests/rls_enabled.sql
 ```
 
-`pnpm db:push` no sigue hasta que escribes el ref del proyecto. `rls_enabled.sql` tiene que imprimir `OK: RLS activo en todas las tablas de public`. No deja datos.
+> Usa un proyecto de Supabase que sea tuyo. Nunca ejecutes datos de ejemplo ni pruebas destructivas contra una base con datos reales.
 
-### Vercel
+## Scripts
 
-Importa el repositorio. El archivo `vercel.json` ya declara los cron (UTC, una vez al día; en el plan Hobby la hora puede moverse dentro de esa hora):
+| Comando | Qué hace |
+|---|---|
+| `pnpm dev` | Servidor de desarrollo |
+| `pnpm build` | Compilación de producción |
+| `pnpm check` | Lint, tipos y tests unitarios |
+| `pnpm test:rls` | Pruebas de políticas RLS |
+| `pnpm test:db:fresh` | Recrea una base local de prueba y valida migraciones |
 
-| Ruta | Schedule | Qué hace |
-| --- | --- | --- |
-| `/api/cron/rates` | `0 13 * * *` | Tasa USD/COP (13:00 UTC, 08:00 en Bogotá) |
-| `/api/cron/purge-deleted` | `30 13 * * *` | Borrado definitivo de lo que lleva más de un día en la papelera |
-| `/api/cron/occurrences` | `45 13 * * *` | Vencimientos de suscripciones y deudas |
+## Arquitectura
 
-Sin `CRON_SECRET` en Production, Vercel llama esas rutas y responden 401. No hace falta otro header.
+```
+app/            Rutas, pantallas y APIs (App Router)
+components/     Componentes de interfaz
+lib/            Dinero, divisas, balance del hogar, recurrencias, env
+messages/       Textos en es.json y en.json
+supabase/       Migraciones y pruebas SQL
+```
+
+Decisiones clave:
+
+- **Un solo modelo de recurrencia** para suscripciones y pagos mínimos de deuda.
+- **Repartos creados en la base** (`save_transaction`) en una sola operación, con una restricción que garantiza que la suma de los repartos iguala el monto.
+- **Borrado suave** con deshacer, depurado por un cron.
+- **Sin cobros automáticos:** el cron solo marca lo vencido. Registrar un pago es siempre una acción tuya.
+- **CSP sin nonce** (`'unsafe-inline'`) por la incompatibilidad actual entre PPR y nonce en Next 16.
+
+## Idiomas
+
+La interfaz está en español e inglés. Los textos viven en `messages/es.json` y `messages/en.json`; no hay cadenas fijas en los componentes.
+
+## Contribuir
+
+Es un proyecto personal, pero las ideas y los reportes son bienvenidos: abre un *issue* describiendo qué esperabas y qué pasó. Si propones código, corre antes `pnpm check`.
+
+## Créditos
+
+- Iconos: [Flaticon Uicons](https://www.flaticon.com/uicons)
+- Componentes animados adaptados de [Magic UI](https://magicui.design) y [Animate UI](https://animate-ui.com)
+
+## Licencia
+
+Define aquí la licencia que prefieras (por ejemplo MIT) y añade el archivo `LICENSE`.
+
+---
+
+<div align="center">
+
+Hecho con cariño por [Isaac (Halcón)](https://www.linkedin.com/in/halcon-dev/)
+
+</div>
