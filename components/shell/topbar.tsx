@@ -1,12 +1,15 @@
 "use client";
 
 /**
- * Topbar de 72 px: título (Title 1) y subtítulo de la ruta actual. Las
- * acciones del frame (chip de tasa, mes, COP/USD, botón primario) llegan con
- * la lógica de cada pantalla.
+ * Topbar de 72 px: título (Title 1) y subtítulo de la ruta actual, y a la
+ * derecha el chip de tasa y el selector COP/USD (01-dashboard.png). El
+ * selector de mes y el botón primario llegan con cada pantalla.
  */
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+
+import { DisplayCurrencyToggle } from "@/components/money/display-currency-toggle";
+import { LiveRateChip } from "@/components/money/live-rate-chip";
 
 import { PAGE_TITLES } from "./nav";
 
@@ -24,6 +27,10 @@ export function Topbar() {
         {page?.subtitle && (
           <p className="text-body text-ink-2 mt-0.5">{t(`pages.${page.subtitle}`)}</p>
         )}
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <LiveRateChip />
+        <DisplayCurrencyToggle />
       </div>
     </header>
   );

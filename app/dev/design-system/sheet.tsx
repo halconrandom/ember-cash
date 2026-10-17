@@ -16,6 +16,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge, ChoiceChip } from "@/components/ui/chip";
+import { CurrencyBadge } from "@/components/money/currency-badge";
+import { CurrencyFilter, type CurrencyFilterValue } from "@/components/money/currency-filter";
+import { MoneyAmount } from "@/components/money/money-amount";
+import { RateProvider, type RateStatus } from "@/components/money/rate-provider";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input } from "@/components/ui/field";
 import { HoldToDeleteButton, TwoStepDeleteButton } from "@/components/ui/hold-to-delete";
@@ -29,6 +33,7 @@ import { SkeletonList } from "@/components/ui/skeleton";
 import { ToastSurface, useToast } from "@/components/ui/toast";
 import { Tooltip, TooltipSurface } from "@/components/ui/tooltip";
 import { useFormat } from "@/lib/i18n/use-format";
+import { money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
 /** Anillo de foco fijo, para mostrar el estado "foco" sin enfocar. */
@@ -417,6 +422,7 @@ function ComponentStates({ t }: { t: T }) {
         <RateChipCard t={t} />
         <DeleteCard t={t} />
       </div>
+      <MoneyCard t={t} />
     </section>
   );
 }
@@ -457,7 +463,7 @@ function ButtonsCard({ t }: { t: T }) {
 
 function InputsCard({ t }: { t: T }) {
   const f = useFormat();
-  const sample = f.amount(125000, "COP");
+  const sample = f.amount(money(125000n, "COP"));
   return (
     <Card className="space-y-4">
       <CardTitle>{t("inputs")}</CardTitle>
@@ -476,7 +482,7 @@ function NavRowsChipsCard({ t }: { t: T }) {
   const tNav = useTranslations("nav");
   const f = useFormat();
   const [selected, setSelected] = useState(true);
-  const amount = f.money(-18500, "COP");
+  const amount = f.money(money(-18500n, "COP"));
   return (
     <Card className="space-y-4">
       <CardTitle>{t("navRowsChips")}</CardTitle>
@@ -557,7 +563,7 @@ function ToastTooltipCard({ t }: { t: T }) {
   const toast = useToast();
   const f = useFormat();
   const tooltip = t("tooltipSample", {
-    usd: f.money(2160, "USD"),
+    usd: f.money(money(2160n, "USD")),
     rate: f.number(4000),
     date: f.date(SAMPLE_DATE),
   });
@@ -583,7 +589,7 @@ function ToastTooltipCard({ t }: { t: T }) {
         </Button>
         <Tooltip content={tooltip}>
           <button type="button" className="text-body text-ink font-semibold tabular-nums">
-            {f.money(86400, "COP")}
+            {f.money(money(86400n, "COP"))}
           </button>
         </Tooltip>
       </div>
@@ -616,12 +622,7 @@ function RateChipCard({ t }: { t: T }) {
       {rows.map((row) => (
         <StateRow key={row.state} label={row.label}>
           <div className="space-y-2">
-            <RateChip
-              state={row.state}
-              rate={rate}
-              asOf={row.asOf}
-              sample={row.state === "fresh"}
-            />
+            <RateChip state={row.state} rate={rate} asOf={row.asOf} />
             <p className="text-callout text-ink-2">{row.note}</p>
           </div>
         </StateRow>
@@ -687,6 +688,96 @@ function DeleteCard({ t }: { t: T }) {
         <TwoStepDeleteButton label={t("deleteDebt")} onConfirm={deleted} />
       </StateRow>
       <p className="text-callout text-ink-2">{t("contrastNote")}</p>
+    </Card>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dinero y moneda (fase 5): montos, filtro e insignia                        */
+/* -------------------------------------------------------------------------- */
+
+/** Tasa de ejemplo de los frames: 1 USD = 4.000 COP. */
+const DEMO_RATE = {
+  base: "USD" as const,
+  quote: "COP" as const,
+  rate: "4000",
+  asOf: SAMPLE_DATE,
+  fetchedAt: new Date().toISOString(),
+  source: "sample",
+};
+
+function MoneyCard({ t }: { t: T }) {
+  const [status, setStatus] = useState<RateStatus | "stale">("idle");
+  const [display, setDisplay] = useState<"COP" | "USD">("COP");
+  const [filter, setFilter] = useState<CurrencyFilterValue>("all");
+  const rate =
+    status === "stale"
+      ? { ...DEMO_RATE, asOf: SAMPLE_STALE_DATE, fetchedAt: "2026-10-09T13:00:00Z" }
+      : DEMO_RATE;
+
+  return (
+    <Card className="space-y-5">
+      <CardTitle>{t("money")}</CardTitle>
+      <div className="flex flex-wrap items-center gap-3">
+        <SegmentedControl
+          label={t("moneyRateState")}
+          options={[
+            { value: "idle", label: t("state.fresh") },
+            { value: "stale", label: t("state.stale") },
+            { value: "updating", label: t("state.updating") },
+            { value: "error", label: t("state.error") },
+          ]}
+          value={status}
+          onChange={setStatus}
+        />
+        <SegmentedControl
+          label={t("displayCurrency")}
+          options={[
+            { value: "COP", label: "COP" },
+            { value: "USD", label: "USD" },
+          ]}
+          value={display}
+          onChange={setDisplay}
+        />
+        <CurrencyFilter value={filter} onChange={setFilter} />
+      </div>
+      {/* key: reinicia el proveedor de demo al cambiar la moneda o la tasa. */}
+      <RateProvider
+        key={`${display}-${status}`}
+        initialRate={rate}
+        initialDisplayCurrency={display}
+        persist={false}
+        forcedStatus={status === "stale" ? "idle" : status}
+      >
+        <div className="grid gap-6 sm:grid-cols-3">
+          <div className="space-y-3">
+            <p className="text-caption text-ink-2 uppercase">{t("moneyRow")}</p>
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-body text-ink font-medium">{t("moneyItemCop")}</span>
+              <MoneyAmount
+                value={money(89900n, "COP")}
+                primaryClassName="text-body font-semibold"
+              />
+            </div>
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-body text-ink flex items-center gap-2 font-medium">
+                {t("moneyItemUsd")}
+                <CurrencyBadge currency="USD" displayCurrency={display} />
+              </span>
+              <MoneyAmount value={money(1599n, "USD")} primaryClassName="text-body font-semibold" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-caption text-ink-2 uppercase">{t("moneyTotal")}</p>
+            <MoneyAmount
+              kind="total"
+              value={display === "COP" ? money(3_360_000n, "COP") : money(84000n, "USD")}
+              primaryClassName="text-amount-xl"
+            />
+          </div>
+          <p className="text-callout text-ink-2">{t("moneyNote")}</p>
+        </div>
+      </RateProvider>
     </Card>
   );
 }

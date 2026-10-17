@@ -114,6 +114,17 @@ Reglas: una migración ya aplicada no se edita; los cambios van en una migració
 - Sin prefijos en la URL: el idioma sale de la cookie `ec-locale` y se guarda en `profiles.locale` (Ajustes > Apariencia > Idioma).
 - Formatos en [lib/i18n/format.ts](lib/i18n/format.ts): números y fechas según el idioma; dinero según la spec (COP sin decimales, USD con 2).
 
+## Dinero y tasa de cambio
+
+- [lib/money](lib/money/): `Money` con `bigint`, formato exacto (COP sin decimales, USD con 2), parseo del input y conversión con redondeo de mitades lejos de cero.
+- La tasa USD/COP se guarda en `exchange_rates`. `GET /api/cron/rates` (con `Authorization: Bearer $CRON_SECRET`) trae la TRM oficial de datos.gov.co y, si falla, usa open.er-api.com. Si las dos fallan no escribe nada.
+- [vercel.json](vercel.json) programa el cron todos los días a las 13:00 UTC (8:00 en Bogotá). Para correrlo a mano en local:
+
+  ```bash
+  curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/rates
+  ```
+
 ## Endpoints
 
 - `GET /api/health` responde `{ "ok": true }`.
+- `GET /api/cron/rates` actualiza la tasa (requiere `CRON_SECRET`).

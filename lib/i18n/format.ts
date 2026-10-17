@@ -1,17 +1,8 @@
 /**
- * Formatos según el idioma, con las reglas de moneda de DESIGN_SPEC §4:
- * - Los decimales los decide la moneda, no el idioma: COP 0, USD 2.
- * - Los separadores los decide el idioma: es → 125.000 / 15,99; en → 125,000 / 15.99.
- * - Con símbolo (por defecto): USD lleva "US$" delante; COP lleva "COP" detrás.
- * - Con código (modal de transacción, spec §4.8): "125.000 COP", "31,25 USD".
- * Entre el número y la unidad va un espacio que no se parte ( ), para
- * que un monto nunca quede cortado en dos líneas.
+ * Formatos de número y fecha según el idioma. El dinero se formatea en
+ * lib/money/format.ts (exacto, con bigint).
  */
-import { CURRENCY_EXPONENT, type CurrencyCode } from "@/lib/db/types";
-
 import { DEFAULT_TIME_ZONE, INTL_TAGS, type Locale } from "./config";
-
-const NBSP = " ";
 
 /** Número con los separadores del idioma y `fractionDigits` decimales fijos. */
 export function formatNumber(value: number, locale: Locale, fractionDigits = 0): string {
@@ -19,35 +10,6 @@ export function formatNumber(value: number, locale: Locale, fractionDigits = 0):
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
-}
-
-/** Importe sin unidad: unidades menores → número con los decimales de la moneda. */
-export function formatAmount(minor: number, currency: CurrencyCode, locale: Locale): string {
-  const exponent = CURRENCY_EXPONENT[currency];
-  return formatNumber(minor / 10 ** exponent, locale, exponent);
-}
-
-type MoneyOptions = {
-  /** "symbol": US$ 15,99 / 125.000 COP. "code": 15,99 USD / 125.000 COP. */
-  unit?: "symbol" | "code";
-  /** Antepone "≈ " (solo en totales y líneas de detalle, spec §4.2). */
-  approx?: boolean;
-};
-
-/** Importe con su unidad según las reglas de la spec. */
-export function formatMoney(
-  minor: number,
-  currency: CurrencyCode,
-  locale: Locale,
-  { unit = "symbol", approx = false }: MoneyOptions = {},
-): string {
-  const sign = minor < 0 ? "-" : "";
-  const amount = formatAmount(Math.abs(minor), currency, locale);
-  const text =
-    unit === "symbol" && currency === "USD"
-      ? `${sign}US$${NBSP}${amount}`
-      : `${sign}${amount}${NBSP}${currency}`;
-  return approx ? `≈${NBSP}${text}` : text;
 }
 
 /** Formatos de fecha usados en la UI. */

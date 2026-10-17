@@ -2,6 +2,23 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.5.0] - 2026-10-17
+
+### Añadido (fase 5: dinero y tasa de cambio)
+
+- `lib/money`: tipo `Money` (`amountMinor: bigint` + moneda), suma, resta, comparación, formato exacto con Intl según el exponente (COP 0, USD 2) y parseo del input según el idioma.
+- Conversión `convert(money, to, rate)` con bigint y redondeo de mitades lejos de cero; `totalIn` suma por moneda y convierte una vez con la tasa más reciente.
+- `GET /api/cron/rates` protegida con `CRON_SECRET`: TRM oficial (datos.gov.co) con respaldo open.er-api; valida forma y rango y guarda en `exchange_rates` con `fetched_at` y `source`. Si ambas fuentes fallan responde 502 y conserva la última tasa. Cron diario en `vercel.json`.
+- Chip de tasa en la topbar con la tasa real y sus 4 estados: fresca, vieja (más de 24 h, ámbar, clic refresca), actualizando (conserva el ancho; lo convertido baja al 60 %) y error (Reintentar; la última tasa queda en el tooltip). Sin la etiqueta SAMPLE. Sin red pasa a error.
+- Selector COP/USD en la topbar que guarda `profiles.display_currency`.
+- Componentes `<MoneyAmount>` (fila con "original US$ 2,99" cuando la moneda difiere; total con "≈" en la otra moneda; tooltip con tasa y fecha), `<CurrencyFilter>` ("Moneda: Todas / COP / USD", por moneda original) y `<CurrencyBadge>` neutra.
+- Tests: 0, 1, 12 dígitos, negativos, redondeo COP y USD, ida y vuelta, parseo, fuentes de la tasa, ruta del cron, los 4 estados del chip y las reglas de `<MoneyAmount>`.
+
+### Cambiado
+
+- El formato de dinero sale de `lib/i18n/format.ts` y pasa a `lib/money/format.ts` (exacto, con bigint); `useFormat().money` recibe un `Money`.
+- `tsconfig` apunta a ES2022 (literales bigint).
+
 ## [0.4.1] - 2026-10-16
 
 ### Añadido

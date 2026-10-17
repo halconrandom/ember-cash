@@ -4,7 +4,11 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
-  resolve: { tsconfigPaths: true },
+  resolve: {
+    tsconfigPaths: true,
+    // "server-only" lanza un error fuera de React Server Components.
+    alias: { "server-only": new URL("./test/server-only.ts", import.meta.url).pathname },
+  },
   test: {
     environment: "node",
     include: ["**/*.test.{ts,tsx}"],
