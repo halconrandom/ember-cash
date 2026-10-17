@@ -48,6 +48,10 @@ type Props = {
   primaryClassName?: string;
   /** Clases de la línea secundaria (por defecto Footnote 12). */
   secondaryClassName?: string;
+  /** Clases de la unidad "COP" (por defecto ink-3; en el hero, blanco). */
+  unitClassName?: string;
+  /** Clases del sufijo ("/mes"); por defecto, el mismo estilo del importe. */
+  suffixClassName?: string;
 };
 
 export function MoneyAmount({
@@ -60,6 +64,8 @@ export function MoneyAmount({
   className,
   primaryClassName,
   secondaryClassName,
+  unitClassName,
+  suffixClassName,
 }: Props) {
   const { rate, status, now, displayCurrency } = useRate();
   const t = useTranslations("money");
@@ -85,8 +91,12 @@ export function MoneyAmount({
         {sign}
         {main}
         {/* Espacio no separable real (no solo margen): el texto se lee bien. */}
-        {unit && <span className="text-callout text-ink-3 font-normal">{` ${unit}`}</span>}
-        {suffix && <span>{`\u00A0${suffix}`}</span>}
+        {unit && (
+          <span className={cn("text-callout text-ink-3 font-normal", unitClassName)}>
+            {` ${unit}`}
+          </span>
+        )}
+        {suffix && <span className={suffixClassName}>{`\u00A0${suffix}`}</span>}
       </span>
     );
   };

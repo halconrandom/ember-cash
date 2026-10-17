@@ -35,6 +35,7 @@
 - El balance del hogar sale de `lib/household/balance.ts` (por moneda; se convierte solo para mostrar). Liquidar total guarda una fila de `settlements` por moneda con saldo y queda exactamente en 0; Deshacer borra esas filas. No dupliques esa lógica en componentes.
 - Salir o quitar a un miembro solo con `leave_household` / `remove_household_member` (saldo en cero). Lo que involucra a un ex miembro queda bloqueado en la base (gastos: solo categoría y nota; liquidaciones: nada).
 - Ningún vencimiento se registra solo: el cron solo marca "Vencida" (`overdue`); la única forma de crear la transacción es "Marcar como pagado" (`post_occurrence`, exige usuario, con la fecha real de pago).
+- Dashboard: los totales salen de la RPC `dashboard_totals` (sumas en la base) y se calculan con `lib/dashboard/aggregate.ts`; nunca se traen transacciones para sumarlas. Cada tarjeta lee sus datos con `safe()` (error aislado) y tiene su propio `<Suspense>`.
 - El interruptor Personal / Compartido se declara por ruta en `components/shell/nav.ts` (`scope: "shell"` o `"page"`).
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.
 

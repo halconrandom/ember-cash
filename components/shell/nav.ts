@@ -56,13 +56,19 @@ export type PageConfig = {
       | "debts.addDebt"
       | "subscriptions.add"
       | "calendar.addPayment"
-      | "household.addShared";
+      | "household.addShared"
+      | "dashboard.add";
     param: "tx" | "goal" | "debt" | "sub" | "event";
   };
 };
 
 export const PAGE_TITLES: Record<string, PageConfig> = {
-  "/": { title: "dashboard", month: true },
+  "/": {
+    title: "dashboard",
+    month: true,
+    scope: "shell",
+    action: { label: "dashboard.add", param: "tx" },
+  },
   "/transactions": {
     title: "transactions",
     month: true,

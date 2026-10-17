@@ -2,6 +2,22 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.11.0] - 2026-10-17
+
+### Añadido (fase 11: dashboard)
+
+- Dashboard con datos reales, según el scope, la moneda elegida y el mes de la topbar:
+  - balance del mes (hero), ingresos y gastos, con la variación contra el mes anterior;
+  - gastos por categoría en barras ordenadas con su color;
+  - tendencia de 6 meses (verde y naranja gráfico, valor directo y tooltip);
+  - próximos pagos de 7 días, desde los vencimientos (incluye los vencidos y los mínimos de deuda);
+  - metas de ahorro, deudas y suscripciones.
+- Cada tarjeta enlaza a su pantalla: Transacciones filtrada por mes, tipo o categoría, Calendario, Ahorros, Deudas y Suscripciones. "Agregar" abre el modal de transacciones en el dashboard. El interruptor Personal / Compartido aparece también aquí.
+- Migración `0012_dashboard.sql`: RPC `dashboard_totals`, que suma en la base por mes, tipo, categoría y moneda (sin borradas ni transferencias). Una sola llamada por petición alimenta las cinco tarjetas de dinero. No hizo falta un índice nuevo: con 200.000 transacciones sintéticas el plan usa `transactions_owner_occurred_idx` (o `transactions_household_occurred_idx` en un hogar) y tarda 37 ms.
+- Cada tarjeta tiene su propio estado de carga (Suspense con su esqueleto), de error (con "Reintentar"; las demás siguen) y vacío (cuenta nueva sin datos).
+- `lib/dashboard/aggregate.ts` (funciones puras) con tests: COP y USD mezclados, mes sin datos, variación contra un mes anterior vacío (devuelve null, no divide por cero), balance anterior negativo, orden de categorías, 6 meses que cruzan el año y eje del gráfico.
+- Token `--hero-chip` (distintivo dentro del hero, texto blanco, en el test de contraste). Estilo de fecha `monthShort` y formato compacto (`f.compact`). `MoneyAmount` acepta `unitClassName` y `suffixClassName`.
+
 ## [0.10.2] - 2026-10-17
 
 ### Cambiado (regla de suscripciones de la fase 9)

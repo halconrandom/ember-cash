@@ -63,6 +63,8 @@ const LIGHT_PAIRS: Pair[] = [
   ["blanco / ember-press", "#FFFFFF", "ember-press", TEXT, 5.63],
   ["blanco / hero-start", "#FFFFFF", "hero-start", TEXT, 4.59],
   ["blanco / hero-end", "#FFFFFF", "hero-end", TEXT, 5.6],
+  // Distintivo de variación dentro del hero (fase 11): texto blanco.
+  ["blanco / hero-chip", "#FFFFFF", "hero-chip", TEXT],
   ["ember-text / surface", "ember-text", "surface", TEXT, 5.1],
   ["ember-text / canvas", "ember-text", "canvas", TEXT, 4.68],
   ["ember-text / ember-50", "ember-text", "ember-50", TEXT, 4.68],

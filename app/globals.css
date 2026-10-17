@@ -46,6 +46,7 @@
   --ember-200: #ffcba8;
   --hero-start: #c84f00;
   --hero-end: #b24509;
+  --hero-chip: #8a3605;
 
   /* Estados y categorías: texto sobre su tinte, gráfico para barras y puntos */
   --positive-text: #177b52;
@@ -146,6 +147,7 @@
   --ember-200: #2b1a10;
   --hero-start: #c84f00;
   --hero-end: #b24509;
+  --hero-chip: #8a3605;
 
   /* En oscuro el mismo tono sirve de texto y de gráfico. */
   --positive-text: #3dd68c;
@@ -312,6 +314,7 @@
   --color-ember-200: var(--ember-200);
   --color-hero-start: var(--hero-start);
   --color-hero-end: var(--hero-end);
+  --color-hero-chip: var(--hero-chip);
   --color-positive: var(--positive);
   --color-positive-text: var(--positive-text);
   --color-positive-tint: var(--positive-tint);

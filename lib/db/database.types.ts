@@ -906,6 +906,17 @@ export type Database = {
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: string };
       create_household: { Args: { p_name: string }; Returns: string };
+      dashboard_totals: {
+        Args: { p_from: string; p_household_id: string; p_to: string };
+        Returns: {
+          category_key: string;
+          currency: string;
+          kind: string;
+          month: string;
+          total_minor: number;
+          tx_count: number;
+        }[];
+      };
       get_household_members: {
         Args: { hid: string };
         Returns: {

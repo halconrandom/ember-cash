@@ -17,7 +17,7 @@ import {
 import type { Money } from "@/lib/money/money";
 
 import { DEFAULT_LOCALE, isLocale, type Locale } from "./config";
-import { formatDate, formatNumber, type DateStyle } from "./format";
+import { formatCompact, formatDate, formatNumber, type DateStyle } from "./format";
 
 export function useFormat() {
   const current = useLocale();
@@ -25,6 +25,7 @@ export function useFormat() {
   return {
     locale,
     number: (value: number, fractionDigits = 0) => formatNumber(value, locale, fractionDigits),
+    compact: (value: number) => formatCompact(value, locale),
     amount: (m: Money) => formatAmount(m, locale),
     money: (m: Money, options?: MoneyFormatOptions) => formatMoney(m, locale, options),
     moneyParts: (m: Money) => formatMoneyParts(m, locale),

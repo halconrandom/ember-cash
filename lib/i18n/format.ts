@@ -24,6 +24,8 @@ const DATE_STYLES = {
   weekday: { weekday: "short" },
   /** "16" */
   day: { day: "numeric" },
+  /** "oct" / "Oct" (eje del gráfico y "vs sep") */
+  monthShort: { month: "short" },
   /** "viernes, 16 de oct" / "Friday, Oct 16" */
   weekdayDate: { weekday: "long", month: "short", day: "numeric" },
   /** "sáb, 17 de oct" / "Sat, Oct 17" */
@@ -33,6 +35,14 @@ const DATE_STYLES = {
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 export type DateStyle = keyof typeof DATE_STYLES;
+
+/** Número compacto para ejes y etiquetas de gráficos: "9,2 M" / "9.2M", "2,5 mil" / "2.5K". */
+export function formatCompact(value: number, locale: Locale): string {
+  return new Intl.NumberFormat(INTL_TAGS[locale], {
+    notation: "compact",
+    maximumSignificantDigits: 3,
+  }).format(value);
+}
 
 /** Fecha según el idioma, en la zona horaria del usuario. */
 export function formatDate(
