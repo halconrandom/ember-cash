@@ -25,6 +25,8 @@
 - Base de datos: nunca editar una migración ya aplicada; crear una nueva. Después de cada migración: `pnpm db:push`, `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`. Toda tabla nueva lleva RLS y tests en `supabase/tests/`. Los tipos de la base se importan desde `lib/db/types.ts`.
 - Dinero: todo importe es `*_minor` (entero en unidades menores) en la moneda original de la fila, con su columna `currency`; la conversión se hace al leer con `exchange_rates`. Nunca floats.
 - En código, el dinero es `Money` de `lib/money` (`amountMinor: bigint`): sumar con `add`/`sum`, convertir con `convert`/`totalIn`, mostrar con `<MoneyAmount>` o `formatMoney`, leer inputs con `parseMoney`. Nada de `number` para importes.
+- Scope: toda consulta de finanzas recibe el scope (`getScope()` de `lib/scope/server.ts`; Personal por defecto, cookie `ec-scope`). Personal = `household_id` nulo; hogar = ese `household_id`.
+- Las transacciones se guardan con la RPC `save_transaction` (rehace los repartos de las compartidas). Borrar es suave (`deleted_at`) con toast y Deshacer; las listas excluyen las borradas.
 - Una transacción compartida y sus repartos se escriben en la misma transacción de base de datos (la suma se valida al hacer COMMIT); las personales y las transferencias no llevan repartos.
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.
 

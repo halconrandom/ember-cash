@@ -8,6 +8,7 @@ import { Suspense } from "react";
 
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
+import { TopbarProvider } from "@/components/shell/topbar-context";
 import { UserCard, UserCardSkeleton } from "@/components/shell/user-card";
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
 import { getMyHouseholds } from "@/lib/households/queries";
@@ -22,10 +23,12 @@ export default function ShellLayout({ children }: Readonly<{ children: React.Rea
           </Suspense>
         }
       />
-      <div className="flex min-w-0 flex-col">
-        <Topbar />
-        <main className="flex-1 px-4 pt-4 pb-8 lg:px-8">{children}</main>
-      </div>
+      <TopbarProvider>
+        <div className="flex min-w-0 flex-col">
+          <Topbar />
+          <main className="flex-1 px-4 pt-4 pb-8 lg:px-8">{children}</main>
+        </div>
+      </TopbarProvider>
     </div>
   );
 }

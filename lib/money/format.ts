@@ -57,3 +57,17 @@ export function formatMoney(
       : `${sign}${amount}${NBSP}${m.currency}`;
   return approx ? `≈${NBSP}${text}` : text;
 }
+
+/**
+ * Partes del importe para darles estilos distintos (02-transactions.png):
+ * con COP el número va en negrita y la unidad "COP" detrás, más pequeña;
+ * con USD el "US$" va delante y en la misma negrita que el número.
+ */
+export function formatMoneyParts(m: Money, locale: Locale): { main: string; unit: string | null } {
+  const negative = m.amountMinor < 0n;
+  const amount = formatAmount(negative ? { ...m, amountMinor: -m.amountMinor } : m, locale);
+  const sign = negative ? "-" : "";
+  return m.currency === "USD"
+    ? { main: `${sign}US$${NBSP}${amount}`, unit: null }
+    : { main: `${sign}${amount}`, unit: m.currency };
+}

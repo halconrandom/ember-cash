@@ -266,7 +266,7 @@ select pg_temp.expect_error(format($q$update public.accounts set household_id = 
 -- 5. exchange_rates, categories y currencies son de solo lectura
 -- =============================================================================
 select pg_temp.login('00000000-0000-4000-b000-00000000000a');
-select pg_temp.expect_count('select count(*) from public.exchange_rates', 1, 'A lee las tasas');
+select pg_temp.expect_count($q$select count(*) from public.exchange_rates where source = 'sample'$q$, 1, 'A lee las tasas (la de ejemplo de este test)');
 select pg_temp.expect_count('select count(*) from public.categories', 9, 'A lee las 9 categorías');
 select pg_temp.expect_count('select count(*) from public.currencies', 2, 'A lee las 2 monedas');
 select pg_temp.expect_error($q$insert into public.exchange_rates (base, quote, rate, as_of, source) values ('USD', 'COP', 1, current_date, 'hack')$q$, '42501', 'A no escribe tasas');

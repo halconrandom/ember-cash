@@ -882,6 +882,23 @@ export type Database = {
       is_household_member: { Args: { hid: string }; Returns: boolean };
       is_household_owner: { Args: { hid: string }; Returns: boolean };
       max_household_members: { Args: never; Returns: number };
+      save_transaction: {
+        Args: {
+          p_account_id: string;
+          p_amount_minor: number;
+          p_category_key: string;
+          p_currency: string;
+          p_description: string;
+          p_household_id: string;
+          p_id: string;
+          p_kind: string;
+          p_note: string;
+          p_occurred_on: string;
+          p_paid_by: string;
+          p_transfer_to_account_id: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

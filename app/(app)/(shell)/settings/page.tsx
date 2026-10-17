@@ -7,7 +7,12 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { Card, CardTitle } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { getAccounts } from "@/lib/accounts/queries";
+import { getCurrentProfile, requireUser } from "@/lib/auth/session";
+import { getScope } from "@/lib/scope/server";
+
+import { AccountsManager } from "./accounts-manager";
 
 import { LocaleSetting } from "./locale-setting";
 import { ThemeSetting } from "./theme-setting";
@@ -26,6 +31,13 @@ export default async function SettingsPage() {
           <p className="text-callout text-ink-2 font-semibold">{t("language")}</p>
           <LocaleSetting />
         </div>
+      </Card>
+
+      <Card className="space-y-4">
+        <CardTitle>{(await getTranslations("accounts"))("title")}</CardTitle>
+        <Suspense fallback={<SkeletonList rows={2} />}>
+          <AccountsSection />
+        </Suspense>
       </Card>
 
       <Card className="space-y-4">
@@ -67,4 +79,16 @@ export default async function SettingsPage() {
 async function AccountEmail() {
   const user = await requireUser();
   return <p className="text-body text-ink-2">{user.email}</p>;
+}
+
+/** Cuentas del scope actual (incluidas las archivadas). */
+async function AccountsSection() {
+  const [scope, profile] = await Promise.all([getScope(), getCurrentProfile()]);
+  const accounts = await getAccounts(scope, { includeArchived: true });
+  return (
+    <AccountsManager
+      accounts={accounts}
+      defaultCurrency={profile.display_currency === "USD" ? "USD" : "COP"}
+    />
+  );
 }

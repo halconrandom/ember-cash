@@ -8,7 +8,12 @@
  */
 import { useLocale } from "next-intl";
 
-import { formatAmount, formatMoney, type MoneyFormatOptions } from "@/lib/money/format";
+import {
+  formatAmount,
+  formatMoney,
+  formatMoneyParts,
+  type MoneyFormatOptions,
+} from "@/lib/money/format";
 import type { Money } from "@/lib/money/money";
 
 import { DEFAULT_LOCALE, isLocale, type Locale } from "./config";
@@ -22,6 +27,7 @@ export function useFormat() {
     number: (value: number, fractionDigits = 0) => formatNumber(value, locale, fractionDigits),
     amount: (m: Money) => formatAmount(m, locale),
     money: (m: Money, options?: MoneyFormatOptions) => formatMoney(m, locale, options),
+    moneyParts: (m: Money) => formatMoneyParts(m, locale),
     date: (date: Date | string, style?: DateStyle) => formatDate(date, locale, style),
   };
 }

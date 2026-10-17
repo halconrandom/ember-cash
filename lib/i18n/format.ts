@@ -20,6 +20,8 @@ const DATE_STYLES = {
   monthYear: { month: "long", year: "numeric" },
   /** "sáb, 17 de oct" / "Sat, Oct 17" */
   weekdayShort: { weekday: "short", month: "short", day: "numeric" },
+  /** "vie, 16 de oct de 2026" / "Fri, Oct 16, 2026" */
+  weekdayDateYear: { weekday: "short", month: "short", day: "numeric", year: "numeric" },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 export type DateStyle = keyof typeof DATE_STYLES;

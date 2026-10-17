@@ -33,17 +33,26 @@ export const NAV_ITEMS: readonly NavEntry[] = [
 ];
 
 /**
- * Título (clave de nav.*) y subtítulo opcional (clave de pages.*) por ruta.
- * Los subtítulos que dependen de datos llegan con cada pantalla.
+ * Por ruta: título (clave de nav.*), subtítulo fijo opcional (clave de
+ * pages.*), si muestra el selector de mes (solo donde los datos son
+ * mensuales, spec §4.11) y la acción principal de la topbar.
+ * Los subtítulos con datos los pone cada página (<TopbarSubtitle>).
  */
-export const PAGE_TITLES: Record<string, { title: NavKey; subtitle?: "calendarSubtitle" }> = {
-  "/": { title: "dashboard" },
-  "/transactions": { title: "transactions" },
+export type PageConfig = {
+  title: NavKey;
+  subtitle?: "calendarSubtitle";
+  month?: boolean;
+  action?: "addTransaction";
+};
+
+export const PAGE_TITLES: Record<string, PageConfig> = {
+  "/": { title: "dashboard", month: true },
+  "/transactions": { title: "transactions", month: true, action: "addTransaction" },
   "/savings": { title: "savings" },
   "/debts": { title: "debts" },
   "/subscriptions": { title: "subscriptions" },
-  "/calendar": { title: "calendar", subtitle: "calendarSubtitle" },
-  "/household": { title: "household" },
+  "/calendar": { title: "calendar", subtitle: "calendarSubtitle", month: true },
+  "/household": { title: "household", month: true },
   "/settings": { title: "settings" },
 };
 

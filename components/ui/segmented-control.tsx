@@ -69,7 +69,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cn(
-              "text-callout relative h-8 rounded-full px-5 font-semibold transition-colors duration-100",
+              "text-callout relative h-8 rounded-full px-4 font-semibold transition-colors duration-100",
               active ? "text-ink" : "text-ink-2 hover:text-ink",
             )}
           >

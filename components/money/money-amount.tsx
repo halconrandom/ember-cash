@@ -5,9 +5,13 @@
  *
  * - kind="row" (filas de listas): primero el importe en la moneda elegida,
  *   sin "≈"; si la moneda original es otra, debajo "original US$ 2,99". Al
- *   pasar el mouse, el tooltip muestra la conversión con su tasa y fecha.
+ *   pasar el mouse, el tooltip muestra el equivalente con su tasa y fecha.
  * - kind="total" (totales, tarjetas, detalle): `value` ya está en la moneda
  *   elegida; debajo, "≈" con el equivalente en la otra moneda.
+ *
+ * Con COP, el número va en negrita y "COP" detrás, más pequeño
+ * (02-transactions.png). `sign` antepone "+" o "-" (ingreso/gasto) y
+ * `positive` lo pinta de verde.
  *
  * Estados de la tasa (de <RateProvider>):
  * - actualizando: las líneas convertidas bajan al 60 % y no se mueven.
@@ -28,12 +32,29 @@ import { useRate } from "./rate-provider";
 type Props = {
   value: Money;
   kind?: "row" | "total";
+  /** Signo de ingreso (+) o gasto (-). El importe se pasa en positivo. */
+  sign?: "+" | "-";
+  /** Verde (ingresos). */
+  positive?: boolean;
+  /**
+   * Si el monto está dentro de un elemento clicable (una fila-botón), el
+   * tooltip se abre con el hover de la fila y no agrega otro foco.
+   */
+  insideInteractive?: boolean;
   className?: string;
   /** Clases del importe principal (tamaño de la escala tipográfica). */
   primaryClassName?: string;
 };
 
-export function MoneyAmount({ value, kind = "row", className, primaryClassName }: Props) {
+export function MoneyAmount({
+  value,
+  kind = "row",
+  sign,
+  positive,
+  insideInteractive,
+  className,
+  primaryClassName,
+}: Props) {
   const { rate, status, now, displayCurrency } = useRate();
   const t = useTranslations("money");
   const f = useFormat();
@@ -41,39 +62,56 @@ export function MoneyAmount({ value, kind = "row", className, primaryClassName }
   const unavailable = status === "error" || !rate;
   const dim = status === "updating" ? "opacity-60" : "";
   const staleTitle = rate && isStale(rate, now) ? t("rateFrom", { date: f.date(rate.asOf) }) : null;
-
-  /** Envuelve lo convertido con el tooltip de tasa vieja, si aplica. */
-  const converted = (node: React.ReactNode) =>
-    staleTitle ? (
-      <Tooltip content={staleTitle}>
-        <span tabIndex={0}>{node}</span>
-      </Tooltip>
-    ) : (
-      node
-    );
-
   const secondaryClass = "text-footnote text-ink-3 tabular-nums";
+
+  /** Importe principal: número (y unidad COP más pequeña). */
+  const primary = (m: Money, extra?: string) => {
+    const { main, unit } = f.moneyParts(m);
+    return (
+      <span
+        className={cn(
+          "whitespace-nowrap tabular-nums",
+          positive ? "text-positive-text" : "text-ink",
+          primaryClassName,
+          extra,
+        )}
+      >
+        {sign}
+        {main}
+        {/* Espacio no separable real (no solo margen): el texto se lee bien. */}
+        {unit && <span className="text-callout text-ink-3 font-normal">{` ${unit}`}</span>}
+      </span>
+    );
+  };
 
   if (kind === "total") {
     const other = otherCurrency(value.currency);
+    const convertedText = unavailable
+      ? t("rateUnavailable")
+      : f.money(convert(value, other, rate), { approx: true });
     return (
       <span className={cn("inline-flex flex-col", className)}>
-        <span className={cn("text-ink tabular-nums", primaryClassName)}>{f.money(value)}</span>
+        {primary(value)}
         <span className={cn(secondaryClass, dim)}>
-          {unavailable
-            ? t("rateUnavailable")
-            : converted(f.money(convert(value, other, rate), { approx: true }))}
+          {staleTitle && !unavailable ? (
+            <Tooltip content={staleTitle}>
+              <span tabIndex={0}>{convertedText}</span>
+            </Tooltip>
+          ) : (
+            convertedText
+          )}
         </span>
       </span>
     );
   }
 
+  const differs = value.currency !== displayCurrency;
+
   // Fila sin tasa: el original sigue como principal y no hay tooltip.
   if (unavailable) {
-    const differs = value.currency !== displayCurrency;
     return (
       <span className={cn("inline-flex flex-col items-end", className)}>
-        <span className={cn("text-ink tabular-nums", primaryClassName)}>{f.money(value)}</span>
+        {primary(value)}
         {differs && <span className={secondaryClass}>{t("rateUnavailable")}</span>}
       </span>
     );
@@ -90,14 +128,11 @@ export function MoneyAmount({ value, kind = "row", className, primaryClassName }
   return (
     <span className={cn("inline-flex flex-col items-end", className)}>
       <Tooltip content={staleTitle ?? detail}>
-        <span
-          tabIndex={0}
-          className={cn("text-ink tabular-nums", primaryClassName, shown !== value && dim)}
-        >
-          {f.money(shown)}
+        <span tabIndex={insideInteractive ? undefined : 0}>
+          {primary(shown, differs ? dim : undefined)}
         </span>
       </Tooltip>
-      {value.currency !== displayCurrency && (
+      {differs && (
         <span className={secondaryClass}>{t("original", { amount: f.money(value) })}</span>
       )}
     </span>

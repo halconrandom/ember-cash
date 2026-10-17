@@ -2,6 +2,26 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.6.0] - 2026-10-17
+
+### Añadido (fase 6: transacciones)
+
+- Scope de datos (Personal por defecto, cookie `ec-scope` validada contra la membresía) que respetan todas las consultas de cuentas y transacciones. El interruptor visible llega en la fase 10.
+- Pantalla Transacciones (02-transactions.png): lista agrupada por día (Hoy, Ayer, fecha), búsqueda, filtros de categoría, cuenta, moneda original y rango de fechas (este mes por defecto), pestañas Todas / Ingresos / Gastos, paginación del servidor ("Mostrando 9 de 42"), tooltip de conversión por fila y estados vacío, cargando y error. Selector de mes y "Agregar transacción" en la topbar; el subtítulo cuenta las transacciones.
+- Modal agregar/editar (07/17-add-transaction.png): Gasto / Ingreso / Transferencia, monto grande con COP/USD y su conversión, categorías en chips, fecha, cuenta, "Pagó" (solo en un hogar), notas y validación ("Escribe un monto mayor que 0"). Las transferencias mueven dinero entre cuentas y no cuentan como ingreso ni gasto.
+- Borrado con toast de 6 s y Deshacer (`deleted_at`); borrado definitivo al vencer el toast y cron diario `/api/cron/purge-deleted` para los que queden.
+- Migración `0007_save_transaction.sql`: RPC `save_transaction` (SECURITY INVOKER) que guarda la transacción y, si es compartida, sus repartos en partes iguales en una sola transacción; tests en `supabase/tests/save_transaction.sql`.
+- Cuentas en Ajustes: crear, renombrar, archivar y desarchivar. El modal ofrece crear una si no hay ninguna.
+- Server Actions con validación zod (el mismo esquema que el formulario); sin service role en el cliente.
+- Primitivas: chip de selección, campo de selección, buscador, área de texto y modal (Base UI Dialog).
+- Tests: validación del formulario, agrupación por día, filtros, fechas, Deshacer restaura, purga.
+
+### Cambiado
+
+- `<MoneyAmount>` muestra el número en negrita y "COP" más pequeño, con signo y color para ingresos/gastos.
+- El control segmentado es un poco más angosto (como en los frames).
+- `rls_finance.sql` ya no asume que `exchange_rates` está vacía.
+
 ## [0.5.0] - 2026-10-17
 
 ### Añadido (fase 5: dinero y tasa de cambio)
