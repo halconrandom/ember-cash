@@ -31,7 +31,7 @@ export default function DebtsPage({ searchParams }: { searchParams: SearchParams
 function DebtsSkeleton() {
   return (
     <div className="space-y-6" role="status" aria-busy="true">
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4 xl:gap-6">
         {[0, 1, 2, 3].map((i) => (
           <Card key={i} className="h-[104px] space-y-3">
             <Skeleton className="h-3 w-28 rounded-full" />

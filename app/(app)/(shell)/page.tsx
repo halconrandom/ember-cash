@@ -42,14 +42,16 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
         <Subtitle searchParams={searchParams} />
       </Suspense>
       <div className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
           {(["balance", "income", "expenses"] as const).map((card) => (
-            <Suspense key={card} fallback={<CardSkeleton rows={0} className="min-h-[188px]" />}>
-              <StatSlot searchParams={searchParams} card={card} />
-            </Suspense>
+            <div key={card} className={card === "balance" ? "col-span-2 lg:col-span-1" : undefined}>
+              <Suspense fallback={<CardSkeleton rows={0} className="min-h-[188px]" />}>
+                <StatSlot searchParams={searchParams} card={card} />
+              </Suspense>
+            </div>
           ))}
         </div>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           <Suspense fallback={<CardSkeleton rows={7} className="min-h-[420px]" />}>
             <CategorySlot searchParams={searchParams} />
           </Suspense>
@@ -57,7 +59,7 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
             <TrendSlot searchParams={searchParams} />
           </Suspense>
         </div>
-        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
           <Suspense fallback={<CardSkeleton rows={5} />}>
             <UpcomingSlot />
           </Suspense>

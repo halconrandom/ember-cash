@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.13.0] - 2026-10-17
+
+### Añadido (fase 13: responsive, PWA y accesibilidad)
+
+- Tres anchos, según `docs/Phone/ember-cash-mobile-1-frames/` y `docs/Phone/full/`. Bajo 600 px la navegación es una barra inferior de 5 pestañas con etiqueta. De 600 a 1023 px, un rail de 96 px con los 7 destinos y Ajustes. Desde 1024 px sigue la sidebar de 248 px y el contenido llega a 1128 px.
+- En teléfono y tablet la topbar lleva el título, el selector de moneda y el botón circular. La tasa y el mes van en filas propias. El interruptor Personal / Compartido del shell solo se ve en escritorio; en Hogar sigue en la página.
+- Pantalla Más, con conteos reales de deudas, suscripciones y miembros. Esas rutas, y Ajustes, dejan activa la pestaña Más.
+- Bajo 600 px el modal es un bottom sheet: grabber, esquinas de 28 px y arrastre (goma a partir de 160 px, cierra si baja más de 96). Se cierra también con la X, Esc o el velo. Desde 600 px el modal sigue centrado, con escala y opacidad en 220 ms y sin arrastre.
+- En pantallas angostas las transacciones son una lista (categoría y cuenta bajo el nombre). El calendario bajo 600 px muestra hasta 3 puntos con forma; desde 600 px siguen los chips y el contorno animado.
+- PWA: manifest, íconos, `apple-touch-icon` y service worker. La caché `ember-static-v1` solo guarda el cascarón offline y recursos estáticos. No guarda navegaciones, RSC, `/api/`, `/auth/` ni orígenes cruzados. Si no hay red, la navegación cae en `public/offline.html`.
+- Objetivos táctiles de al menos 44 px, inputs a 16 px en el teléfono, `viewport-fit=cover` y `theme-color` por esquema.
+
 ## [0.12.0] - 2026-10-17
 
 ### Añadido (fase 12: animaciones)

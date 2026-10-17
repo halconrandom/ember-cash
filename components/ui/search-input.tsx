@@ -5,9 +5,12 @@ import { cn } from "@/lib/utils";
 
 import { Icon } from "./icon";
 
-type Props = Omit<React.ComponentProps<"input">, "type"> & { label: string };
+type Props = Omit<React.ComponentProps<"input">, "type"> & {
+  label: string;
+  ref?: React.Ref<HTMLInputElement>;
+};
 
-export function SearchInput({ label, className, ...props }: Props) {
+export function SearchInput({ label, className, ref, ...props }: Props) {
   return (
     <div className={cn("relative", className)}>
       <Icon
@@ -18,7 +21,8 @@ export function SearchInput({ label, className, ...props }: Props) {
       <input
         type="search"
         aria-label={label}
-        className="border-border bg-surface text-body text-ink placeholder:text-ink-3 h-10 w-full rounded-full border pr-4 pl-11"
+        ref={ref}
+        className="border-border bg-surface text-body text-ink placeholder:text-ink-3 min-h-11 w-full rounded-full border pr-4 pl-11"
         {...props}
       />
     </div>

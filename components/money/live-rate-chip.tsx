@@ -30,6 +30,7 @@ export function LiveRateChip({ className }: { className?: string }) {
     <RateChip
       state={state}
       rate={rate ? t("rate", { value: f.number(Number(rate.rate), 2) }) : undefined}
+      rateShort={rate ? f.number(Number(rate.rate), 2) : undefined}
       asOf={rate ? f.date(rate.asOf) : undefined}
       onRefresh={refresh}
       className={className}

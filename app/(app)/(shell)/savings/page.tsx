@@ -31,7 +31,7 @@ export default function SavingsPage({ searchParams }: { searchParams: SearchPara
 function SavingsSkeleton() {
   return (
     <div className="space-y-6" role="status" aria-busy="true">
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
         {[0, 1, 2].map((i) => (
           <Card key={i} className="h-[112px] space-y-3">
             <Skeleton className="h-3 w-28 rounded-full" />
@@ -39,7 +39,7 @@ function SavingsSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <Card key={i} className="flex h-[300px] items-center gap-6">
             <Skeleton className="size-[124px] shrink-0 rounded-full" />

@@ -48,7 +48,7 @@ export default async function SettingsPage() {
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="border-border bg-surface text-body text-ink hover:bg-surface2 inline-flex h-10 items-center rounded-full border px-6 font-semibold transition-colors duration-100"
+            className="border-border bg-surface text-body text-ink hover:bg-surface2 inline-flex min-h-11 items-center rounded-full border px-6 font-semibold transition-colors duration-100"
           >
             {t("signOut")}
           </button>

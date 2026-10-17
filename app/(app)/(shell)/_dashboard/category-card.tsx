@@ -82,16 +82,22 @@ export function CategoryCard({ rows, month }: { rows: AggregateRow[]; month: str
               <li key={s.categoryKey}>
                 <Link
                   href={`/transactions?month=${month}&category=${s.categoryKey}`}
-                  className="rounded-row hover:bg-surface2 grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_7.5rem_3rem] items-center gap-4 px-2 py-1.5 transition-colors duration-100"
+                  className="rounded-row hover:bg-surface2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1.5 px-2 py-2 transition-colors duration-100 min-[600px]:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_7.5rem_3rem] min-[600px]:gap-4 min-[600px]:py-1.5"
                 >
                   <span className="text-body text-ink flex min-w-0 items-center gap-3">
                     <Icon name={meta.icon} size={20} className={TONE_TEXT[meta.tone]} />
                     <span className="truncate">{tc(s.categoryKey)}</span>
                   </span>
+                  <span className="text-body text-ink text-right font-semibold whitespace-nowrap tabular-nums min-[600px]:col-start-3 min-[600px]:row-start-1">
+                    {amountText(s.amount)}
+                  </span>
+                  <span className="text-callout text-ink-2 text-right tabular-nums min-[600px]:col-start-4 min-[600px]:row-start-1">
+                    {s.percent}%
+                  </span>
                   <span
                     role="img"
                     aria-label={t("shareLabel", { percent: s.percent })}
-                    className="bg-track h-2 overflow-hidden rounded-full"
+                    className="bg-track col-span-3 h-2 overflow-hidden rounded-full min-[600px]:col-span-1 min-[600px]:col-start-2 min-[600px]:row-start-1"
                   >
                     <motion.span
                       className={cn("block h-full rounded-full", TONE_BAR[meta.tone])}
@@ -99,12 +105,6 @@ export function CategoryCard({ rows, month }: { rows: AggregateRow[]; month: str
                       animate={{ width: `${width}%` }}
                       transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
                     />
-                  </span>
-                  <span className="text-body text-ink text-right font-semibold whitespace-nowrap tabular-nums">
-                    {amountText(s.amount)}
-                  </span>
-                  <span className="text-callout text-ink-2 text-right tabular-nums">
-                    {s.percent}%
                   </span>
                 </Link>
               </li>

@@ -8,6 +8,9 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/auth/callback")).toBe(true);
     expect(isPublicPath("/api/health")).toBe(true);
+    expect(isPublicPath("/offline")).toBe(true);
+    expect(isPublicPath("/sw.js")).toBe(true);
+    expect(isPublicPath("/manifest.webmanifest")).toBe(true);
   });
 
   it("protege el resto", () => {

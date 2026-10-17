@@ -13,7 +13,8 @@ export type NavKey =
   | "subscriptions"
   | "calendar"
   | "household"
-  | "settings";
+  | "settings"
+  | "more";
 
 export type NavEntry = {
   href: string;
@@ -21,7 +22,7 @@ export type NavEntry = {
   icon: IconName & SolidIconName;
 };
 
-/** Elementos del sidebar, en el orden de 01-dashboard.png. */
+/** Elementos del sidebar y del rail, en el orden de 01-dashboard.png. */
 export const NAV_ITEMS: readonly NavEntry[] = [
   { href: "/", key: "dashboard", icon: "apps" },
   { href: "/transactions", key: "transactions", icon: "receipt" },
@@ -33,6 +34,21 @@ export const NAV_ITEMS: readonly NavEntry[] = [
 ];
 
 /**
+ * Pestañas del teléfono (<600 px, docs/Phone/ember-cash-mobile-1-frames/m01).
+ * Deudas, suscripciones y hogar viven en Más.
+ */
+export const TAB_ITEMS: readonly NavEntry[] = [
+  { href: "/", key: "dashboard", icon: "apps" },
+  { href: "/transactions", key: "transactions", icon: "receipt" },
+  { href: "/savings", key: "savings", icon: "piggy-bank" },
+  { href: "/calendar", key: "calendar", icon: "calendar" },
+  { href: "/more", key: "more", icon: "menu-dots" },
+];
+
+/** Rutas que dejan activa la pestaña Más (m10). */
+const MORE_PREFIXES = ["/more", "/debts", "/subscriptions", "/household", "/settings"] as const;
+
+/**
  * Por ruta: título (clave de nav.*), subtítulo fijo opcional (clave de
  * pages.*), si muestra el selector de mes (solo donde los datos son
  * mensuales, spec §4.11) y la acción principal de la topbar.
@@ -40,7 +56,7 @@ export const NAV_ITEMS: readonly NavEntry[] = [
  */
 export type PageConfig = {
   title: NavKey;
-  subtitle?: "calendarSubtitle";
+  subtitle?: "calendarSubtitle" | "moreSubtitle";
   month?: boolean;
   /**
    * Dónde va el interruptor Personal / Compartido: "shell" (fila sobre el
@@ -100,9 +116,21 @@ export const PAGE_TITLES: Record<string, PageConfig> = {
     action: { label: "household.addShared", param: "tx" },
   },
   "/settings": { title: "settings" },
+  "/more": { title: "more", subtitle: "moreSubtitle" },
 };
 
 /** ¿La ruta `pathname` corresponde al elemento `href`? */
 export function isActive(href: string, pathname: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Activo de la barra inferior. Más sigue activo en deudas, suscripciones,
+ * hogar y ajustes: esas rutas no tienen pestaña propia.
+ */
+export function isTabActive(href: string, pathname: string): boolean {
+  if (href === "/more") {
+    return MORE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  }
+  return isActive(href, pathname);
 }

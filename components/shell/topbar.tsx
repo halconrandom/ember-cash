@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * Topbar de 72 px (01/02-*.png): título (Title 1) y subtítulo a la izquierda;
- * a la derecha, el chip de tasa, el selector de mes (en rutas mensuales), el
- * selector COP/USD y la acción principal de la ruta.
+ * Topbar. En escritorio (≥1024 px) es la fila de 72 px: título, chip de tasa,
+ * mes, COP/USD y la acción con texto. Por debajo
+ * (docs/Phone/ember-cash-mobile-1-frames/m02 y m03, y t01) el título queda
+ * con el selector de moneda y el "+" circular; la tasa va en una fila propia
+ * y el mes en otra. Personal/Compartido no vive aquí: en el teléfono y la
+ * tablet solo aparece dentro de Hogar.
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -11,10 +14,12 @@ import { useTranslations } from "next-intl";
 import { DisplayCurrencyToggle } from "@/components/money/display-currency-toggle";
 import { LiveRateChip } from "@/components/money/live-rate-chip";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { withFilters } from "@/lib/transactions/filters";
 
 import { MonthSelector } from "./month-selector";
 import { PAGE_TITLES } from "./nav";
+import { openTransactionSearch } from "./search-event";
 import { useTopbar } from "./topbar-context";
 
 export function Topbar() {
@@ -25,32 +30,61 @@ export function Topbar() {
   const { subtitle, actionHidden } = useTopbar();
   const page = PAGE_TITLES[pathname];
   const subtitleText = subtitle ?? (page?.subtitle ? t(`pages.${page.subtitle}`) : null);
+  const actionLabel = page?.action ? t(page.action.label) : null;
+
+  function openAction() {
+    if (!page?.action) return;
+    router.push(`${pathname}${withFilters(params, { [page.action.param]: "new" })}`, {
+      scroll: false,
+    });
+  }
 
   return (
-    <header className="flex min-h-[72px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3 lg:px-8">
-      <div className="min-w-0">
+    <header className="shell-topbar bar-material border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-3 lg:min-h-[72px] lg:flex-nowrap lg:border-0 lg:px-8">
+      <div className="order-1 min-w-0 flex-1">
         <h1 className="text-title1 text-ink">
           {page ? t(`nav.${page.title}`) : t("common.appName")}
         </h1>
         {subtitleText && <p className="text-body text-ink-2 mt-0.5">{subtitleText}</p>}
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <LiveRateChip />
-        {page?.month && <MonthSelector />}
+
+      <div className="order-2 flex shrink-0 items-center gap-2 lg:order-4">
         <DisplayCurrencyToggle />
-        {page?.action && !actionHidden && (
-          <Button
-            icon="plus"
-            onClick={() =>
-              router.push(`${pathname}${withFilters(params, { [page.action!.param]: "new" })}`, {
-                scroll: false,
-              })
-            }
-          >
-            {t(page.action.label)}
-          </Button>
+        {page?.action && !actionHidden && actionLabel && (
+          <>
+            <Button
+              icon="plus"
+              aria-label={actionLabel}
+              className="size-11 px-0 lg:hidden"
+              onClick={openAction}
+            />
+            <Button icon="plus" className="hidden lg:inline-flex" onClick={openAction}>
+              {actionLabel}
+            </Button>
+          </>
         )}
       </div>
+
+      {/* En tablet el chip muestra solo el número (t01: "4,000 · as of …"). */}
+      <div className="order-3 w-full overflow-x-auto lg:order-2 lg:w-auto">
+        <LiveRateChip />
+      </div>
+
+      {page?.month && (
+        <div className="order-4 flex min-h-11 w-full items-center justify-between gap-2 lg:order-3 lg:w-auto">
+          <MonthSelector />
+          {pathname === "/transactions" && (
+            <button
+              type="button"
+              onClick={openTransactionSearch}
+              aria-label={t("transactions.searchLabel")}
+              className="text-ink-2 hover:bg-surface2 hover:text-ink grid size-11 shrink-0 place-items-center rounded-full lg:hidden"
+            >
+              <Icon name="search" />
+            </button>
+          )}
+        </div>
+      )}
     </header>
   );
 }

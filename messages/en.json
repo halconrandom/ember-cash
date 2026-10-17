@@ -14,10 +14,29 @@
     "subscriptions": "Subscriptions",
     "calendar": "Calendar",
     "household": "Household",
-    "settings": "Settings"
+    "settings": "Settings",
+    "more": "More"
   },
   "pages": {
-    "calendarSubtitle": "Payment due dates, paydays and recurring charges"
+    "calendarSubtitle": "Payment due dates, paydays and recurring charges",
+    "moreSubtitle": "Debts, subscriptions and household"
+  },
+  "more": {
+    "profileLabel": "Profile and settings",
+    "debtsDetail": "{count, plural, =0 {No open debts} one {# open} other {# open}}",
+    "subscriptionsDetail": "{count, plural, =0 {No recurring charges} one {# recurring} other {# recurring}}",
+    "householdDetail": "{name} · {count, plural, one {# member} other {# members}}",
+    "householdNone": "No shared household",
+    "settingsDetail": "Language, currency and accounts",
+    "errorRow": "Could not load",
+    "errorTitle": "More could not be opened",
+    "errorDescription": "Try again. The rest of the app is still available.",
+    "retry": "Retry"
+  },
+  "offline": {
+    "title": "You are offline",
+    "body": "Ember Cash needs the internet. Nothing here comes from a saved copy: your money is never stored in the cache.",
+    "retry": "Retry"
   },
   "userCard": {
     "settings": "Settings",

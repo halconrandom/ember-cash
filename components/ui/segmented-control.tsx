@@ -51,7 +51,7 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={cn(
-        "border-seg-border bg-seg-track inline-flex h-10 items-center rounded-full border p-1",
+        "border-seg-border bg-seg-track inline-flex min-h-11 items-center rounded-full border p-0.5",
         className,
       )}
     >
@@ -71,7 +71,7 @@ export function SegmentedControl<T extends string>({
               onClick={() => onChange(option.value)}
               onKeyDown={(e) => onKeyDown(e, i)}
               className={cn(
-                "text-callout relative h-8 rounded-full px-4 font-semibold transition-colors duration-100",
+                "text-callout relative min-h-11 rounded-full px-4 font-semibold transition-colors duration-100",
                 active ? "text-ink" : "text-ink-2 hover:text-ink",
               )}
             >

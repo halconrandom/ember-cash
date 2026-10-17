@@ -8,7 +8,7 @@
  *   petición, el proveedor va dentro de <Suspense> (cacheComponents).
  * - Proveedores de cliente: tema, movimiento reducido y toasts.
  */
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
@@ -18,6 +18,7 @@ import "@flaticon/flaticon-uicons/css/regular/rounded.css";
 import "@flaticon/flaticon-uicons/css/solid/rounded.css";
 import "./globals.css";
 
+import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { Providers } from "@/components/providers";
 import { DEFAULT_LOCALE, DEFAULT_TIME_ZONE, LOCALE_SCRIPT } from "@/lib/i18n/config";
 import { THEME_SCRIPT } from "@/lib/theme/constants";
@@ -28,9 +29,34 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+/**
+ * theme-color no admite variables CSS. Los hex son --canvas
+ * (claro #f5f5f7, oscuro #0b0b0d). viewport-fit=cover deja que las barras
+ * usen env(safe-area-inset-*).
+ */
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0b0d" },
+  ],
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
-  return { title: t("common.appName"), description: t("metadata.description") };
+  return {
+    title: t("common.appName"),
+    description: t("metadata.description"),
+    applicationName: "Ember Cash",
+    appleWebApp: {
+      capable: true,
+      title: "Ember Cash",
+      statusBarStyle: "default",
+    },
+    icons: {
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    },
+  };
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -46,6 +72,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT + LOCALE_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
+        <RegisterServiceWorker />
         <Suspense fallback={null}>
           <IntlRoot>{children}</IntlRoot>
         </Suspense>

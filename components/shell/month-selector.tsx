@@ -41,12 +41,12 @@ export function MonthSelector() {
   }
 
   const arrow =
-    "grid size-8 place-items-center rounded-full text-ink-2 transition-colors duration-100 hover:bg-surface2 hover:text-ink";
+    "grid size-11 place-items-center rounded-full text-ink-2 transition-colors duration-100 hover:bg-surface2 hover:text-ink";
   return (
     <div
       role="group"
       aria-label={t("label")}
-      className="border-border bg-surface inline-flex h-10 items-center gap-1 rounded-full border px-1"
+      className="border-border bg-surface inline-flex min-h-11 items-center gap-1 rounded-full border px-1"
     >
       <button type="button" className={arrow} onClick={() => go(-1)} aria-label={t("previous")}>
         <Icon name="angle-small-left" size={18} />

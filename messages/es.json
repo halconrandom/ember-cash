@@ -14,10 +14,29 @@
     "subscriptions": "Suscripciones",
     "calendar": "Calendario",
     "household": "Hogar",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "more": "Más"
   },
   "pages": {
-    "calendarSubtitle": "Fechas de pago, días de cobro y cargos recurrentes"
+    "calendarSubtitle": "Fechas de pago, días de cobro y cargos recurrentes",
+    "moreSubtitle": "Deudas, suscripciones y hogar"
+  },
+  "more": {
+    "profileLabel": "Perfil y ajustes",
+    "debtsDetail": "{count, plural, =0 {Sin deudas abiertas} one {# abierta} other {# abiertas}}",
+    "subscriptionsDetail": "{count, plural, =0 {Sin cargos recurrentes} one {# recurrente} other {# recurrentes}}",
+    "householdDetail": "{name} · {count, plural, one {# miembro} other {# miembros}}",
+    "householdNone": "Sin hogar compartido",
+    "settingsDetail": "Idioma, moneda y cuentas",
+    "errorRow": "No se pudo cargar",
+    "errorTitle": "No se pudo abrir Más",
+    "errorDescription": "Reintenta. El resto de la app sigue disponible.",
+    "retry": "Reintentar"
+  },
+  "offline": {
+    "title": "Sin conexión",
+    "body": "Ember Cash necesita internet. Lo que ves aquí no sale de una copia guardada: los datos de tu dinero no se guardan en el caché.",
+    "retry": "Reintentar"
   },
   "userCard": {
     "settings": "Ajustes",

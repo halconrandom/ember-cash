@@ -26,6 +26,11 @@ type Props = {
   state: RateChipState;
   /** Texto de la tasa, ya formateado ("1 USD = 3.174,67 COP"). */
   rate?: string;
+  /**
+   * Misma tasa, solo el número. Se ve entre 600 y 1023 px
+   * (docs/Phone/ember-cash-mobile-1-frames/t01: "4,000 · as of …").
+   */
+  rateShort?: string;
   /** Fecha de la tasa, ya formateada ("17 de oct"). */
   asOf?: string;
   /** Refrescar (clic en "stale") o reintentar (botón en "error"). */
@@ -33,9 +38,10 @@ type Props = {
   className?: string;
 };
 
-const BASE = "inline-flex h-10 items-center gap-2 rounded-full px-4 text-body whitespace-nowrap";
+const BASE =
+  "inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-body whitespace-nowrap";
 
-export function RateChip({ state, rate, asOf, onRefresh, className }: Props) {
+export function RateChip({ state, rate, rateShort, asOf, onRefresh, className }: Props) {
   const t = useTranslations("rateChip");
   const ref = useRef<HTMLElement>(null);
   const [width, setWidth] = useState<number | null>(null);
@@ -107,7 +113,16 @@ export function RateChip({ state, rate, asOf, onRefresh, className }: Props) {
         size={18}
         className={state === "stale" ? "text-amber-text" : "text-ink-2"}
       />
-      <span className="text-ink font-semibold tabular-nums">{rate}</span>
+      <span className="text-ink font-semibold tabular-nums">
+        {rateShort ? (
+          <>
+            <span className="min-[600px]:max-lg:hidden">{rate}</span>
+            <span className="hidden min-[600px]:inline lg:hidden">{rateShort}</span>
+          </>
+        ) : (
+          rate
+        )}
+      </span>
       <span className={cn("text-callout", state === "stale" ? "text-amber-text" : "text-ink-2")}>
         {t("asOf", { date: asOf ?? "" })}
       </span>

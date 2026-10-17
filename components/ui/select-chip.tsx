@@ -41,7 +41,7 @@ export function SelectChip({
   return (
     <div
       className={cn(
-        "text-body relative inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border pr-2.5 pl-3 font-medium whitespace-nowrap transition-colors duration-100",
+        "text-body relative inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border pr-2.5 pl-3 font-medium whitespace-nowrap transition-colors duration-100",
         "has-[select:focus-visible]:outline-focus-ring has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-solid",
         active
           ? "bg-ember-50 text-ember-text border-transparent"

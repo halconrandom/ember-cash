@@ -10,6 +10,8 @@
  *
  * Movimiento (spec §7): el contorno del día elegido se desliza entre celdas
  * (layoutId) y el cambio de mes hace un fundido de 150 ms (CalendarMonthFade).
+ * Bajo 600 px (docs/Phone/ember-cash-mobile-1-frames/m05 y docs/Phone/full/)
+ * la celda muestra hasta 3 puntos con forma; desde 600 px siguen los chips.
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -54,6 +56,13 @@ const DOT: Record<CalendarKind, string> = {
   payday: "bg-positive",
   recurring: "bg-violet",
 };
+/** Forma del punto en el teléfono: círculo due, cuadrado payday, rombo recurring. */
+const DOT_SHAPE: Record<CalendarKind, string> = {
+  payment_due: "rounded-full",
+  payday: "rounded-[1px]",
+  recurring: "rotate-45 rounded-[1px]",
+};
+const PHONE_DOTS = 3;
 const GLANCE_ICON: Record<CalendarKind, IconName> = {
   payday: "arrow-small-down",
   payment_due: "file-invoice-dollar",
@@ -203,9 +212,10 @@ export function CalendarView({
               <div
                 key={cell.date}
                 className={cn(
-                  "border-border relative min-h-28 border-t border-l p-1.5",
+                  "border-border relative border-t border-l p-1 min-[600px]:min-h-28 min-[600px]:p-1.5",
+                  "max-[599px]:min-h-16",
                   !cell.inMonth && "bg-canvas",
-                  isToday && "bg-ember-50",
+                  isToday && "min-[600px]:bg-ember-50",
                 )}
               >
                 {isSelected && (
@@ -224,13 +234,33 @@ export function CalendarView({
                   onClick={() => pickDay(cell.date)}
                   className={cn(
                     "text-footnote mb-1 tabular-nums",
+                    "max-[599px]:mx-auto max-[599px]:mb-0.5 max-[599px]:grid max-[599px]:size-11 max-[599px]:place-items-center max-[599px]:rounded-full",
                     cell.inMonth ? "text-ink" : "text-ink-3",
                     isToday && "font-semibold",
+                    isToday && "max-[599px]:bg-ember-fill max-[599px]:text-white",
                   )}
                 >
                   {Number(cell.date.slice(8))}
                 </button>
-                <div className="space-y-1">
+                <div className="flex items-center justify-center gap-0.5 min-[600px]:hidden">
+                  {cell.events.slice(0, PHONE_DOTS).map((event) => (
+                    <span
+                      key={event.occurrenceId}
+                      aria-hidden
+                      className={cn(
+                        "size-1.5",
+                        DOT[event.calendarKind],
+                        DOT_SHAPE[event.calendarKind],
+                      )}
+                    />
+                  ))}
+                  {cell.events.length > PHONE_DOTS && (
+                    <span className="text-footnote text-ink-2">
+                      {t("more", { count: cell.events.length - PHONE_DOTS })}
+                    </span>
+                  )}
+                </div>
+                <div className="hidden space-y-1 min-[600px]:block">
                   {shown.map((event) => (
                     <button
                       key={event.occurrenceId}

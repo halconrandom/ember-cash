@@ -152,7 +152,7 @@ export function SubscriptionsView({
     <div className="space-y-6">
       <TopbarSubtitle text={t("subtitle", { count: active.length })} />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <SummaryCard icon="refresh" label={t("monthlyTotal")}>
           <MoneyAmount
             kind="total"
@@ -232,7 +232,7 @@ export function SubscriptionsView({
               description={t("emptyFilterDescription")}
             />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 min-[600px]:grid-cols-2">
               <AnimatedList key={filter} animateOnMount={cardsEntrance}>
                 {visible.map((item) => {
                   // Cobro de hoy o vencido de esta suscripción (el más antiguo).
@@ -333,7 +333,7 @@ export function SubscriptionsView({
                   </span>
                   <span
                     className={cn(
-                      "text-footnote grid size-9 place-items-center rounded-full tabular-nums",
+                      "text-footnote grid size-11 place-items-center rounded-full tabular-nums",
                       isToday ? "bg-ember-fill font-semibold text-white" : "bg-surface2 text-ink",
                     )}
                   >

@@ -504,3 +504,115 @@
     transform: none;
   }
 }
+
+/* Barra inferior y topbar con scroll
+   (docs/Phone/ember-cash-mobile-1-frames/m01). surface al 92 % (94 % en
+   oscuro) + blur 20 px y saturate 180 %. En escritorio el topbar no lleva
+   este material: lo anula .shell-topbar. */
+.bar-material {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(20px) saturate(1.8);
+}
+.dark .bar-material {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bar-material,
+  .dark .bar-material {
+    background: var(--surface);
+    backdrop-filter: none;
+  }
+}
+@media (max-width: 1023px) {
+  .shell-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding-top: env(safe-area-inset-top);
+  }
+}
+@media (min-width: 1024px) {
+  .shell-topbar.bar-material {
+    background: transparent;
+    backdrop-filter: none;
+  }
+}
+
+/* El contenido no encadena el rebote con el documento. El sheet tampoco. */
+main,
+.modal-scroll {
+  overscroll-behavior-y: contain;
+}
+
+/* Inputs a 16 px solo en el teléfono: iOS hace zoom si el campo es más
+   chico. El cuerpo de la UI sigue en text-body (14 px). */
+@media (max-width: 599px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Modal centrado desde 600 px; bottom sheet por debajo
+   (docs/Phone/ember-cash-mobile-1-frames/m04). translate y scale son
+   propiedades distintas de transform: motion solo anima la opacidad y el
+   arrastre del sheet escribe style.translate sin pisar la escala. */
+.modal-popup {
+  top: 50%;
+  left: 50%;
+  max-height: calc(100dvh - 2rem);
+  translate: -50% -50%;
+  scale: 1;
+  transition:
+    opacity 220ms var(--ease-out-ember),
+    translate 220ms var(--ease-out-ember),
+    scale 220ms var(--ease-out-ember);
+}
+.modal-popup[data-starting-style],
+.modal-popup[data-ending-style] {
+  opacity: 0;
+  scale: 0.96;
+}
+@media (max-width: 599px) {
+  .modal-popup {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 1rem);
+    translate: 0 0;
+    scale: 1;
+    border-radius: 28px 28px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    transition:
+      opacity 400ms var(--ease-out-ember),
+      translate 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .modal-popup[data-starting-style],
+  .modal-popup[data-ending-style] {
+    translate: 0 100%;
+    scale: 1;
+  }
+  .modal-footer :is(button, a) {
+    min-height: 52px;
+    flex: 1 1 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-popup,
+  .modal-popup[data-starting-style],
+  .modal-popup[data-ending-style] {
+    transition: none;
+    scale: 1;
+  }
+}
+@media (max-width: 599px) and (prefers-reduced-motion: reduce) {
+  .modal-popup,
+  .modal-popup[data-starting-style],
+  .modal-popup[data-ending-style] {
+    translate: 0 0;
+  }
+}

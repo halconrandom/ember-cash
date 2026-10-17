@@ -196,7 +196,7 @@ function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () =
       onClick={onOpen}
       aria-label={t("transactions.edit", { description: row.description })}
       className={cn(
-        "rounded-row hover:bg-surface2 grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-2.5 text-left transition-colors duration-100",
+        "rounded-row hover:bg-surface2 grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left transition-colors duration-100",
         COLUMNS,
       )}
     >
@@ -215,6 +215,10 @@ function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () =
             <CurrencyBadge currency={row.amount.currency} displayCurrency={displayCurrency} />
           </span>
           {row.note && <span className="text-callout text-ink-2 block truncate">{row.note}</span>}
+          {/* En la lista del teléfono la categoría y la cuenta van bajo el nombre (m03). */}
+          <span className="text-footnote text-ink-2 block truncate lg:hidden">
+            {[categoryLabel, accountLabel].filter(Boolean).join(" · ")}
+          </span>
         </span>
       </span>
       <span className="hidden lg:block">
@@ -254,7 +258,7 @@ function Pagination({ page, pageCount }: { page: number; pageCount: number }) {
   const sorted = [...pages].sort((a, b) => a - b);
   const href = (p: number) => `${pathname}${withFilters(params, { page: String(p) })}`;
   const cell =
-    "grid size-10 place-items-center rounded-control text-body font-medium tabular-nums transition-colors duration-100";
+    "grid size-11 place-items-center rounded-control text-body font-medium tabular-nums transition-colors duration-100";
 
   return (
     <nav aria-label={t("pagination")} className="flex items-center gap-1">

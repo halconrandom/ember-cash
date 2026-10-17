@@ -16,7 +16,7 @@ type Props = {
 
 export function UserCard({ name, space, settingsLabel }: Props) {
   return (
-    <div className="rounded-row border-card-edge bg-surface shadow-card flex h-[50px] items-center gap-3 border pr-2 pl-3">
+    <div className="rounded-row border-card-edge bg-surface shadow-card flex min-h-[52px] items-center gap-3 border pr-1 pl-3">
       <Avatar name={name} />
       <div className="min-w-0 flex-1">
         <p className="text-body text-ink truncate font-semibold">{name}</p>
@@ -25,7 +25,7 @@ export function UserCard({ name, space, settingsLabel }: Props) {
       <Link
         href="/settings"
         aria-label={settingsLabel}
-        className="rounded-control text-ink-2 hover:bg-surface2 hover:text-ink grid size-9 place-items-center transition-colors duration-100"
+        className="rounded-control text-ink-2 hover:bg-surface2 hover:text-ink grid size-11 place-items-center transition-colors duration-100"
       >
         <Icon name="settings" />
       </Link>
@@ -38,7 +38,7 @@ export function UserCardSkeleton() {
   return (
     <div
       aria-hidden
-      className="rounded-row border-card-edge bg-surface shadow-card h-[50px] border"
+      className="rounded-row border-card-edge bg-surface shadow-card h-[52px] border"
     />
   );
 }

@@ -39,7 +39,7 @@ export function NavItem({ href, label, icon, active, surface = "canvas", classNa
       aria-current={active ? "page" : undefined}
       {...handlers}
       className={cn(
-        "rounded-control text-body press-scale relative flex h-[42px] items-center gap-3 px-3 transition-colors duration-100",
+        "rounded-control text-body press-scale relative flex min-h-11 items-center gap-3 px-3 transition-colors duration-100",
         active
           ? "text-ember-text font-semibold"
           : cn(

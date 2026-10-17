@@ -147,6 +147,7 @@ export const SOLID_ICONS = {
   "piggy-bank": { uicon: "piggy-bank", lucide: PiggyBank },
   receipt: { uicon: "receipt", lucide: Receipt },
   refresh: { uicon: "refresh", lucide: RefreshCw },
+  settings: { uicon: "settings", lucide: Settings },
   "shopping-cart": { uicon: "shopping-cart", lucide: ShoppingCart },
   ticket: { uicon: "ticket", lucide: Ticket },
   users: { uicon: "users", lucide: Users },

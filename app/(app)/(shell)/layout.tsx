@@ -1,15 +1,18 @@
 /**
- * Shell de la app (01-dashboard.png): sidebar de 248 px, topbar de 72 px y
- * contenido con padding de 32 px. El sidebar y el topbar persisten entre
- * rutas; solo cambia el contenido, sin transición de página. Sobre el
- * contenido, en las rutas que dependen del scope, va el interruptor
- * Personal / Compartido.
+ * Shell de la app. Tres anchos, según docs/Phone/ember-cash-mobile-1-frames/
+ * y docs/Phone/full/:
+ * - <600 px: barra inferior y contenido a todo el ancho.
+ * - 600–1023 px: rail de 96 px.
+ * - ≥1024 px: sidebar de 248 px y contenido de hasta 1128 px.
+ * El interruptor Personal / Compartido del shell solo se ve en escritorio.
+ * En el teléfono y la tablet vive dentro de Hogar.
  */
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
-import { Sidebar } from "@/components/shell/sidebar";
 import { ScopeRow, ScopeRowFallback } from "@/components/shell/scope-row";
+import { Sidebar } from "@/components/shell/sidebar";
+import { TabBar } from "@/components/shell/tab-bar";
 import { Topbar } from "@/components/shell/topbar";
 import { TopbarProvider } from "@/components/shell/topbar-context";
 import { UserCard, UserCardSkeleton } from "@/components/shell/user-card";
@@ -19,7 +22,7 @@ import { getScope } from "@/lib/scope/server";
 
 export default function ShellLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex min-h-dvh flex-col lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="flex min-h-dvh flex-col min-[600px]:grid min-[600px]:grid-cols-[96px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
       <Sidebar
         userCard={
           <Suspense fallback={<UserCardSkeleton />}>
@@ -30,12 +33,16 @@ export default function ShellLayout({ children }: Readonly<{ children: React.Rea
       <TopbarProvider>
         <div className="flex min-w-0 flex-col">
           <Topbar />
-          <main className="flex-1 px-4 pt-4 pb-8 lg:px-8">
-            <Suspense fallback={<ScopeRowFallback />}>
-              <CurrentScopeRow />
-            </Suspense>
-            {children}
+          <main className="flex-1 px-4 pt-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] min-[600px]:pb-8 lg:px-8">
+            <div className="lg:mx-auto lg:max-w-[1128px]">
+              <Suspense fallback={<ScopeRowFallback />}>
+                <CurrentScopeRow />
+              </Suspense>
+              {children}
+            </div>
           </main>
+          {/* Fija: no ocupa una celda del grid. */}
+          <TabBar />
         </div>
       </TopbarProvider>
     </div>

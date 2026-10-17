@@ -24,6 +24,10 @@ export function isPublicPath(
 ): boolean {
   return (
     pathname === "/login" ||
+    pathname === "/offline" ||
+    pathname === "/sw.js" ||
+    pathname === "/offline.html" ||
+    pathname === "/manifest.webmanifest" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/") ||
     (env !== "production" && pathname.startsWith("/dev/"))

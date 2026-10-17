@@ -164,7 +164,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
         }
       />
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4 xl:gap-6">
         <StatCard icon="sack-dollar" label={t("totalRemaining")}>
           {totals ? (
             <MoneyAmount

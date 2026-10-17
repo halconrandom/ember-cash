@@ -14,7 +14,7 @@ export function ScopeRow(props: { scope: "personal" | "shared"; householdId: str
   const pathname = usePathname();
   if (PAGE_TITLES[pathname]?.scope !== "shell") return null;
   return (
-    <div className="mb-6">
+    <div className="mb-6 hidden lg:block">
       <ScopeSwitch {...props} />
     </div>
   );
@@ -24,5 +24,5 @@ export function ScopeRow(props: { scope: "personal" | "shared"; householdId: str
 export function ScopeRowFallback() {
   const pathname = usePathname();
   if (PAGE_TITLES[pathname]?.scope !== "shell") return null;
-  return <div aria-hidden className="mb-6 h-10" />;
+  return <div aria-hidden className="mb-6 hidden h-11 lg:block" />;
 }
