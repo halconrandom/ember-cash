@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 // Tests del borrado irreversible: mantener 2 s (puntero y teclado), cancelar
 // al soltar o con Esc, y la confirmación en dos pasos con ventana de 4 s.
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithIntl as render } from "@/test/intl";
 
 import { HoldToDeleteButton, TwoStepDeleteButton } from "./hold-to-delete";
 
@@ -67,6 +69,13 @@ describe("HoldToDeleteButton", () => {
     const button = screen.getByRole("button", { name: /hold to delete/i });
     const hint = document.getElementById(button.getAttribute("aria-describedby") ?? "");
     expect(hint?.textContent).toBe("Hold Enter for 2 seconds to delete debt");
+  });
+
+  it("en español usa los textos de messages/es.json", () => {
+    render(<HoldToDeleteButton itemName="la deuda" onConfirm={() => undefined} />, "es");
+    const button = screen.getByRole("button", { name: /mantén para borrar/i });
+    const hint = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(hint?.textContent).toBe("Mantén Enter durante 2 segundos para borrar la deuda");
   });
 });
 

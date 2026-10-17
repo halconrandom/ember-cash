@@ -35,3 +35,10 @@
 - Texto de 12 px como mínimo; montos con `tabular-nums`; nunca truncar montos ni fechas.
 - Borrados reversibles: toast con Undo. Irreversibles: `HoldToDeleteButton` o `TwoStepDeleteButton`.
 - Compara con `/dev/design-system` y los frames de `docs/design/` antes de dar una pantalla por terminada.
+
+## Textos e idiomas
+
+- Ninguna cadena de UI va escrita directo en el código: todo va en `messages/*.json` (next-intl). Cada texto nuevo se agrega en `es` y en `en` a la vez; `lib/i18n/messages.test.ts` falla si una clave existe en un idioma y no en el otro.
+- La UI va en español neutro (sin voseo y, cuando se pueda, sin marcar género). El español es el idioma por defecto.
+- Números y fechas con `useFormat()` / `lib/i18n/format.ts` (separadores según el idioma). El dinero sigue la spec: COP sin decimales, USD con 2, nunca floats para calcular.
+- Sin prefijos de idioma en la URL: el idioma vive en la cookie `ec-locale` y en `profiles.locale`.

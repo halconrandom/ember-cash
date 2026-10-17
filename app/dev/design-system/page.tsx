@@ -5,16 +5,18 @@
  */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { DesignSystemSheet } from "./sheet";
 
-export const metadata: Metadata = {
-  title: "Design system · Ember Cash",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("designSystem");
+  return { title: t("metaTitle"), robots: { index: false, follow: false } };
+}
 
-export default function DesignSystemPage() {
+export default async function DesignSystemPage() {
   if (process.env.NODE_ENV === "production") notFound();
+  const t = await getTranslations("designSystem");
 
   return (
     <div className="flex flex-col">
@@ -23,7 +25,9 @@ export default function DesignSystemPage() {
         <section
           key={theme}
           className={`${theme} bg-canvas`}
-          aria-label={`Design system, ${theme}`}
+          aria-label={t("sectionLabel", {
+            theme: t(theme === "light" ? "themeLight" : "themeDark"),
+          })}
         >
           <DesignSystemSheet theme={theme} />
         </section>

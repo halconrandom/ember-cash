@@ -3,15 +3,25 @@
  * Generado desde docs/design/logos/svg/icon-orange-tile.svg (no editar el
  * trazado a mano; regenerar desde el SVG si cambia el logo).
  */
-export function LogoTile({ size = 36, className }: { size?: number; className?: string }) {
+export function LogoTile({
+  size = 36,
+  className,
+  label,
+}: {
+  size?: number;
+  className?: string;
+  /** Nombre accesible; sin él el logo es decorativo (el nombre va al lado). */
+  label?: string;
+}) {
   return (
     <svg
       viewBox="0 0 1024 1024"
       width={size}
       height={size}
       className={className}
-      role="img"
-      aria-label="Ember Cash"
+      role={label ? "img" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
     >
       <rect width="1024" height="1024" rx="229.07" fill="var(--ember-fill)" />
       <path

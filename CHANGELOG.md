@@ -2,6 +2,22 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.4.1] - 2026-10-16
+
+### Añadido
+
+- Internacionalización con next-intl: español (por defecto) e inglés, sin prefijos en la URL. Todas las cadenas de la UI pasan a `messages/es.json` y `messages/en.json` (shell, login, onboarding, invitación, hogar, ajustes, primitivas y `/dev/design-system`). Secciones en español: Panel, Transacciones, Ahorros, Deudas, Suscripciones, Calendario, Hogar y Ajustes.
+- Migración `0006_profile_locale.sql` (el número 0005 ya estaba usado): `profiles.locale` ('es' | 'en', por defecto 'es'), con tests en `supabase/tests/profile_locale.sql`. Selector de idioma en Ajustes; el idioma del perfil se aplica al entrar desde otro dispositivo.
+- Formatos según el idioma (`lib/i18n/format.ts`, `useFormat`): números y fechas con es-CO / en-US; el dinero sigue la spec (COP sin decimales, USD con 2, US$ delante y COP detrás).
+- Tests: paridad de claves y variables entre idiomas, formatos, textos en español de las primitivas.
+- Regla en CLAUDE.md: ninguna cadena de UI en el código; cada texto va en es y en en.
+
+### Cambiado
+
+- La etiqueta del ítem activo del sidebar usa ember-text, como dice DESIGN_SPEC §1 (5.10:1 en claro, 8.25:1 en oscuro; par agregado al test de contraste).
+- Los errores de las RPC de hogares se traducen por clave (`householdErrorKey`).
+- Textos en español neutro: "enlace" en vez de "link", "hogar" en vez de "household", bienvenida sin marca de género.
+
 ## [0.4.0] - 2026-10-16
 
 ### Añadido (fase 4: sistema de diseño y shell)

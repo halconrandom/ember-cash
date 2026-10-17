@@ -6,9 +6,10 @@
  * están encima, y "Undo" llama a la función que restaura el elemento.
  *
  *   const toast = useToast();
- *   toast.show({ message: "Transaction deleted", onUndo: () => restore(id) });
+ *   toast.show({ message: t("transactionDeleted"), onUndo: () => restore(id) });
  */
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import {
   createContext,
   useCallback,
@@ -26,7 +27,7 @@ export const TOAST_DURATION_MS = 6000;
 
 type ToastInput = {
   message: string;
-  /** Si existe, el toast muestra el botón "Undo". */
+  /** Si existe, el toast muestra el botón "Deshacer". */
   onUndo?: () => void;
   undoLabel?: string;
   /** Se llama cuando el toast se cierra sin Undo (el borrado queda final). */
@@ -136,12 +137,13 @@ function ToastView({ toast, onClose }: { toast: ToastItem; onClose: (id: number)
 export function ToastSurface({
   message,
   onUndo,
-  undoLabel = "Undo",
+  undoLabel,
 }: {
   message: string;
   onUndo?: () => void;
   undoLabel?: string;
 }) {
+  const t = useTranslations("toast");
   return (
     <div
       role="status"
@@ -155,7 +157,7 @@ export function ToastSurface({
           onClick={onUndo}
           className="text-toast-action focus-visible:outline-toast-action font-semibold"
         >
-          {undoLabel}
+          {undoLabel ?? t("undo")}
         </button>
       )}
     </div>

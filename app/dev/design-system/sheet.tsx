@@ -5,10 +5,12 @@
  * - 10-design-system.png: tokens, íconos, escala tipográfica, radios,
  *   sombras, espaciado y componentes base.
  * - 19-states.png / 20-states-dark.png: estados de los componentes.
- * Los estados "hover", "pressed" y "focus" se muestran fijos con clases; los
- * componentes reales también se pueden probar en vivo (fila "Live").
- * Todos los textos y cifras son datos de ejemplo.
+ * Los estados "hover", "presionado" y "foco" se muestran fijos con clases; los
+ * componentes reales también se pueden probar en vivo (fila "En vivo").
+ * Textos en messages/*.json (namespace designSystem); cifras de ejemplo
+ * formateadas según el idioma.
  */
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -26,42 +28,50 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { ToastSurface, useToast } from "@/components/ui/toast";
 import { Tooltip, TooltipSurface } from "@/components/ui/tooltip";
+import { useFormat } from "@/lib/i18n/use-format";
 import { cn } from "@/lib/utils";
 
-/** Anillo de foco fijo, para mostrar el estado "focus" sin enfocar. */
+/** Anillo de foco fijo, para mostrar el estado "foco" sin enfocar. */
 const FOCUS = "outline-2 outline-offset-2 outline-focus-ring outline-solid";
 
+/** Fechas de ejemplo de los frames (16 y 9 de octubre de 2026, 22 de octubre). */
+const SAMPLE_DATE = "2026-10-16";
+const SAMPLE_STALE_DATE = "2026-10-09";
+const SAMPLE_DUE_DATE = "2026-10-22";
+
+type T = ReturnType<typeof useTranslations<"designSystem">>;
+
 export function DesignSystemSheet({ theme }: { theme: "light" | "dark" }) {
+  const t = useTranslations("designSystem");
   return (
     <>
       {/* Como 10-design-system.png: hoja sobre superficie (blanca en claro). */}
       <div className="bg-surface">
         <div className="mx-auto max-w-[1440px] space-y-16 px-6 py-12 lg:px-12">
           <header>
-            <h1 className="text-display text-ink">Ember Cash design system</h1>
+            <h1 className="text-display text-ink">{t("title")}</h1>
             <p className="text-body text-ink-2 mt-2">
-              Tokens (Light / Dark), type, components and icons. Showing the {theme} theme. All
-              figures are sample data.
+              {t("intro", { theme: t(theme === "light" ? "themeLight" : "themeDark") })}
             </p>
           </header>
 
           <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)]">
-            <ColorTokens />
-            <Icons />
+            <ColorTokens t={t} />
+            <Icons t={t} />
           </div>
 
           <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-            <TypeScale />
-            <RadiusShadowSpacing />
+            <TypeScale t={t} />
+            <RadiusShadowSpacing t={t} />
           </div>
 
-          <BaseComponents />
+          <BaseComponents t={t} />
         </div>
       </div>
 
       {/* Como 19-states.png / 20-states-dark.png: tarjetas sobre canvas. */}
       <div className="mx-auto max-w-[1440px] px-6 py-12 lg:px-12">
-        <ComponentStates />
+        <ComponentStates t={t} />
       </div>
     </>
   );
@@ -71,50 +81,51 @@ export function DesignSystemSheet({ theme }: { theme: "light" | "dark" }) {
 /* 10-design-system: tokens                                                   */
 /* -------------------------------------------------------------------------- */
 
-const SWATCHES: { label: string; token: string }[] = [
-  { label: "canvas", token: "canvas" },
-  { label: "surface", token: "surface" },
-  { label: "surface2", token: "surface2" },
-  { label: "border", token: "border" },
-  { label: "text", token: "text" },
-  { label: "text2", token: "text2" },
-  { label: "text3", token: "text3" },
-  { label: "ember-fill", token: "ember-fill" },
-  { label: "ember (graphic)", token: "ember" },
-  { label: "ember-text", token: "ember-text" },
-  { label: "hero start", token: "hero-start" },
-  { label: "hero end", token: "hero-end" },
-  { label: "ember50", token: "ember-50" },
-  { label: "positive-text", token: "positive-text" },
-  { label: "positive-graphic", token: "positive" },
-  { label: "negative-text", token: "negative-text" },
-  { label: "negative-graphic", token: "negative" },
-  { label: "info-text", token: "info-text" },
-  { label: "violet-text", token: "violet-text" },
-  { label: "amber-text", token: "amber-text" },
-  { label: "pink-text", token: "pink-text" },
-  { label: "teal (Housing)", token: "teal" },
-  { label: "olive (Health)", token: "olive" },
-  { label: "slate (Other)", token: "slate" },
-  { label: "income-bar", token: "income-bar" },
-  { label: "expense-bar", token: "expense-bar" },
-  { label: "member Isaac", token: "member-a" },
-  { label: "member Sofia", token: "member-b" },
-  { label: "track", token: "track" },
-  { label: "focus ring", token: "focus-ring" },
-];
+/** Tokens mostrados, en el orden de la hoja. La etiqueta sale de designSystem.swatches. */
+const SWATCHES = [
+  "canvas",
+  "surface",
+  "surface2",
+  "border",
+  "text",
+  "text2",
+  "text3",
+  "ember-fill",
+  "ember",
+  "ember-text",
+  "hero-start",
+  "hero-end",
+  "ember-50",
+  "positive-text",
+  "positive",
+  "negative-text",
+  "negative",
+  "info-text",
+  "violet-text",
+  "amber-text",
+  "pink-text",
+  "teal",
+  "olive",
+  "slate",
+  "income-bar",
+  "expense-bar",
+  "member-a",
+  "member-b",
+  "track",
+  "focus-ring",
+] as const;
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <h2 className="text-caption text-ink-2 mb-5 uppercase">{children}</h2>;
 }
 
-function ColorTokens() {
+function ColorTokens({ t }: { t: T }) {
   return (
     <section>
-      <SectionLabel>Color tokens (light swatch front, dark behind)</SectionLabel>
+      <SectionLabel>{t("colorTokens")}</SectionLabel>
       <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 lg:grid-cols-6">
-        {SWATCHES.map((s) => (
-          <Swatch key={s.token} {...s} />
+        {SWATCHES.map((token) => (
+          <Swatch key={token} token={token} label={t(`swatches.${token}`)} />
         ))}
       </div>
     </section>
@@ -215,10 +226,11 @@ const SHEET_ORDER: IconName[] = [
 ];
 const EXTRA_ICONS = (Object.keys(ICONS) as IconName[]).filter((n) => !SHEET_ORDER.includes(n));
 
-function IconTile({ children, title }: { children: React.ReactNode; title: string }) {
+/** Mosaico de ícono. `name` es el identificador técnico (title nativo). */
+function IconTile({ children, name }: { children: React.ReactNode; name: string }) {
   return (
     <span
-      title={title}
+      title={name}
       className="rounded-control bg-surface2 text-ink grid size-[42px] place-items-center"
     >
       {children}
@@ -226,29 +238,26 @@ function IconTile({ children, title }: { children: React.ReactNode; title: strin
   );
 }
 
-function Icons() {
+function Icons({ t }: { t: T }) {
   return (
     <section>
-      <SectionLabel>Icons (Uicons by Flaticon: regular rounded, solid rounded)</SectionLabel>
+      <SectionLabel>{t("icons")}</SectionLabel>
       <div className="flex flex-wrap gap-3">
         {SHEET_ORDER.map((name) => (
-          <IconTile key={name} title={name}>
+          <IconTile key={name} name={name}>
             <Icon name={name} />
           </IconTile>
         ))}
-        <IconTile title="flame (solid)">
+        <IconTile name="flame">
           <Icon name="flame" variant="solid" className="text-ember" />
         </IconTile>
         {EXTRA_ICONS.map((name) => (
-          <IconTile key={name} title={name}>
+          <IconTile key={name} name={name}>
             <Icon name={name} />
           </IconTile>
         ))}
       </div>
-      <p className="text-callout text-ink-2 mt-6">
-        Icons designed by Flaticon (Uicons) from flaticon.com. Free licence requires visible
-        attribution.
-      </p>
+      <p className="text-callout text-ink-2 mt-6">{t("iconsAttribution")}</p>
     </section>
   );
 }
@@ -257,48 +266,45 @@ function Icons() {
 /* 10-design-system: tipografía, radios, sombras, espaciado                   */
 /* -------------------------------------------------------------------------- */
 
-function TypeScale() {
+function TypeScale({ t }: { t: T }) {
   return (
     <section>
-      <SectionLabel>Type scale (Inter, min 12 px)</SectionLabel>
+      <SectionLabel>{t("typeScale")}</SectionLabel>
       <div className="grid gap-8 sm:grid-cols-2">
         <div className="text-ink space-y-3">
-          <p className="text-display">Display 40 / Bold</p>
-          <p className="text-amount-xl">Amount XL 32 / Bold</p>
-          <p className="text-title1">Title 1 26 / Bold</p>
-          <p className="text-title2">Title 2 22 / Bold</p>
-          <p className="text-headline">Headline 16 / Semibold</p>
+          <p className="text-display">{t("typeDisplay")}</p>
+          <p className="text-amount-xl">{t("typeAmountXl")}</p>
+          <p className="text-title1">{t("typeTitle1")}</p>
+          <p className="text-title2">{t("typeTitle2")}</p>
+          <p className="text-headline">{t("typeHeadline")}</p>
         </div>
         <div className="text-ink space-y-4">
-          <p className="text-body">Body 14 / Regular, Medium</p>
-          <p className="text-callout font-medium">Callout 13 / Medium, Semibold</p>
-          <p className="text-footnote">Footnote 12 / Regular, Medium</p>
-          <p className="text-caption uppercase">Caption 12 / Semibold</p>
-          <p className="text-callout text-ink-2 pt-2">
-            Tracking by size: 40: -2.2%, 32/26: -1.8%, 22: -1.1%, 16: -0.4%, 13-14: -0.1%, 12: 0
-            (caption +6%).
-          </p>
+          <p className="text-body">{t("typeBody")}</p>
+          <p className="text-callout font-medium">{t("typeCallout")}</p>
+          <p className="text-footnote">{t("typeFootnote")}</p>
+          <p className="text-caption uppercase">{t("typeCaption")}</p>
+          <p className="text-callout text-ink-2 pt-2">{t("tracking")}</p>
         </div>
       </div>
     </section>
   );
 }
 
-function RadiusShadowSpacing() {
+function RadiusShadowSpacing({ t }: { t: T }) {
   const radii = [
     { label: "12", className: "rounded-control" },
     { label: "16", className: "rounded-row" },
-    { label: "20 card", className: "rounded-card" },
-    { label: "28 modal", className: "rounded-modal" },
-    { label: "pill", className: "rounded-full" },
+    { label: t("radiusCard"), className: "rounded-card" },
+    { label: t("radiusModal"), className: "rounded-modal" },
+    { label: t("radiusPill"), className: "rounded-full" },
   ];
   const spacing = [4, 8, 12, 16, 20, 24, 32, 48];
   return (
     <section>
-      <SectionLabel>Radius / shadow / spacing</SectionLabel>
+      <SectionLabel>{t("radiusShadowSpacing")}</SectionLabel>
       <div className="flex flex-wrap gap-6">
         {radii.map((r) => (
-          <div key={r.label}>
+          <div key={r.className}>
             <div
               className={cn("border-border bg-surface2 h-[42px] w-[62px] border", r.className)}
             />
@@ -308,10 +314,10 @@ function RadiusShadowSpacing() {
       </div>
       <div className="mt-8 flex flex-wrap gap-8">
         {[
-          { label: "shadow card", className: "shadow-card" },
-          { label: "shadow pop", className: "shadow-pop" },
+          { label: t("shadowCard"), className: "shadow-card" },
+          { label: t("shadowPop"), className: "shadow-pop" },
         ].map((s) => (
-          <div key={s.label}>
+          <div key={s.className}>
             <div
               className={cn(
                 "rounded-row border-card-edge bg-surface h-[50px] w-[100px] border",
@@ -331,22 +337,23 @@ function RadiusShadowSpacing() {
           />
         ))}
       </div>
-      <p className="text-callout text-ink-2 mt-3">{spacing.join(" ")}</p>
+      <p className="text-callout text-ink-2 mt-3 tabular-nums">{spacing.join(" ")}</p>
     </section>
   );
 }
 
-function BaseComponents() {
+function BaseComponents({ t }: { t: T }) {
+  const f = useFormat();
   const [currency, setCurrency] = useState<"COP" | "USD">("COP");
   return (
     <section>
-      <SectionLabel>Components</SectionLabel>
+      <SectionLabel>{t("components")}</SectionLabel>
       <div className="flex flex-wrap items-center gap-4">
-        <Button icon="plus">Primary</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="soft">Soft</Button>
+        <Button icon="plus">{t("primary")}</Button>
+        <Button variant="secondary">{t("secondary")}</Button>
+        <Button variant="soft">{t("soft")}</Button>
         <SegmentedControl
-          label="Display currency"
+          label={t("displayCurrency")}
           options={[
             { value: "COP", label: "COP" },
             { value: "USD", label: "USD" },
@@ -355,11 +362,11 @@ function BaseComponents() {
           onChange={setCurrency}
         />
         <Badge tone="positive" dot>
-          On track
+          {t("onTrack")}
         </Badge>
-        <Badge tone="negative">Due Oct 22</Badge>
+        <Badge tone="negative">{t("due", { date: f.date(SAMPLE_DUE_DATE) })}</Badge>
         <Badge tone="warning" dot>
-          Behind
+          {t("behind")}
         </Badge>
         <Badge tone="neutral">USD</Badge>
       </div>
@@ -391,99 +398,101 @@ function StateRow({
   );
 }
 
-function ComponentStates() {
+function ComponentStates({ t }: { t: T }) {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-title1 text-ink">Component states</h2>
-        <p className="text-body text-ink-2 mt-1">
-          Focus ring: 2 px #BD490A (dark #FF9552), offset 2 px. Pressed: scale 0.97. Sample data
-          only.
-        </p>
+        <h2 className="text-title1 text-ink">{t("statesTitle")}</h2>
+        <p className="text-body text-ink-2 mt-1">{t("statesIntro")}</p>
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
-        <ButtonsCard />
-        <InputsCard />
-        <NavRowsChipsCard />
-        <EmptyCard />
-        <LoadingCard />
-        <ToastTooltipCard />
+        <ButtonsCard t={t} />
+        <InputsCard t={t} />
+        <NavRowsChipsCard t={t} />
+        <EmptyCard t={t} />
+        <LoadingCard t={t} />
+        <ToastTooltipCard t={t} />
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <RateChipCard />
-        <DeleteCard />
+        <RateChipCard t={t} />
+        <DeleteCard t={t} />
       </div>
     </section>
   );
 }
 
-function ButtonsCard() {
+function ButtonsCard({ t }: { t: T }) {
   return (
     <Card className="space-y-4">
-      <CardTitle>Buttons</CardTitle>
-      <StateRow label="Default">
-        <Button icon="check">Save transaction</Button>
+      <CardTitle>{t("buttons")}</CardTitle>
+      <StateRow label={t("state.default")}>
+        <Button icon="check">{t("saveTransaction")}</Button>
       </StateRow>
-      <StateRow label="Hover">
+      <StateRow label={t("state.hover")}>
         <Button icon="check" className="bg-ember-press">
-          Save transaction
+          {t("saveTransaction")}
         </Button>
       </StateRow>
-      <StateRow label="Pressed" note="scale 0.97, 100 ms">
+      <StateRow label={t("state.pressed")} note={t("pressedNote")}>
         <Button icon="check" className="bg-ember-press scale-[0.97]">
-          Save transaction
+          {t("saveTransaction")}
         </Button>
       </StateRow>
-      <StateRow label="Focus">
+      <StateRow label={t("state.focus")}>
         <Button icon="check" className={FOCUS}>
-          Save transaction
+          {t("saveTransaction")}
         </Button>
       </StateRow>
-      <StateRow label="Disabled">
+      <StateRow label={t("state.disabled")}>
         <Button icon="check" disabled>
-          Save transaction
+          {t("saveTransaction")}
         </Button>
       </StateRow>
-      <StateRow label="Secondary">
-        <Button variant="secondary">Cancel</Button>
+      <StateRow label={t("state.secondary")}>
+        <Button variant="secondary">{t("cancel")}</Button>
       </StateRow>
     </Card>
   );
 }
 
-function InputsCard() {
+function InputsCard({ t }: { t: T }) {
+  const f = useFormat();
+  const sample = f.amount(125000, "COP");
   return (
     <Card className="space-y-4">
-      <CardTitle>Inputs</CardTitle>
-      <Field label="Amount" defaultValue="125,000" inputMode="decimal" />
+      <CardTitle>{t("inputs")}</CardTitle>
+      <Field label={t("amount")} defaultValue={sample} inputMode="decimal" />
       <div className="space-y-2">
-        <span className="text-callout text-ink-2 block font-semibold">Amount (focus)</span>
-        <Input aria-label="Amount (focus)" defaultValue="125,000" className={FOCUS} />
+        <span className="text-callout text-ink-2 block font-semibold">{t("amountFocus")}</span>
+        <Input aria-label={t("amountFocus")} defaultValue={sample} className={FOCUS} />
       </div>
-      <Field label="Amount (error)" defaultValue="0" error="Enter an amount greater than 0" />
-      <Field label="Amount (disabled)" placeholder="Locked while syncing" disabled />
+      <Field label={t("amountError")} defaultValue="0" error={t("amountErrorMessage")} />
+      <Field label={t("amountDisabled")} placeholder={t("locked")} disabled />
     </Card>
   );
 }
 
-function NavRowsChipsCard() {
+function NavRowsChipsCard({ t }: { t: T }) {
+  const tNav = useTranslations("nav");
+  const f = useFormat();
   const [selected, setSelected] = useState(true);
+  const amount = f.money(-18500, "COP");
   return (
     <Card className="space-y-4">
-      <CardTitle>Navigation, rows, chips</CardTitle>
-      <StateRow label="Hover">
+      <CardTitle>{t("navRowsChips")}</CardTitle>
+      <StateRow label={t("state.hover")}>
         <span className="rounded-control bg-surface2 text-body text-ink-2 flex h-[42px] w-[210px] items-center gap-3 px-3 font-medium">
           <Icon name="piggy-bank" />
-          Savings
+          {tNav("savings")}
         </span>
       </StateRow>
-      <StateRow label="Active">
-        <span className="rounded-control border-card-edge bg-surface text-body text-ink shadow-card flex h-[42px] w-[210px] items-center gap-3 border px-3 font-semibold">
+      <StateRow label={t("state.active")}>
+        <span className="rounded-control border-card-edge bg-surface text-body text-ember-text shadow-card flex h-[42px] w-[210px] items-center gap-3 border px-3 font-semibold">
           <Icon name="piggy-bank" variant="solid" className="text-ember" />
-          Savings
+          {tNav("savings")}
         </span>
       </StateRow>
-      <StateRow label="Focus">
+      <StateRow label={t("state.focus")}>
         <span
           className={cn(
             "rounded-control bg-surface text-body text-ink-2 flex h-[42px] w-[210px] items-center gap-3 px-3 font-medium",
@@ -491,42 +500,42 @@ function NavRowsChipsCard() {
           )}
         >
           <Icon name="piggy-bank" />
-          Savings
+          {tNav("savings")}
         </span>
       </StateRow>
       <div className="border-divider border-t pt-4" />
-      <StateRow label="Hover row">
-        <ListRow className="bg-surface2" trailing="-18,500 COP">
-          Coffee Corner
+      <StateRow label={t("state.hoverRow")}>
+        <ListRow className="bg-surface2" trailing={amount}>
+          {t("merchant")}
         </ListRow>
       </StateRow>
-      <StateRow label="Selected">
-        <ListRow selected={selected} onClick={() => setSelected((s) => !s)} trailing="-18,500 COP">
-          Coffee Corner
+      <StateRow label={t("state.selected")}>
+        <ListRow selected={selected} onClick={() => setSelected((s) => !s)} trailing={amount}>
+          {t("merchant")}
         </ListRow>
       </StateRow>
-      <StateRow label="Chips">
+      <StateRow label={t("state.chips")}>
         <ChoiceChip tone="warning" selected={false}>
-          Food &amp; groceries
+          {t("foodGroceries")}
         </ChoiceChip>
-        <ChoiceChip selected>Selected</ChoiceChip>
+        <ChoiceChip selected>{t("selectedChip")}</ChoiceChip>
       </StateRow>
     </Card>
   );
 }
 
-function EmptyCard() {
+function EmptyCard({ t }: { t: T }) {
   return (
     <Card className="space-y-4">
-      <CardTitle>Empty state</CardTitle>
+      <CardTitle>{t("emptyState")}</CardTitle>
       <EmptyState
         icon="receipt"
-        title="No transactions yet"
-        description="Add your first transaction or import a bank file to see your month take shape."
+        title={t("emptyTitle")}
+        description={t("emptyDescription")}
         actions={
           <>
-            <Button icon="plus">Add transaction</Button>
-            <Button variant="secondary">Import</Button>
+            <Button icon="plus">{t("addTransaction")}</Button>
+            <Button variant="secondary">{t("import")}</Button>
           </>
         }
       />
@@ -534,45 +543,47 @@ function EmptyCard() {
   );
 }
 
-function LoadingCard() {
+function LoadingCard({ t }: { t: T }) {
   return (
     <Card className="space-y-6">
-      <CardTitle>Loading (skeleton)</CardTitle>
+      <CardTitle>{t("loading")}</CardTitle>
       <SkeletonList rows={4} />
-      <p className="text-callout text-ink-2">
-        Skeleton matches final row geometry; shimmer is static under reduced motion.
-      </p>
+      <p className="text-callout text-ink-2">{t("loadingNote")}</p>
     </Card>
   );
 }
 
-function ToastTooltipCard() {
+function ToastTooltipCard({ t }: { t: T }) {
   const toast = useToast();
+  const f = useFormat();
+  const tooltip = t("tooltipSample", {
+    usd: f.money(2160, "USD"),
+    rate: f.number(4000),
+    date: f.date(SAMPLE_DATE),
+  });
   return (
     <Card className="space-y-4">
-      <CardTitle>Toast and tooltip</CardTitle>
-      <ToastSurface message="Transaction deleted" onUndo={() => undefined} />
-      <p className="text-callout text-ink-2">
-        Toast replaces a confirmation dialog; stays 6 s, Undo restores the item.
-      </p>
-      <TooltipSurface>≈ US$ 21.60 · rate 4,000, as of Oct 16 (sample)</TooltipSurface>
+      <CardTitle>{t("toastTooltip")}</CardTitle>
+      <ToastSurface message={t("transactionDeleted")} onUndo={() => undefined} />
+      <p className="text-callout text-ink-2">{t("toastNote")}</p>
+      <TooltipSurface>{tooltip}</TooltipSurface>
       <div className="border-divider flex flex-wrap items-center gap-3 border-t pt-4">
-        <span className="text-caption text-ink-2 uppercase">Live</span>
+        <span className="text-caption text-ink-2 uppercase">{t("state.live")}</span>
         <Button
           variant="secondary"
           size="sm"
           onClick={() =>
             toast.show({
-              message: "Transaction deleted",
-              onUndo: () => toast.show({ message: "Transaction restored" }),
+              message: t("transactionDeleted"),
+              onUndo: () => toast.show({ message: t("transactionRestored") }),
             })
           }
         >
-          Show toast
+          {t("showToast")}
         </Button>
-        <Tooltip content="≈ US$ 21.60 · rate 4,000, as of Oct 16 (sample)">
+        <Tooltip content={tooltip}>
           <button type="button" className="text-body text-ink font-semibold tabular-nums">
-            86,400 COP
+            {f.money(86400, "COP")}
           </button>
         </Tooltip>
       </div>
@@ -580,105 +591,102 @@ function ToastTooltipCard() {
   );
 }
 
-function RateChipCard() {
+function RateChipCard({ t }: { t: T }) {
+  const f = useFormat();
+  const rate = t("rateSample", { cop: f.number(4000) });
+  const rows = [
+    { state: "fresh", label: t("state.fresh"), asOf: f.date(SAMPLE_DATE), note: t("freshNote") },
+    {
+      state: "stale",
+      label: t("state.stale"),
+      asOf: f.date(SAMPLE_STALE_DATE),
+      note: t("staleNote", { date: f.date(SAMPLE_STALE_DATE) }),
+    },
+    {
+      state: "updating",
+      label: t("state.updating"),
+      asOf: f.date(SAMPLE_DATE),
+      note: t("updatingNote"),
+    },
+    { state: "error", label: t("state.error"), asOf: f.date(SAMPLE_DATE), note: t("errorNote") },
+  ] as const;
   return (
     <Card className="space-y-4">
-      <CardTitle>Exchange-rate chip states</CardTitle>
-      <StateRow label="Fresh">
-        <div className="space-y-2">
-          <RateChip state="fresh" rate="1 USD = 4,000 COP" asOf="Oct 16" sample />
-          <p className="text-callout text-ink-2">
-            Fetched today. Converted amounts show with the chip&apos;s date.
-          </p>
-        </div>
-      </StateRow>
-      <StateRow label="Stale">
-        <div className="space-y-2">
-          <RateChip state="stale" rate="1 USD = 4,000 COP" asOf="Oct 9" />
-          <p className="text-callout text-ink-2">
-            Older than 24 h: amber chip with the old date. Converted amounts stay, tooltip says
-            &apos;rate from Oct 9&apos;. Click refreshes.
-          </p>
-        </div>
-      </StateRow>
-      <StateRow label="Updating">
-        <div className="space-y-2">
-          <RateChip state="updating" rate="1 USD = 4,000 COP" asOf="Oct 16" />
-          <p className="text-callout text-ink-2">
-            Chip keeps its width. Numbers do not move; converted lines dim to 60% until done.
-          </p>
-        </div>
-      </StateRow>
-      <StateRow label="Error">
-        <div className="space-y-2">
-          <RateChip state="error" rate="1 USD = 4,000 COP" asOf="Oct 16" />
-          <p className="text-callout text-ink-2">
-            Rate not available: originals stay primary, each converted line reads &apos;rate
-            unavailable&apos; instead of a stale number.
-          </p>
-        </div>
-      </StateRow>
+      <CardTitle>{t("rateChips")}</CardTitle>
+      {rows.map((row) => (
+        <StateRow key={row.state} label={row.label}>
+          <div className="space-y-2">
+            <RateChip
+              state={row.state}
+              rate={rate}
+              asOf={row.asOf}
+              sample={row.state === "fresh"}
+            />
+            <p className="text-callout text-ink-2">{row.note}</p>
+          </div>
+        </StateRow>
+      ))}
     </Card>
   );
 }
 
-function DeleteCard() {
+function DeleteCard({ t }: { t: T }) {
+  const tHold = useTranslations("holdToDelete");
   const toast = useToast();
+  const item = t("debtItem");
   const deleted = () =>
-    toast.show({ message: "Debt deleted", onUndo: () => toast.show({ message: "Debt restored" }) });
+    toast.show({
+      message: t("debtDeleted"),
+      onUndo: () => toast.show({ message: t("debtRestored") }),
+    });
   return (
     <Card className="space-y-4">
-      <CardTitle>Irreversible delete: pointer, keyboard, two-step</CardTitle>
-      <StateRow label="Pointer">
+      <CardTitle>{t("delete")}</CardTitle>
+      <StateRow label={t("state.pointer")}>
         <div className="space-y-2">
-          <HoldToDeleteButton itemName="debt" onConfirm={deleted} demoProgress={0.55} />
-          <p className="text-callout text-ink-2">
-            Press and hold 2 s, fill sweeps left to right. Release cancels.
-          </p>
+          <HoldToDeleteButton itemName={item} onConfirm={deleted} demoProgress={0.55} />
+          <p className="text-callout text-ink-2">{t("pointerNote")}</p>
         </div>
       </StateRow>
-      <StateRow label="Keyboard">
+      <StateRow label={t("state.keyboard")}>
         <div className="space-y-2">
           <HoldToDeleteButton
-            itemName="debt"
+            itemName={item}
             onConfirm={deleted}
             demoProgress={0.4}
             className={FOCUS}
           />
-          <p className="text-callout text-ink-2 flex items-center gap-2">
-            <Keycap>Enter</Keycap> or <Keycap>Space</Keycap> held 2 s
+          <p className="text-callout text-ink-2 flex flex-wrap items-center gap-2">
+            {t.rich("keyboardKeys", {
+              enter: (chunks) => <Keycap>{chunks}</Keycap>,
+              space: (chunks) => <Keycap>{chunks}</Keycap>,
+            })}
           </p>
           <p className="text-callout text-ink-2">
-            Same fill and focus ring. Releasing the key or Esc cancels. Screen reader: &apos;Hold
-            Enter for 2 seconds to delete debt&apos;.
+            {t("keyboardNote", { hint: tHold("hint", { seconds: 2, item }) })}
           </p>
         </div>
       </StateRow>
-      <StateRow label="Two-step">
+      <StateRow label={t("state.twoStep")}>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="danger-outline" size="lg" icon="trash">
-              Delete debt
+              {t("deleteDebt")}
             </Button>
             <Icon name="arrow-small-right" className="text-ink-2" />
             <Button variant="danger" size="lg">
-              Press again to confirm
+              {tHold("confirm")}
             </Button>
           </div>
-          <ToastSurface message="Debt deleted" onUndo={() => undefined} />
-          <p className="text-callout text-ink-2">
-            Second press within 4 s, then a toast with Undo (6 s) before the delete is final.
-          </p>
+          <ToastSurface message={t("debtDeleted")} onUndo={() => undefined} />
+          <p className="text-callout text-ink-2">{t("twoStepNote")}</p>
         </div>
       </StateRow>
-      <StateRow label="Live">
-        <HoldToDeleteButton itemName="debt" onConfirm={deleted} />
-        <TwoStepDeleteButton label="Delete debt" onConfirm={deleted} />
+      <StateRow label={t("state.live")}>
+        <HoldToDeleteButton itemName={item} onConfirm={deleted} />
+        <TwoStepDeleteButton label={t("deleteDebt")} onConfirm={deleted} />
       </StateRow>
-      <p className="text-callout text-ink-2">
-        Label contrast: ink on the red fill is 10.45 (light) / 9.69 (dark); red text on the fill was
-        3.29 / 3.64 and was replaced.
-      </p>
+      <p className="text-callout text-ink-2">{t("contrastNote")}</p>
     </Card>
   );
 }

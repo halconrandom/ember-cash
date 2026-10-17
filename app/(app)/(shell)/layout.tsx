@@ -3,6 +3,7 @@
  * contenido con padding de 32 px. El sidebar y el topbar persisten entre
  * rutas; solo cambia el contenido, sin transición de página.
  */
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { Sidebar } from "@/components/shell/sidebar";
@@ -29,14 +30,19 @@ export default function ShellLayout({ children }: Readonly<{ children: React.Rea
   );
 }
 
-/** Tarjeta del usuario con su nombre y su espacio (household o personal). */
+/** Tarjeta del usuario con su nombre y su espacio (hogar o personal). */
 async function CurrentUserCard() {
   const user = await requireUser();
-  const [profile, households] = await Promise.all([getCurrentProfile(), getMyHouseholds(user.id)]);
+  const [profile, households, t] = await Promise.all([
+    getCurrentProfile(),
+    getMyHouseholds(user.id),
+    getTranslations("userCard"),
+  ]);
   return (
     <UserCard
-      name={profile.display_name ?? user.email ?? "You"}
-      space={households[0]?.name ?? "Personal space"}
+      name={profile.display_name ?? user.email ?? t("fallbackName")}
+      space={households[0]?.name ?? t("personalSpace")}
+      settingsLabel={t("settings")}
     />
   );
 }

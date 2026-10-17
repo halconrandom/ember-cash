@@ -4,6 +4,7 @@
  * Server Actions de la página principal.
  */
 import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 import { requireUser } from "@/lib/auth/session";
 import { buildInviteUrl, generateInviteToken, hashInviteToken } from "@/lib/households/invites";
@@ -13,9 +14,9 @@ import { createClient } from "@/lib/supabase/server";
 export type InviteLinkResult = { ok: true; url: string } | { ok: false; error: string };
 
 /**
- * Genera un link de invitación para un household. El token se crea aquí y en
+ * Genera un enlace de invitación para un hogar. El token se crea aquí y en
  * la base solo se guarda su hash. RLS impide que alguien que no sea owner
- * inserte la invitación.
+ * inserte la invitación. El error vuelve ya traducido.
  */
 export async function createInviteLink(householdId: string): Promise<InviteLinkResult> {
   await requireUser();
@@ -27,14 +28,9 @@ export async function createInviteLink(householdId: string): Promise<InviteLinkR
     .insert({ household_id: householdId, token_hash: hashInviteToken(token) });
 
   if (error) {
-    // 42501 = RLS rechazó el insert: el usuario no es owner.
-    return {
-      ok: false,
-      error:
-        error.code === "42501"
-          ? "Solo el owner del household puede invitar."
-          : "No se pudo crear la invitación. Intenta de nuevo.",
-    };
+    // 42501 = RLS rechazó el insert: el usuario no administra el hogar.
+    const t = await getTranslations("householdErrors");
+    return { ok: false, error: t(error.code === "42501" ? "onlyAdminCanInvite" : "inviteFailed") };
   }
 
   return { ok: true, url: buildInviteUrl(await requestOrigin(), token) };

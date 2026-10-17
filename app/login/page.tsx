@@ -6,6 +6,7 @@
  * <Suspense>; el encabezado se prerenderiza.
  */
 import { redirect } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -17,18 +18,17 @@ import { LoginForm } from "./login-form";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-/** Mensajes para los errores que llegan desde /auth/callback y /auth/confirm. */
-const ERRORS: Record<string, string> = {
-  callback: "No se pudo completar el inicio de sesión con Google. Intenta de nuevo.",
-  link: "El link no es válido o ya venció. Pide uno nuevo.",
-};
+/** Errores que llegan desde /auth/callback y /auth/confirm (claves de login.errors). */
+const ERROR_KEYS = ["callback", "link"] as const;
+type LoginErrorKey = (typeof ERROR_KEYS)[number];
 
 export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  const t = useTranslations("login");
   return (
     <CenteredPage className="max-w-sm">
       <Card>
-        <h1 className="text-title2 text-ink">Inicia sesión</h1>
-        <p className="text-body text-ink-2 mt-1">Tus finanzas, claras y en un solo lugar.</p>
+        <h1 className="text-title2 text-ink">{t("title")}</h1>
+        <p className="text-body text-ink-2 mt-1">{t("subtitle")}</p>
         <Suspense fallback={null}>
           <LoginContent searchParams={searchParams} />
         </Suspense>
@@ -44,6 +44,9 @@ async function LoginContent({ searchParams }: { searchParams: SearchParams }) {
 
   if (await getCurrentUser()) redirect(next);
 
-  const errorKey = typeof params.error === "string" ? params.error : "";
-  return <LoginForm next={next} initialError={ERRORS[errorKey] ?? null} />;
+  const error = typeof params.error === "string" ? params.error : "";
+  const initialError = (ERROR_KEYS as readonly string[]).includes(error)
+    ? (error as LoginErrorKey)
+    : null;
+  return <LoginForm next={next} initialError={initialError} />;
 }

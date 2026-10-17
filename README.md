@@ -108,6 +108,12 @@ Reglas: una migración ya aplicada no se edita; los cambios van en una migració
 - `/dev/design-system` (solo en desarrollo) muestra todo en claro y oscuro para comparar con `docs/design/10-design-system.png`, `19-states.png` y `20-states-dark.png`.
 - `lib/design/contrast.test.ts` (port de `docs/contrast.py`) falla si algún par de tokens baja del ratio de la spec.
 
+## Idiomas
+
+- next-intl con español (`es`, por defecto) e inglés (`en`). Textos en [messages/es.json](messages/es.json) y [messages/en.json](messages/en.json).
+- Sin prefijos en la URL: el idioma sale de la cookie `ec-locale` y se guarda en `profiles.locale` (Ajustes > Apariencia > Idioma).
+- Formatos en [lib/i18n/format.ts](lib/i18n/format.ts): números y fechas según el idioma; dinero según la spec (COP sin decimales, USD con 2).
+
 ## Endpoints
 
 - `GET /api/health` responde `{ "ok": true }`.

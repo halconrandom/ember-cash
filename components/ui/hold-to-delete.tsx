@@ -8,7 +8,7 @@
  *    izquierda a derecha; soltar cancela.
  * 2. El mismo botón con teclado: mantener Enter o Espacio 2 s; soltar la
  *    tecla o Esc cancela. Lo anuncia con aria-describedby.
- * 3. <TwoStepDeleteButton>: el primer clic cambia a "Press again to confirm";
+ * 3. <TwoStepDeleteButton>: el primer clic cambia a "Presiona otra vez para confirmar";
  *    un segundo clic antes de 4 s confirma. Es el respaldo para control por
  *    interruptor o por voz. Después, quien lo usa muestra un toast con Undo.
  *
@@ -16,6 +16,7 @@
  * daba 3.29 / 3.64 y la spec lo rechazó. El rojo queda solo en el borde.
  */
 import { motion, MotionConfig } from "motion/react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -28,8 +29,9 @@ export const HOLD_DURATION_MS = 2000;
 export const TWO_STEP_WINDOW_MS = 4000;
 
 type HoldProps = {
+  /** Texto del botón; por defecto "Mantén para borrar". */
   label?: string;
-  /** Qué se borra, para el anuncio accesible ("debt"). */
+  /** Qué se borra, ya traducido, para el anuncio accesible ("la deuda"). */
   itemName?: string;
   onConfirm: () => void;
   duration?: number;
@@ -39,15 +41,16 @@ type HoldProps = {
 };
 
 export function HoldToDeleteButton({
-  label = "Hold to delete",
-  itemName = "item",
+  label,
+  itemName,
   onConfirm,
   duration = HOLD_DURATION_MS,
   demoProgress,
   className,
 }: HoldProps) {
+  const t = useTranslations("holdToDelete");
   const [holding, setHolding] = useState(false);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<"" | "keepHolding" | "cancelled">("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintId = useId();
 
@@ -56,13 +59,13 @@ export function HoldToDeleteButton({
     clearTimeout(timer.current);
     timer.current = null;
     setHolding(false);
-    setStatus("Cancelled");
+    setStatus("cancelled");
   }, []);
 
   const start = useCallback(() => {
     if (timer.current) return;
     setHolding(true);
-    setStatus("Keep holding");
+    setStatus("keepHolding");
     timer.current = setTimeout(() => {
       timer.current = null;
       setHolding(false);
@@ -131,14 +134,14 @@ export function HoldToDeleteButton({
         </MotionConfig>
         <span className="relative flex items-center gap-2">
           <Icon name="trash" size={18} />
-          {label}
+          {label ?? t("label")}
         </span>
       </button>
       <span id={hintId} className="sr-only">
-        Hold Enter for {Math.round(duration / 1000)} seconds to delete {itemName}
+        {t("hint", { seconds: Math.round(duration / 1000), item: itemName ?? t("defaultItem") })}
       </span>
       <span className="sr-only" aria-live="polite">
-        {status}
+        {status ? t(status) : ""}
       </span>
     </>
   );
@@ -153,13 +156,16 @@ type TwoStepProps = {
 };
 
 export function TwoStepDeleteButton({
-  label = "Delete",
-  confirmLabel = "Press again to confirm",
+  label,
+  confirmLabel,
   onConfirm,
   window: windowMs = TWO_STEP_WINDOW_MS,
   className,
 }: TwoStepProps) {
+  const t = useTranslations("holdToDelete");
   const [armed, setArmed] = useState(false);
+  const idleText = label ?? t("delete");
+  const confirmText = confirmLabel ?? t("confirm");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -200,10 +206,10 @@ export function TwoStepDeleteButton({
         )}
       >
         {!armed && <Icon name="trash" size={18} />}
-        {armed ? confirmLabel : label}
+        {armed ? confirmText : idleText}
       </motion.button>
       <span className="sr-only" aria-live="polite">
-        {armed ? confirmLabel : ""}
+        {armed ? confirmText : ""}
       </span>
     </>
   );

@@ -5,7 +5,8 @@
  * - Inactivo: ícono regular y texto text2.
  * - Hover: fondo según la superficie (canvas en el sidebar, surface2 en tarjetas).
  * - Activo: píldora de superficie con sombra (borde en oscuro), ícono sólido
- *   en naranja gráfico y texto semibold. La píldora se desliza entre
+ *   en naranja gráfico y texto semibold en ember-text (DESIGN_SPEC §1: "active
+ *   nav label"; 5.10:1 en claro y 8.25:1 en oscuro sobre surface). La píldora se desliza entre
  *   elementos con un spring sin rebote.
  * - Foco: anillo global.
  */
@@ -45,7 +46,7 @@ export function NavItem({
       className={cn(
         "rounded-control text-body relative flex h-[42px] items-center gap-3 px-3 transition-colors duration-100",
         active
-          ? "text-ink font-semibold"
+          ? "text-ember-text font-semibold"
           : cn(
               "text-ink-2 font-medium",
               surface === "canvas" ? "hover:bg-hover-canvas" : "hover:bg-surface2",

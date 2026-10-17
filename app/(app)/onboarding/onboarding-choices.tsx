@@ -2,8 +2,9 @@
 
 /**
  * Las tres opciones del onboarding. Cada una es un formulario con su Server
- * Action. Solo "Crear household" usa el botón primario (uno por pantalla).
+ * Action. Solo "Crear hogar" usa el botón primario (uno por pantalla).
  */
+import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { chooseAlone, createHousehold, goToInvite, type FormState } from "./acti
 const initial: FormState = { error: null };
 
 export function OnboardingChoices() {
+  const t = useTranslations("onboarding");
   const [aloneState, aloneAction, alonePending] = useActionState(chooseAlone, initial);
   const [createState, createAction, createPending] = useActionState(createHousehold, initial);
   const [joinState, joinAction, joinPending] = useActionState(goToInvite, initial);
@@ -22,49 +24,47 @@ export function OnboardingChoices() {
   return (
     <div className="space-y-4">
       <Card className="space-y-3">
-        <CardTitle>Usar solo yo</CardTitle>
-        <p className="text-body text-ink-2">Tus finanzas personales, sin compartir con nadie.</p>
+        <CardTitle>{t("alone.title")}</CardTitle>
+        <p className="text-body text-ink-2">{t("alone.description")}</p>
         <form action={aloneAction}>
           <Button type="submit" variant="secondary" icon="user" disabled={alonePending}>
-            {alonePending ? "Guardando..." : "Usar solo yo"}
+            {alonePending ? t("alone.saving") : t("alone.button")}
           </Button>
         </form>
         <ErrorText message={aloneState.error} />
       </Card>
 
       <Card className="space-y-3">
-        <CardTitle>Crear household</CardTitle>
-        <p className="text-body text-ink-2">Comparte gastos con otra persona. Tú serás el owner.</p>
+        <CardTitle>{t("create.title")}</CardTitle>
+        <p className="text-body text-ink-2">{t("create.description")}</p>
         <form action={createAction} className="space-y-4">
           <Field
-            label="Nombre del household"
+            label={t("create.nameLabel")}
             name="name"
             required
             maxLength={80}
-            placeholder="Casa"
+            placeholder={t("create.namePlaceholder")}
             error={createState.error}
           />
           <Button type="submit" icon="plus" disabled={createPending}>
-            {createPending ? "Creando..." : "Crear household"}
+            {createPending ? t("create.creating") : t("create.button")}
           </Button>
         </form>
       </Card>
 
       <Card className="space-y-3">
-        <CardTitle>Unirme con una invitación</CardTitle>
-        <p className="text-body text-ink-2">
-          Pega el link que te compartió el owner del household.
-        </p>
+        <CardTitle>{t("join.title")}</CardTitle>
+        <p className="text-body text-ink-2">{t("join.description")}</p>
         <form action={joinAction} className="space-y-4">
           <Field
-            label="Link de invitación"
+            label={t("join.label")}
             name="invite"
             required
-            placeholder="https://.../invite/..."
+            placeholder={t("join.placeholder")}
             error={joinState.error}
           />
           <Button type="submit" variant="secondary" disabled={joinPending}>
-            Continuar
+            {t("join.button")}
           </Button>
         </form>
       </Card>

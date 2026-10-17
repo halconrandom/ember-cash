@@ -1,28 +1,34 @@
 "use client";
 
 /**
- * Formulario de login. Google redirige a /auth/callback; el link mágico llega
- * por correo y entra por /auth/confirm (según la plantilla de Supabase).
- * Un solo botón primario: "Enviar link mágico". Google es secundario.
+ * Formulario de login. Google redirige a /auth/callback; el enlace mágico
+ * llega por correo y entra por /auth/confirm (según la plantilla de Supabase).
+ * Un solo botón primario: "Enviar enlace mágico". Google es secundario.
  */
+import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { createClient } from "@/lib/supabase/client";
 
+/** Claves de login.errors. */
+type ErrorKey =
+  "invalidEmail" | "googleFailed" | "rateLimited" | "sendFailed" | "callback" | "link";
+
 type Props = {
   /** Ruta interna a la que volver después del login. */
   next: string;
-  /** Error que llega en la URL (por ejemplo, un link vencido). */
-  initialError: string | null;
+  /** Error que llega en la URL (por ejemplo, un enlace vencido). */
+  initialError: "callback" | "link" | null;
 };
 
 export function LoginForm({ next, initialError }: Props) {
+  const t = useTranslations("login");
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState<"google" | "email" | null>(null);
-  const [error, setError] = useState<string | null>(initialError);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorKey | null>(initialError);
+  const [emailError, setEmailError] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
 
   /** URL de retorno, conservando `next`. */
@@ -38,7 +44,7 @@ export function LoginForm({ next, initialError }: Props) {
     });
     // Si todo va bien el navegador ya está saliendo hacia Google.
     if (error) {
-      setError("No se pudo abrir el inicio de sesión con Google. Intenta de nuevo.");
+      setError("googleFailed");
       setPending(null);
     }
   }
@@ -47,10 +53,10 @@ export function LoginForm({ next, initialError }: Props) {
     event.preventDefault();
     const address = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
-      setEmailError("Escribe un correo válido.");
+      setEmailError(true);
       return;
     }
-    setEmailError(null);
+    setEmailError(false);
     setPending("email");
     setError(null);
     const { error } = await createClient().auth.signInWithOtp({
@@ -59,11 +65,7 @@ export function LoginForm({ next, initialError }: Props) {
     });
     setPending(null);
     if (error) {
-      setError(
-        error.status === 429
-          ? "Se enviaron demasiados correos. Espera unos minutos e intenta de nuevo."
-          : "No se pudo enviar el link. Revisa el correo e intenta de nuevo.",
-      );
+      setError(error.status === 429 ? "rateLimited" : "sendFailed");
       return;
     }
     setSentTo(address);
@@ -72,16 +74,14 @@ export function LoginForm({ next, initialError }: Props) {
   if (sentTo) {
     return (
       <div className="mt-6 space-y-3" aria-live="polite">
-        <p className="text-body text-positive-text font-semibold">
-          Te enviamos un link a {sentTo}.
-        </p>
-        <p className="text-callout text-ink-2">Ábrelo para entrar. Puedes cerrar esta pestaña.</p>
+        <p className="text-body text-positive-text font-semibold">{t("sent", { email: sentTo })}</p>
+        <p className="text-callout text-ink-2">{t("sentHint")}</p>
         <button
           type="button"
           className="text-body text-ember-text font-medium underline-offset-4 hover:underline"
           onClick={() => setSentTo(null)}
         >
-          Usar otro correo
+          {t("otherEmail")}
         </button>
       </div>
     );
@@ -95,33 +95,33 @@ export function LoginForm({ next, initialError }: Props) {
         onClick={signInWithGoogle}
         disabled={pending !== null}
       >
-        {pending === "google" ? "Abriendo Google..." : "Continuar con Google"}
+        {pending === "google" ? t("googleOpening") : t("google")}
       </Button>
 
       <div className="flex items-center gap-3" aria-hidden="true">
         <span className="bg-border h-px flex-1" />
-        <span className="text-footnote text-ink-3">o con tu correo</span>
+        <span className="text-footnote text-ink-3">{t("orEmail")}</span>
         <span className="bg-border h-px flex-1" />
       </div>
 
       <form onSubmit={sendMagicLink} className="space-y-4" noValidate>
         <Field
-          label="Correo"
+          label={t("emailLabel")}
           type="email"
           autoComplete="email"
-          placeholder="tu@correo.com"
+          placeholder={t("emailPlaceholder")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          error={emailError}
+          error={emailError ? t("errors.invalidEmail") : null}
         />
         <Button type="submit" className="w-full" disabled={pending !== null}>
-          {pending === "email" ? "Enviando..." : "Enviar link mágico"}
+          {pending === "email" ? t("sending") : t("send")}
         </Button>
       </form>
 
       {error && (
         <p role="alert" className="text-callout text-negative-text">
-          {error}
+          {t(`errors.${error}`)}
         </p>
       )}
     </div>

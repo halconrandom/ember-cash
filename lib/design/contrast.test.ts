@@ -66,6 +66,8 @@ const LIGHT_PAIRS: Pair[] = [
   ["ember-text / surface", "ember-text", "surface", TEXT, 5.1],
   ["ember-text / canvas", "ember-text", "canvas", TEXT, 4.68],
   ["ember-text / ember-50", "ember-text", "ember-50", TEXT, 4.68],
+  // Etiqueta del ítem activo del sidebar: ember-text sobre la píldora (surface)
+  ["nav activa: ember-text / surface", "ember-text", "surface", TEXT, 5.1],
   ["ember (gráfico) / surface", "ember", "surface", GRAPHIC, 3.05],
   // Estados y categorías: texto sobre su tinte
   ["positive-text / tint", "positive-text", "positive-tint", TEXT, 4.71],
@@ -115,6 +117,7 @@ const DARK_PAIRS: Pair[] = [
   ["blanco / ember-fill", "#FFFFFF", "ember-fill", TEXT, 4.61],
   ["ember-text / surface", "ember-text", "surface", TEXT, 8.25],
   ["ember-text / ember-50", "ember-text", "ember-50", TEXT, 7.69],
+  ["nav activa: ember-text / surface", "ember-text", "surface", TEXT, 8.25],
   ["ember (gráfico) / surface", "ember", "surface", GRAPHIC, 6.88],
   ["positive / surface", "positive-text", "surface", TEXT, 9.54],
   ["negative / surface", "negative-text", "surface", TEXT, 6.17],

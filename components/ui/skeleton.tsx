@@ -3,6 +3,8 @@
  * final; el brillo es una opacidad suave que se detiene con movimiento
  * reducido (ver .animate-shimmer en globals.css).
  */
+import { useTranslations } from "next-intl";
+
 import { cn } from "@/lib/utils";
 
 export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
@@ -24,10 +26,11 @@ export function SkeletonRow() {
 }
 
 /** Lista de filas en carga, con el texto accesible "Cargando". */
-export function SkeletonList({ rows = 4, label = "Loading" }: { rows?: number; label?: string }) {
+export function SkeletonList({ rows = 4, label }: { rows?: number; label?: string }) {
+  const t = useTranslations("skeleton");
   return (
     <div role="status" aria-busy="true" className="space-y-[22px]">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t("loading")}</span>
       {Array.from({ length: rows }, (_, i) => (
         <SkeletonRow key={i} />
       ))}

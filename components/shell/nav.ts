@@ -1,39 +1,50 @@
 /**
- * Navegación del shell: rutas, etiquetas, íconos y títulos del topbar.
- * Las etiquetas siguen los frames de diseño (01-dashboard.png).
+ * Navegación del shell: rutas, íconos y claves de texto (messages/*.json,
+ * namespace "nav"). Los textos nunca van aquí directamente.
  */
 import type { IconName, SolidIconName } from "@/components/ui/icon-registry";
 
+/** Claves de nav.* en messages/*.json. */
+export type NavKey =
+  | "dashboard"
+  | "transactions"
+  | "savings"
+  | "debts"
+  | "subscriptions"
+  | "calendar"
+  | "household"
+  | "settings";
+
 export type NavEntry = {
   href: string;
-  label: string;
+  key: NavKey;
   icon: IconName & SolidIconName;
 };
 
 /** Elementos del sidebar, en el orden de 01-dashboard.png. */
 export const NAV_ITEMS: readonly NavEntry[] = [
-  { href: "/", label: "Dashboard", icon: "apps" },
-  { href: "/transactions", label: "Transactions", icon: "receipt" },
-  { href: "/savings", label: "Savings", icon: "piggy-bank" },
-  { href: "/debts", label: "Debts", icon: "credit-card" },
-  { href: "/subscriptions", label: "Subscriptions", icon: "refresh" },
-  { href: "/calendar", label: "Calendar", icon: "calendar" },
-  { href: "/household", label: "Household", icon: "users" },
+  { href: "/", key: "dashboard", icon: "apps" },
+  { href: "/transactions", key: "transactions", icon: "receipt" },
+  { href: "/savings", key: "savings", icon: "piggy-bank" },
+  { href: "/debts", key: "debts", icon: "credit-card" },
+  { href: "/subscriptions", key: "subscriptions", icon: "refresh" },
+  { href: "/calendar", key: "calendar", icon: "calendar" },
+  { href: "/household", key: "household", icon: "users" },
 ];
 
 /**
- * Título y subtítulo de cada ruta. Los subtítulos de los frames que dependen
- * de datos ("42 transactions in October 2026") llegan con cada pantalla.
+ * Título (clave de nav.*) y subtítulo opcional (clave de pages.*) por ruta.
+ * Los subtítulos que dependen de datos llegan con cada pantalla.
  */
-export const PAGE_TITLES: Record<string, { title: string; subtitle?: string }> = {
-  "/": { title: "Dashboard" },
-  "/transactions": { title: "Transactions" },
-  "/savings": { title: "Savings" },
-  "/debts": { title: "Debts" },
-  "/subscriptions": { title: "Subscriptions" },
-  "/calendar": { title: "Calendar", subtitle: "Payment due dates, paydays and recurring charges" },
-  "/household": { title: "Household" },
-  "/settings": { title: "Settings" },
+export const PAGE_TITLES: Record<string, { title: NavKey; subtitle?: "calendarSubtitle" }> = {
+  "/": { title: "dashboard" },
+  "/transactions": { title: "transactions" },
+  "/savings": { title: "savings" },
+  "/debts": { title: "debts" },
+  "/subscriptions": { title: "subscriptions" },
+  "/calendar": { title: "calendar", subtitle: "calendarSubtitle" },
+  "/household": { title: "household" },
+  "/settings": { title: "settings" },
 };
 
 /** ¿La ruta `pathname` corresponde al elemento `href`? */

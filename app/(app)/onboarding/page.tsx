@@ -3,6 +3,7 @@
  * terminó, vuelve a la página principal.
  */
 import { redirect } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -13,11 +14,12 @@ import { getCurrentProfile } from "@/lib/auth/session";
 import { OnboardingChoices } from "./onboarding-choices";
 
 export default function OnboardingPage() {
+  const t = useTranslations("onboarding");
   return (
     <CenteredPage className="max-w-xl space-y-6">
       <div>
-        <h1 className="text-title1 text-ink">Bienvenido a Ember Cash</h1>
-        <p className="text-body text-ink-2 mt-1">¿Cómo vas a usar la app?</p>
+        <h1 className="text-title1 text-ink">{t("title")}</h1>
+        <p className="text-body text-ink-2 mt-1">{t("subtitle")}</p>
       </div>
       <Suspense
         fallback={

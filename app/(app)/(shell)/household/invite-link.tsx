@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Botón para que el owner genere un link de invitación y lo copie.
- * Cada clic crea una invitación nueva (de un solo uso, vence en 7 días).
+ * Botón para que quien administra el hogar genere un enlace de invitación y
+ * lo copie. Cada clic crea una invitación nueva (de un solo uso, vence en 7 días).
  */
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/field";
 import { createInviteLink } from "./actions";
 
 export function InviteLink({ householdId }: { householdId: string }) {
+  const t = useTranslations("household");
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -41,13 +43,13 @@ export function InviteLink({ householdId }: { householdId: string }) {
   return (
     <div className="space-y-3">
       <Button icon="user-add" onClick={generate} disabled={pending}>
-        {pending ? "Generando..." : url ? "Generar otro link" : "Generar link de invitación"}
+        {pending ? t("inviteGenerating") : url ? t("inviteRegenerate") : t("inviteGenerate")}
       </Button>
 
       {url && (
         <div className="space-y-2">
           <label htmlFor="invite-url" className="text-callout text-ink-2 block font-semibold">
-            Link de invitación
+            {t("inviteLabel")}
           </label>
           <div className="flex gap-2">
             <div className="min-w-0 flex-1">
@@ -59,10 +61,10 @@ export function InviteLink({ householdId }: { householdId: string }) {
               />
             </div>
             <Button variant="secondary" size="lg" onClick={copy}>
-              {copied ? "Copiado" : "Copiar"}
+              {copied ? t("copied") : t("copy")}
             </Button>
           </div>
-          <p className="text-footnote text-ink-3">Sirve una sola vez y vence en 7 días.</p>
+          <p className="text-footnote text-ink-3">{t("inviteHint")}</p>
         </div>
       )}
 

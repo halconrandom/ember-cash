@@ -491,6 +491,7 @@ export type Database = {
           display_currency: string;
           display_name: string | null;
           id: string;
+          locale: string;
           onboarded_at: string | null;
           theme: string;
           timezone: string;
@@ -501,6 +502,7 @@ export type Database = {
           display_currency?: string;
           display_name?: string | null;
           id: string;
+          locale?: string;
           onboarded_at?: string | null;
           theme?: string;
           timezone?: string;
@@ -511,6 +513,7 @@ export type Database = {
           display_currency?: string;
           display_name?: string | null;
           id?: string;
+          locale?: string;
           onboarded_at?: string | null;
           theme?: string;
           timezone?: string;
