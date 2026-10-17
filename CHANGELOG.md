@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.3.0] - 2026-10-16
+
+### Añadido (fase 3: modelo financiero)
+
+- Migración `0003_finance_model.sql` (el nombre `0002` ya lo usaba `0002_revoke_handle_new_user.sql`): `currencies` (COP 0, USD 2), `categories` fijas y sembradas, `exchange_rates`, `accounts`, `transactions`, `transaction_splits`, `goals`, `goal_contributions`, `debts`, `debt_payments`, `recurring_items`, `recurring_occurrences`, `budgets` y `settlements`. Todo importe es `*_minor bigint` en la moneda original de la fila.
+- RLS en todas las tablas: lo personal solo lo ve y edita su owner; lo compartido, cualquier miembro del household. `owner_id` y `settlements.created_by` son inmutables; las referencias a otras filas (cuenta, meta, deuda, recurrente, transacción) deben ser visibles para quien escribe; `paid_by`, los repartos, los aportes y las liquidaciones solo pueden nombrar miembros del household.
+- Catálogos y `exchange_rates` de solo lectura para usuarios (escribe el service role). Se revocan `TRUNCATE`, `REFERENCES` y `TRIGGER` a `authenticated` en todas las tablas, también las de `0001`.
+- Tests SQL en `supabase/tests/rls_finance.sql` y runner `scripts/db-tests.mjs` (`pnpm test:rls`, `pnpm test:db:fresh`).
+- Tipos de la base en `lib/db/database.types.ts`, expuestos con alias y uniones literales en `lib/db/types.ts`.
+
 ## [0.2.0] - 2026-10-16
 
 ### Añadido (fase 2: auth y households)

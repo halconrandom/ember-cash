@@ -22,5 +22,6 @@
 
 - `pnpm check` (lint, typecheck y tests) debe pasar antes de cada commit.
 - La CLI de Supabase se usa con `pnpm exec supabase ...`.
-- Base de datos: nunca editar una migración ya aplicada; crear una nueva. Después de cada migración: `pnpm db:push`, `pnpm db:types` y `pnpm test:rls`. Toda tabla nueva lleva RLS.
+- Base de datos: nunca editar una migración ya aplicada; crear una nueva. Después de cada migración: `pnpm db:push`, `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`. Toda tabla nueva lleva RLS y tests en `supabase/tests/`. Los tipos de la base se importan desde `lib/db/types.ts`.
+- Dinero: todo importe es `*_minor` (entero en unidades menores) con su columna `currency`; nunca floats.
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.

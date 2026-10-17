@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getPublicEnv } from "@/lib/env";
 
-import type { Database } from "./database.types";
+import type { Database } from "@/lib/db/types";
 
 /** Rutas que no requieren sesión. Las APIs manejan su propia autenticación. */
 export function isPublicPath(pathname: string): boolean {

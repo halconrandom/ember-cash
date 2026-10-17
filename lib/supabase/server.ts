@@ -12,7 +12,7 @@ import { connection } from "next/server";
 
 import { getServerEnv } from "@/lib/env";
 
-import type { Database } from "./database.types";
+import type { Database } from "@/lib/db/types";
 
 /** Crea un cliente de Supabase ligado a las cookies de la petición actual. */
 export async function createClient() {

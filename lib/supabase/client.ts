@@ -7,7 +7,7 @@ import { createBrowserClient } from "@supabase/ssr";
 
 import { getPublicEnv } from "@/lib/env";
 
-import type { Database } from "./database.types";
+import type { Database } from "@/lib/db/types";
 
 /** Crea un cliente de Supabase para el navegador. */
 export function createClient() {

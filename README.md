@@ -91,7 +91,7 @@ pnpm exec supabase link --project-ref <ref-del-proyecto>
 | `pnpm db:types` | Regenera `lib/supabase/database.types.ts` desde el esquema remoto                         |
 | `pnpm test:rls` | Corre `supabase/tests/rls_households.sql` en una transacción con ROLLBACK (no deja datos) |
 
-Reglas: una migración ya aplicada no se edita; los cambios van en una migración nueva. Después de cada migración, corre `pnpm db:types` y `pnpm test:rls`.
+Reglas: una migración ya aplicada no se edita; los cambios van en una migración nueva. Después de cada migración, corre `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`.
 
 ### Auth
 
