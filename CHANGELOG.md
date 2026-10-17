@@ -2,6 +2,25 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.11.1] - 2026-10-17
+
+### Añadido
+
+- Test del estado de error del dashboard (`app/(app)/(shell)/_dashboard/slots.test.tsx`), con `dashboard_totals` simulada como caída:
+  - solo las 5 tarjetas que dependen de esa consulta (balance, ingresos, gastos, categorías y tendencia) muestran "Reintentar";
+  - próximos pagos, metas, deudas y suscripciones siguen con sus datos;
+  - "Reintentar" vuelve a pedir la página;
+  - si solo fallan las metas, solo esa tarjeta queda en error;
+  - un `redirect` interno de Next no se traga.
+- Contraste de los estados del presupuesto compartido (pendiente de la fase 10):
+  - en oscuro pasan los tres (barra contra pista: ámbar 6,18, rojo 3,84 y gris 3,25; contra la tarjeta, 9,93, 6,17 y 5,22);
+  - en claro pasan el rojo (3,29), el gris (4,34) y los textos;
+  - la barra ámbar en claro da 2,72 contra su pista (menos de 3:1) y queda en un test PENDIENTE hasta decidir cómo corregirla.
+
+### Cambiado
+
+- Las tarjetas del dashboard (slots) pasan a `_dashboard/slots.tsx` para poder probarlas, porque un `page.tsx` solo puede exportar la página. No cambia nada visible.
+
 ## [0.11.0] - 2026-10-17
 
 ### Añadido (fase 11: dashboard)

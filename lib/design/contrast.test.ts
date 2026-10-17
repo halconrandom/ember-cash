@@ -98,6 +98,12 @@ const LIGHT_PAIRS: Pair[] = [
   ["income-bar / surface", "income-bar", "surface", GRAPHIC, 5.26],
   ["expense-bar / surface", "expense-bar", "surface", GRAPHIC, 3.05],
   ["neutral-bar / surface", "neutral-bar", "surface", GRAPHIC, 5.15],
+  // Estados del presupuesto compartido en claro (el ámbar contra la pista
+  // queda en un test PENDIENTE abajo).
+  ["presupuesto rojo: negative / track", "negative", "track", GRAPHIC, 3.29],
+  ["presupuesto gris: neutral-bar / track", "neutral-bar", "track", GRAPHIC, 4.34],
+  ["presupuesto ámbar: amber-text / surface", "amber-text", "surface", TEXT, 5.2],
+  ["presupuesto rojo: negative-text / surface", "negative-text", "surface", TEXT, 5.3],
   // Miembros (iniciales sobre el avatar)
   ["member-a-on / member-a", "member-a-on", "member-a", TEXT],
   ["member-b-on / member-b", "member-b-on", "member-b", TEXT, 5.35],
@@ -127,6 +133,15 @@ const DARK_PAIRS: Pair[] = [
   // Excepción de la spec: en oscuro la barra de deudas usa #FF7A2E.
   ["barra deudas: debt-bar (#FF7A2E) / track", "debt-bar", "track", GRAPHIC, 4.28],
   ["barra deudas: debt-bar (#FF7A2E) / surface2", "debt-bar", "surface2", GRAPHIC, 6.17],
+  // Estados del presupuesto compartido (fase 10) en oscuro: barra contra su
+  // pista y contra la tarjeta; el texto del estado ya está arriba
+  // (amber-text, negative-text y text2 sobre surface).
+  ["presupuesto ámbar: amber / track", "amber", "track", GRAPHIC, 6.18],
+  ["presupuesto rojo: negative / track", "negative", "track", GRAPHIC, 3.84],
+  ["presupuesto gris: neutral-bar / track", "neutral-bar", "track", GRAPHIC, 3.25],
+  ["presupuesto ámbar: amber / surface", "amber", "surface", GRAPHIC, 9.93],
+  ["presupuesto rojo: negative / surface", "negative", "surface", GRAPHIC, 6.17],
+  ["presupuesto gris: neutral-bar / surface", "neutral-bar", "surface", GRAPHIC, 5.22],
   ["positive / surface", "positive-text", "surface", TEXT, 9.54],
   ["negative / surface", "negative-text", "surface", TEXT, 6.17],
   ["info / surface", "info-text", "surface", TEXT, 6.46],
@@ -204,6 +219,16 @@ describe("contraste de tokens", () => {
     // El naranja gráfico nunca es texto ni fondo de texto blanco.
     expect(contrastRatio("#FFFFFF", LIGHT.ember)).toBeLessThan(TEXT);
     expect(LIGHT["ember-text"]).not.toBe(LIGHT.ember);
+  });
+
+  it("PENDIENTE: en claro la barra ámbar del presupuesto no llega a 3:1 contra su pista", () => {
+    // amber #C2821C sobre track #EBEBF0 = 2,72 (WCAG 1.4.11 pide 3:1). Contra
+    // la tarjeta da 3,23 y el estado va escrito ("96 % usado"), así que el
+    // color no es la única señal; queda documentado hasta decidir: mantenerlo,
+    // usar amber-text #936316 para esa barra en claro u oscurecer la pista.
+    expect(contrastRatio(LIGHT.amber, LIGHT.track)).toBeCloseTo(2.72, 2);
+    // En oscuro los tres estados pasan (ver DARK_PAIRS).
+    expect(contrastRatio(DARK.amber, DARK.track)).toBeGreaterThanOrEqual(GRAPHIC);
   });
 
   it("la barra de deudas usa ember-fill en claro y el naranja gráfico en oscuro", () => {
