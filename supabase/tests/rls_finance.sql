@@ -14,6 +14,7 @@
 --            2...03 B personal, 2...04 C personal, 2...05 compartida (cuenta personal de A)
 --   metas    3...01 compartida, 3...02 A personal
 --   deuda    4...01 A;  recurrente 5...01 compartido;  presupuesto 6...01 compartido
+--   sección 7: transacciones 2...07 y 2...08 (compartidas)
 -- =============================================================================
 begin;
 
@@ -27,19 +28,30 @@ begin
     json_build_object('sub', uid, 'role', 'authenticated')::text, true);
 end $$;
 
--- Ejecuta `stmt` y exige que falle con el SQLSTATE `expected`.
-create function pg_temp.expect_error(stmt text, expected text, label text)
+-- Ejecuta `stmt` y exige que falle con el SQLSTATE `expected` (y, si se
+-- indica, con el mensaje `message`). Si falla, lo que hizo `stmt` se deshace.
+create function pg_temp.expect_error(stmt text, expected text, label text, message text default null)
 returns void language plpgsql as $$
 begin
   begin
     execute stmt;
   exception when others then
-    if sqlstate <> expected then
-      raise exception 'FALLO: % (esperaba %, obtuvo % "%")', label, expected, sqlstate, sqlerrm;
+    if sqlstate <> expected or (message is not null and sqlerrm <> message) then
+      raise exception 'FALLO: % (esperaba % %, obtuvo % "%")', label, expected,
+        coalesce(message, ''), sqlstate, sqlerrm;
     end if;
     return;
   end;
   raise exception 'FALLO: % (no dio error)', label;
+end $$;
+
+-- Ejecuta `stmt` y exige que NO falle.
+create function pg_temp.expect_ok(stmt text, label text)
+returns void language plpgsql as $$
+begin
+  execute stmt;
+exception when others then
+  raise exception 'FALLO: % (dio % "%")', label, sqlstate, sqlerrm;
 end $$;
 
 -- Ejecuta `stmt` (update/delete) y exige que afecte exactamente `n` filas.
@@ -123,7 +135,9 @@ insert into public.transactions (id, household_id, account_id, kind, category_ke
 
 insert into public.transaction_splits (transaction_id, user_id, share_minor) values
   ('20000000-0000-4000-8000-000000000002', '00000000-0000-4000-b000-00000000000a', 1000000),
-  ('20000000-0000-4000-8000-000000000002', '00000000-0000-4000-b000-00000000000b', 1000000);
+  ('20000000-0000-4000-8000-000000000002', '00000000-0000-4000-b000-00000000000b', 1000000),
+  ('20000000-0000-4000-8000-000000000005', '00000000-0000-4000-b000-00000000000a', 150000),
+  ('20000000-0000-4000-8000-000000000005', '00000000-0000-4000-b000-00000000000b', 150000);
 
 insert into public.goal_contributions (goal_id, amount_minor, currency)
 values ('30000000-0000-4000-8000-000000000001', 100000, 'COP');
@@ -175,7 +189,7 @@ select pg_temp.login('00000000-0000-4000-b000-00000000000b');
 select pg_temp.expect_count('select count(*) from public.accounts', 2, 'B ve la cuenta compartida y la suya');
 select pg_temp.expect_count('select count(*) from public.transactions', 3, 'B ve las 2 compartidas y la suya');
 select pg_temp.expect_count($q$select count(*) from public.transactions where id = '20000000-0000-4000-8000-000000000001'$q$, 0, 'B no ve la transacción personal de A');
-select pg_temp.expect_count('select count(*) from public.transaction_splits', 2, 'B ve los repartos de la compartida');
+select pg_temp.expect_count('select count(*) from public.transaction_splits', 4, 'B ve los repartos de las compartidas');
 select pg_temp.expect_count('select count(*) from public.goals', 1, 'B ve solo la meta compartida');
 select pg_temp.expect_count('select count(*) from public.goal_contributions', 1, 'B ve los aportes a la meta compartida');
 select pg_temp.expect_count('select count(*) from public.debts', 0, 'B no ve las deudas de A');
@@ -217,7 +231,7 @@ select pg_temp.expect_error(format($q$insert into public.transactions (household
 select pg_temp.expect_error($q$insert into public.transactions (account_id, kind, category_key, description, amount_minor, currency, occurred_on) values ('10000000-0000-4000-8000-000000000001', 'expense', 'food', 'x', 1, 'COP', current_date)$q$, '42501', 'C no usa la cuenta de A en una transacción suya');
 select pg_temp.expect_error($q$insert into public.transaction_splits values ('20000000-0000-4000-8000-000000000002', '00000000-0000-4000-b000-00000000000c', 1)$q$, '42501', 'C no agrega repartos a la compartida de H');
 select pg_temp.expect_error($q$insert into public.goal_contributions (goal_id, amount_minor, currency) values ('30000000-0000-4000-8000-000000000001', 1, 'COP')$q$, '42501', 'C no aporta a la meta de H');
-select pg_temp.expect_error($q$insert into public.debt_payments (debt_id, paid_on, amount_minor) values ('40000000-0000-4000-8000-000000000001', current_date, 1)$q$, '42501', 'C no registra pagos en la deuda de A');
+select pg_temp.expect_error($q$insert into public.debt_payments (debt_id, paid_on, amount_minor, principal_minor) values ('40000000-0000-4000-8000-000000000001', current_date, 1, 1)$q$, '42501', 'C no registra pagos en la deuda de A');
 select pg_temp.expect_error($q$insert into public.recurring_occurrences (recurring_item_id, due_on) values ('50000000-0000-4000-8000-000000000001', current_date + 30)$q$, '42501', 'C no agrega vencimientos al recurrente de H');
 select pg_temp.expect_error(format($q$insert into public.settlements (household_id, from_user, to_user, amount_minor, currency) values (%L, '00000000-0000-4000-b000-00000000000a', '00000000-0000-4000-b000-00000000000b', 1, 'COP')$q$, current_setting('test.h')), '42501', 'C no crea liquidaciones en H');
 select pg_temp.expect_error(format($q$insert into public.budgets (household_id, category_key, limit_minor, currency) values (%L, 'food', 1, 'COP')$q$, current_setting('test.h')), '42501', 'C no crea presupuestos en H');
@@ -267,6 +281,95 @@ select pg_temp.expect_error($q$insert into public.transactions (account_id, kind
 select pg_temp.expect_error($q$insert into public.transactions (account_id, kind, description, amount_minor, currency, occurred_on, transfer_to_account_id) values ('10000000-0000-4000-8000-000000000001', 'transfer', 'x', 1, 'COP', current_date, '10000000-0000-4000-8000-000000000001')$q$, '23514', 'no hay transferencias a la misma cuenta');
 select pg_temp.expect_error($q$insert into public.transactions (account_id, kind, category_key, description, amount_minor, currency, occurred_on) values ('10000000-0000-4000-8000-000000000001', 'expense', 'food', 'x', 0, 'COP', current_date)$q$, '23514', 'el importe debe ser mayor que 0');
 select pg_temp.expect_error($q$insert into public.recurring_occurrences (recurring_item_id, due_on) values ('50000000-0000-4000-8000-000000000001', current_date)$q$, '23505', 'no hay dos vencimientos el mismo día');
+
+-- =============================================================================
+-- 7. Repartos (trigger diferido) y desglose de pagos de deuda
+--    El trigger de repartos es DEFERRABLE INITIALLY DEFERRED: normalmente se
+--    comprueba al hacer COMMIT. Como estos tests terminan en ROLLBACK, cada
+--    caso termina con `set constraints all immediate` para forzar la
+--    comprobación en ese momento, y empieza con `deferred` para poder crear la
+--    transacción y sus repartos en sentencias separadas.
+-- =============================================================================
+select pg_temp.login('00000000-0000-4000-b000-00000000000a');
+
+-- Todo lo creado en la preparación cumple las reglas.
+select pg_temp.expect_ok('set constraints all immediate; set constraints all deferred',
+  'los datos de la preparación cumplen las reglas de repartos');
+
+select pg_temp.expect_ok(format($q$
+  set constraints all deferred;
+  insert into public.transactions (id, household_id, account_id, kind, category_key, description,
+    amount_minor, currency, occurred_on, paid_by)
+  values ('20000000-0000-4000-8000-000000000007', %L, '10000000-0000-4000-8000-000000000002',
+    'expense', 'food', 'Cena', 90000, 'COP', current_date, '00000000-0000-4000-b000-00000000000a');
+  insert into public.transaction_splits values
+    ('20000000-0000-4000-8000-000000000007', '00000000-0000-4000-b000-00000000000a', 45000),
+    ('20000000-0000-4000-8000-000000000007', '00000000-0000-4000-b000-00000000000b', 45000);
+  set constraints all immediate$q$, current_setting('test.h')),
+  'compartida con repartos que suman el monto pasa');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  update public.transaction_splits set share_minor = 50000
+  where transaction_id = '20000000-0000-4000-8000-000000000007'
+    and user_id = '00000000-0000-4000-b000-00000000000a';
+  set constraints all immediate$q$,
+  '23514', 'repartos que suman más que el monto fallan', 'splits_sum_mismatch');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  update public.transactions set amount_minor = 100000
+  where id = '20000000-0000-4000-8000-000000000007';
+  set constraints all immediate$q$,
+  '23514', 'cambiar el monto sin ajustar los repartos falla', 'splits_sum_mismatch');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  delete from public.transaction_splits
+  where transaction_id = '20000000-0000-4000-8000-000000000007'
+    and user_id = '00000000-0000-4000-b000-00000000000b';
+  set constraints all immediate$q$,
+  '23514', 'quitar un reparto deja la suma corta y falla', 'splits_sum_mismatch');
+
+select pg_temp.expect_error(format($q$
+  set constraints all deferred;
+  insert into public.transactions (id, household_id, account_id, kind, category_key, description,
+    amount_minor, currency, occurred_on)
+  values ('20000000-0000-4000-8000-000000000008', %L, '10000000-0000-4000-8000-000000000002',
+    'expense', 'food', 'Sin repartos', 10000, 'COP', current_date);
+  set constraints all immediate$q$, current_setting('test.h')),
+  '23514', 'una compartida sin repartos falla', 'splits_sum_mismatch');
+
+select pg_temp.expect_ok($q$
+  set constraints all deferred;
+  update public.transactions set amount_minor = 100000
+  where id = '20000000-0000-4000-8000-000000000007';
+  update public.transaction_splits set share_minor = 50000
+  where transaction_id = '20000000-0000-4000-8000-000000000007';
+  set constraints all immediate$q$,
+  'cambiar monto y repartos juntos pasa');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  insert into public.transaction_splits values
+    ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-b000-00000000000a', 25000);
+  set constraints all immediate$q$,
+  '23514', 'una transacción personal no lleva repartos', 'personal_transaction_has_splits');
+
+select pg_temp.expect_error($q$
+  set constraints all deferred;
+  update public.transactions set household_id = null
+  where id = '20000000-0000-4000-8000-000000000007';
+  set constraints all immediate$q$,
+  '23514', 'volver personal una compartida con repartos falla', 'personal_transaction_has_splits');
+
+-- Desglose de pagos de deuda (CHECK inmediato).
+select pg_temp.expect_ok($q$insert into public.debt_payments (debt_id, paid_on, amount_minor, interest_minor, principal_minor) values ('40000000-0000-4000-8000-000000000001', current_date, 100000, 30000, 70000)$q$,
+  'pago de deuda con interés + capital = monto pasa');
+select pg_temp.expect_error($q$insert into public.debt_payments (debt_id, paid_on, amount_minor, interest_minor, principal_minor) values ('40000000-0000-4000-8000-000000000001', current_date, 100000, 30000, 60000)$q$,
+  '23514', 'pago de deuda con desglose que no suma falla');
+select pg_temp.expect_error($q$insert into public.debt_payments (debt_id, paid_on, amount_minor) values ('40000000-0000-4000-8000-000000000001', current_date, 100000)$q$,
+  '23514', 'pago de deuda sin desglose falla');
 
 select set_config('role', 'postgres', true);
 select 'OK: todas las pruebas RLS de finanzas pasaron' as resultado;

@@ -23,5 +23,6 @@
 - `pnpm check` (lint, typecheck y tests) debe pasar antes de cada commit.
 - La CLI de Supabase se usa con `pnpm exec supabase ...`.
 - Base de datos: nunca editar una migración ya aplicada; crear una nueva. Después de cada migración: `pnpm db:push`, `pnpm db:types`, `pnpm test:rls` y `pnpm test:db:fresh`. Toda tabla nueva lleva RLS y tests en `supabase/tests/`. Los tipos de la base se importan desde `lib/db/types.ts`.
-- Dinero: todo importe es `*_minor` (entero en unidades menores) con su columna `currency`; nunca floats.
+- Dinero: todo importe es `*_minor` (entero en unidades menores) en la moneda original de la fila, con su columna `currency`; la conversión se hace al leer con `exchange_rates`. Nunca floats.
+- Una transacción compartida y sus repartos se escriben en la misma transacción de base de datos (la suma se valida al hacer COMMIT); las personales no llevan repartos.
 - Next.js 16 con `cacheComponents`: lo que lee cookies, params o datos va dentro de `<Suspense>` en cada página.

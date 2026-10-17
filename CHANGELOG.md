@@ -2,6 +2,19 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.3.1] - 2026-10-16
+
+### Añadido
+
+- Migración `0004_finance_validations.sql`:
+  - CHECK en `debt_payments`: `interest_minor + principal_minor = amount_minor`.
+  - Constraint trigger diferido (`DEFERRABLE INITIALLY DEFERRED`) en `transaction_splits` y `transactions`: en una transacción compartida la suma de `share_minor` debe ser igual a `amount_minor`; una transacción personal no lleva repartos. Se comprueba al hacer COMMIT, así que la transacción y sus repartos se pueden crear en sentencias separadas dentro de la misma transacción de base de datos.
+- Tests para ambos casos (suma correcta pasa, suma incorrecta falla) en `supabase/tests/rls_finance.sql`.
+
+### Cambiado
+
+- Esquema sin cambios en importes: cada fila guarda el importe en su moneda original y la conversión se hace al leer (decisión confirmada; la sección 8 del spec no se modifica).
+
 ## [0.3.0] - 2026-10-16
 
 ### Añadido (fase 3: modelo financiero)
