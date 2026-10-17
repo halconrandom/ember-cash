@@ -75,7 +75,6 @@ async function CalendarContent({ searchParams }: { searchParams: SearchParams })
         open={creating}
         editing={null}
         initialKind="bill"
-        accounts={accounts}
         today={today}
         param="event"
       />

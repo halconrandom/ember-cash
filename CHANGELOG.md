@@ -2,6 +2,17 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.10.2] - 2026-10-17
+
+### Cambiado (regla de suscripciones de la fase 9)
+
+- Se elimina el registro automático. El modal de suscripciones ya no tiene "Registrar sola" ni la cuenta asociada. Migración `0011_manual_occurrences.sql`: se borra la columna `recurring_items.auto_post`.
+- El cron `/api/cron/occurrences` ya no crea transacciones. Deja al día los pagos de deuda, materializa vencimientos y marca como "Vencida" (`overdue`, estado nuevo) los que tienen fecha pasada y nadie confirmó (RPC `mark_overdue_occurrences`, solo para la service role). Los vencimientos ya atrasados se marcaron en la migración.
+- En Suscripciones y en el calendario, el cobro de hoy aparece como "Por pagar" y uno pasado sin confirmar como "Vencida". "Marcar como pagado" abre un modal con la fecha real de pago (por defecto hoy, no puede ser futura) y la cuenta. Es lo único que crea la transacción, y en el calendario se marca de a un vencimiento. Una vencida también se puede reprogramar y vuelve a quedar programada.
+- `post_occurrence` exige un usuario: sin `auth.uid()` falla con `not_authenticated`, y la service role ya no puede ejecutarla. Recibe la fecha real de pago (`p_paid_on`); el reparto en un hogar usa esa fecha.
+- Salir del hogar (0.10.1) ya no apaga nada, así que se quitaron el aviso de suscripciones sin cobro automático y la columna `household_departures.auto_post_disabled`. La columna `notice_dismissed_at` queda sin uso.
+- Tests: el cron nunca crea transacciones (Vitest, sin llamadas a `post_occurrence` ni a la tabla `transactions`); en SQL, sin usuario no se registra nada, la service role no ejecuta `post_occurrence`, marcar vencidas no crea transacciones ni toca a otros dueños, una vencida se paga con la fecha real y `auto_post` ya no existe. Estado visible en `lib/recurring/state.ts`, con tests.
+
 ## [0.10.1] - 2026-10-17
 
 ### Añadido (fase 10.1: salir del hogar)

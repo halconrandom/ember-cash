@@ -1,9 +1,11 @@
 /**
  * Qué recurrente crea el campo Repetir de una transacción.
  *
- * - Ingreso → día de cobro (income), sin auto-registro.
- * - Gasto de la categoría Suscripciones → suscripción, se registra sola.
- * - Otro gasto → factura (bill), queda pendiente hasta confirmar.
+ * - Ingreso → día de cobro (income).
+ * - Gasto de la categoría Suscripciones → suscripción.
+ * - Otro gasto → factura (bill).
+ * Ninguno se registra solo: cada vencimiento queda Por pagar hasta que
+ * alguien lo marca como pagado.
  * - Transferencia o "Nunca" → no crea nada.
  * Solo al crear: editar una transacción no toca el recurrente (si no, cada
  * guardado duplicaría la serie).
@@ -17,7 +19,6 @@ export type Repeat = "never" | RecurringFrequency;
 export type RecurringDraft = {
   kind: RecurringKind;
   frequency: RecurringFrequency;
-  autoPost: boolean;
   name: string;
   anchorDate: string;
 };
@@ -36,9 +37,6 @@ export function recurringFromTransaction(
   return {
     kind,
     frequency: tx.repeat,
-    // Las facturas y los días de cobro no se auto-registran aunque la columna
-    // lo permita: se confirman con "Marcar como pagado".
-    autoPost: kind === "subscription",
     name: recurringName(tx.description),
     anchorDate: tx.occurredOn,
   };

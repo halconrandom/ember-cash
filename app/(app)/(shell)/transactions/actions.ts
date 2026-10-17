@@ -100,7 +100,6 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
         frequency: draft.frequency,
         interval: 1,
         anchor_date: draft.anchorDate,
-        auto_post: draft.autoPost,
       })
       .select("id")
       .single();

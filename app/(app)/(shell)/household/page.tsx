@@ -8,8 +8,6 @@
  *   compartidos del mes con su reparto, presupuesto compartido, meta
  *   compartida e historial de liquidaciones. "Agregar gasto compartido"
  *   abre el modal de transacciones (?tx=new) con "Pagó".
- * - Si alguien salió y sus suscripciones quedaron sin cobro automático,
- *   arriba aparece un aviso (en los dos scopes).
  */
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -36,7 +34,6 @@ import { parseFilters } from "@/lib/transactions/filters";
 import { getTransaction } from "@/lib/transactions/queries";
 
 import { TransactionModal } from "../transactions/transaction-modal";
-import { DepartureNotices } from "./departure-notice";
 import { HouseholdHeader, NoHousehold, PersonalScopeNote } from "./household-header";
 import { HouseholdView } from "./household-view";
 
@@ -108,7 +105,6 @@ async function HouseholdContent({ searchParams }: { searchParams: SearchParams }
       <div className="space-y-6">
         <TopbarHideAction />
         {header}
-        <DepartureNotices departures={departures} />
         <PersonalScopeNote />
       </div>
     );
@@ -142,7 +138,6 @@ async function HouseholdContent({ searchParams }: { searchParams: SearchParams }
         }
       />
       {header}
-      <DepartureNotices departures={departures} />
       <HouseholdView
         householdId={household.id}
         members={members}

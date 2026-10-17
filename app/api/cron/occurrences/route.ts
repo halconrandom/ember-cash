@@ -1,8 +1,9 @@
 /**
  * GET /api/cron/occurrences
  * Lo llama el cron diario de Vercel (vercel.json) con el encabezado
- * `Authorization: Bearer <CRON_SECRET>`. Materializa vencimientos y registra
- * las transacciones de hoy que corresponden (ver lib/recurring/cron.ts).
+ * `Authorization: Bearer <CRON_SECRET>`. Materializa vencimientos y marca
+ * como vencidos los que pasaron sin confirmar. Nunca crea transacciones (ver
+ * lib/recurring/cron.ts).
  */
 import { timingSafeEqual } from "node:crypto";
 

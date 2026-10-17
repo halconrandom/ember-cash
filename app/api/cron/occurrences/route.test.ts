@@ -23,10 +23,10 @@ describe("GET /api/cron/occurrences", () => {
   });
 
   it("con el secreto materializa y registra", async () => {
-    runOccurrencesCron.mockResolvedValue({ ok: true, inserted: 3, posted: 1, skipped: 0 });
+    runOccurrencesCron.mockResolvedValue({ ok: true, inserted: 3, overdue: 1 });
     const res = await GET(new Request("http://x/api/cron/occurrences", { headers: AUTH }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, inserted: 3, posted: 1, skipped: 0 });
+    expect(await res.json()).toEqual({ ok: true, inserted: 3, overdue: 1 });
   });
 
   it("si la corrida falla responde 500", async () => {

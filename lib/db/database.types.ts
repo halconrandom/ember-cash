@@ -398,7 +398,6 @@ export type Database = {
       };
       household_departures: {
         Row: {
-          auto_post_disabled: string[];
           display_name: string | null;
           household_id: string;
           id: string;
@@ -408,7 +407,6 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          auto_post_disabled?: string[];
           display_name?: string | null;
           household_id: string;
           id?: string;
@@ -418,7 +416,6 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          auto_post_disabled?: string[];
           display_name?: string | null;
           household_id?: string;
           id?: string;
@@ -569,7 +566,6 @@ export type Database = {
           account_id: string | null;
           amount_minor: number;
           anchor_date: string;
-          auto_post: boolean;
           category_key: string | null;
           currency: string;
           debt_id: string | null;
@@ -589,7 +585,6 @@ export type Database = {
           account_id?: string | null;
           amount_minor: number;
           anchor_date: string;
-          auto_post?: boolean;
           category_key?: string | null;
           currency: string;
           debt_id?: string | null;
@@ -609,7 +604,6 @@ export type Database = {
           account_id?: string | null;
           amount_minor?: number;
           anchor_date?: string;
-          auto_post?: boolean;
           category_key?: string | null;
           currency?: string;
           debt_id?: string | null;
@@ -937,9 +931,17 @@ export type Database = {
       is_household_member: { Args: { hid: string }; Returns: boolean };
       is_household_owner: { Args: { hid: string }; Returns: boolean };
       leave_household: { Args: { hid: string }; Returns: undefined };
+      mark_overdue_occurrences: {
+        Args: { p_owner: string; p_today: string };
+        Returns: number;
+      };
       max_household_members: { Args: never; Returns: number };
       post_occurrence: {
-        Args: { p_account_id: string; p_occurrence_id: string };
+        Args: {
+          p_account_id: string;
+          p_occurrence_id: string;
+          p_paid_on?: string;
+        };
         Returns: string;
       };
       remove_household_member: {

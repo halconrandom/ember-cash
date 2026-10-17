@@ -4,7 +4,9 @@
  * Modal para crear o editar un recurrente (suscripción, factura o día de
  * cobro). En Suscripciones el tipo queda fijo en suscripción. En el
  * calendario se puede elegir. "Una vez" guarda un mensual que termina el
- * mismo día, así el motor solo genera esa ocurrencia.
+ * mismo día, así el motor solo genera esa ocurrencia. Nada se registra
+ * solo: cada vencimiento queda Por pagar hasta "Marcar como pagado", que es
+ * donde se elige la cuenta y la fecha real.
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -17,9 +19,7 @@ import { Field } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { SelectField } from "@/components/ui/select-field";
-import { ACCOUNT_TYPE_ICON, CATEGORY_META, categoriesFor } from "@/lib/categories";
-import type { AccountSummary } from "@/lib/accounts/queries";
+import { CATEGORY_META, categoriesFor } from "@/lib/categories";
 import type { CategoryKey } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
@@ -45,7 +45,6 @@ type Props = {
   /** En Suscripciones no se cambia el tipo. */
   lockedKind?: "subscription";
   initialKind?: FormKind;
-  accounts: AccountSummary[];
   today: string;
   /** Qué parámetro de la URL cierra el modal. */
   param: "sub" | "event";
@@ -56,7 +55,6 @@ export function SubscriptionModal({
   editing,
   lockedKind,
   initialKind = "bill",
-  accounts,
   today,
   param,
 }: Props) {
@@ -78,7 +76,6 @@ export function SubscriptionModal({
   const [currency, setCurrency] = useState(editing?.amount.currency ?? displayCurrency);
   const [amount, setAmount] = useState(editing ? f.amount(editing.amount) : "");
   const [categoryKey, setCategoryKey] = useState(editing?.categoryKey ?? "");
-  const [accountId, setAccountId] = useState(editing?.accountId ?? "");
   const [frequency, setFrequency] = useState<FormFrequency>(
     editing ? (editing.endsOn === editing.anchorDate ? "once" : editing.frequency) : "monthly",
   );
@@ -87,7 +84,6 @@ export function SubscriptionModal({
   const [endsOn, setEndsOn] = useState(
     editing?.endsOn && editing.endsOn !== editing.anchorDate ? editing.endsOn : "",
   );
-  const [autoPost, setAutoPost] = useState(editing ? editing.autoPost : true);
   const [errors, setErrors] = useState<Partial<Record<RecurringField, RecurringErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -122,12 +118,10 @@ export function SubscriptionModal({
       amount,
       currency,
       categoryKey,
-      accountId,
       frequency,
       interval: frequency === "once" ? "1" : interval,
       anchorDate,
       endsOn,
-      autoPost: (lockedKind ?? kind) === "subscription" && autoPost,
     };
     const check = validateRecurring(input, locale);
     if (!check.ok) {
@@ -161,13 +155,6 @@ export function SubscriptionModal({
   }
 
   const categoryKind = (lockedKind ?? kind) === "income" ? "income" : "expense";
-  const accountOptions = [
-    { value: "", label: tm("noAccount") },
-    ...accounts.map((account) => ({
-      value: account.id,
-      label: `${account.name} · ${account.currency}`,
-    })),
-  ];
 
   const footer = (
     <>
@@ -365,36 +352,7 @@ export function SubscriptionModal({
           )}
         </div>
 
-        <SelectField
-          label={tm("account")}
-          icon={
-            ACCOUNT_TYPE_ICON[
-              accounts.find((account) => account.id === accountId)?.type ?? "checking"
-            ]
-          }
-          value={accountId}
-          onChange={(value) => {
-            setAccountId(value);
-            clear("accountId");
-          }}
-          options={accountOptions}
-          error={err("accountId")}
-        />
-
-        {(lockedKind ?? kind) === "subscription" && (
-          <label className="text-body text-ink flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={autoPost}
-              onChange={(event) => setAutoPost(event.target.checked)}
-              className="accent-ember-fill size-4"
-            />
-            {tm("autoPost")}
-          </label>
-        )}
-        {(lockedKind ?? kind) !== "subscription" && (
-          <p className="text-callout text-ink-2">{tm("confirmHint")}</p>
-        )}
+        <p className="text-callout text-ink-2">{tm("confirmHint")}</p>
 
         {editing && (
           <Button

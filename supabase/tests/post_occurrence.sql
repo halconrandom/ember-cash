@@ -1,5 +1,6 @@
 -- =============================================================================
--- Tests de 0008_post_occurrence.sql. A y B en el hogar H; C es ajeno.
+-- Tests de post_occurrence (0008, cambiada en 0010 y 0011) y del estado
+-- 'overdue' (0011). A y B en el hogar H; C es ajeno.
 -- Todo en una transacción con ROLLBACK.
 -- =============================================================================
 begin;
@@ -48,9 +49,9 @@ select public.accept_invite('po-token');
 -- 1. Suscripción personal: crea la transacción, la vincula y marca pagado.
 select pg_temp.po_login('00000000-0000-4000-e100-00000000000a');
 insert into public.recurring_items (id, kind, name, category_key, amount_minor, currency, account_id,
-  frequency, anchor_date, auto_post)
+  frequency, anchor_date)
 values ('73000000-0000-4000-8000-000000000001', 'subscription', 'Nube', 'subscriptions', 11960, 'COP',
-  '72000000-0000-4000-8000-000000000001', 'monthly', current_date, true);
+  '72000000-0000-4000-8000-000000000001', 'monthly', current_date);
 insert into public.recurring_occurrences (id, recurring_item_id, due_on)
 values ('74000000-0000-4000-8000-000000000001', '73000000-0000-4000-8000-000000000001', current_date);
 
@@ -123,7 +124,50 @@ update public.recurring_items set subtitle = '200 GB' where id = '73000000-0000-
 select pg_temp.po_expect((select subtitle = '200 GB' from public.recurring_items
   where id = '73000000-0000-4000-8000-000000000001'), 'guarda el subtítulo');
 
+-- 8. Vencida y pagada después: la transacción lleva la fecha real de pago.
 select set_config('role', 'postgres', true);
+insert into public.recurring_occurrences (id, recurring_item_id, due_on, status)
+values ('74000000-0000-4000-8000-000000000005', '73000000-0000-4000-8000-000000000001', current_date - 10, 'overdue');
+select pg_temp.po_login('00000000-0000-4000-e100-00000000000a');
+select set_config('test.po_late', public.post_occurrence('74000000-0000-4000-8000-000000000005',
+  '72000000-0000-4000-8000-000000000001', current_date - 2)::text, true);
+select pg_temp.po_expect((select occurred_on = current_date - 2 from public.transactions
+  where id = current_setting('test.po_late')::uuid), 'la transacción usa la fecha real de pago');
+select pg_temp.po_expect((select status = 'paid' from public.recurring_occurrences
+  where id = '74000000-0000-4000-8000-000000000005'), 'una vencida se puede marcar como pagada');
+
+-- 9. Nunca automático: sin usuario (como el cron) no registra, y la service
+-- role no puede ejecutarla.
+select set_config('role', 'postgres', true);
+select set_config('request.jwt.claims', '', true);
+insert into public.recurring_occurrences (id, recurring_item_id, due_on)
+values ('74000000-0000-4000-8000-000000000006', '73000000-0000-4000-8000-000000000001', current_date - 1);
+select pg_temp.po_expect_error($q$select public.post_occurrence('74000000-0000-4000-8000-000000000006',
+  '72000000-0000-4000-8000-000000000001')$q$, '28000', 'sin usuario no se registra nada');
+select pg_temp.po_expect(not has_function_privilege('service_role', 'public.post_occurrence(uuid, uuid, date)', 'execute'),
+  'la service role no puede ejecutar post_occurrence');
+select pg_temp.po_expect(not exists (select 1 from information_schema.columns
+  where table_schema = 'public' and table_name = 'recurring_items' and column_name = 'auto_post'),
+  'la columna auto_post ya no existe');
+
+-- 10. mark_overdue_occurrences: solo marca las pasadas sin confirmar del
+-- dueño y no crea transacciones.
+select set_config('test.po_txcount', (select count(*) from public.transactions)::text, true);
+select pg_temp.po_expect(public.mark_overdue_occurrences('00000000-0000-4000-e100-00000000000a', current_date) = 1,
+  'marca una vencida (la de ayer)');
+select pg_temp.po_expect((select status = 'overdue' from public.recurring_occurrences
+  where id = '74000000-0000-4000-8000-000000000006'), 'la de ayer queda vencida');
+select pg_temp.po_expect((select status = 'scheduled' from public.recurring_occurrences
+  where id = '74000000-0000-4000-8000-000000000002'), 'la futura sigue programada');
+select pg_temp.po_expect((select count(*) from public.transactions)::text = current_setting('test.po_txcount'),
+  'marcar vencidas no crea transacciones');
+select pg_temp.po_expect(public.mark_overdue_occurrences('00000000-0000-4000-e100-00000000000c', current_date) = 0,
+  'no toca vencimientos de otro dueño');
+select pg_temp.po_expect(not has_function_privilege('authenticated', 'public.mark_overdue_occurrences(uuid, date)', 'execute'),
+  'solo la service role marca vencidas');
+select pg_temp.po_expect_error($q$update public.recurring_occurrences set status = 'otro'
+  where id = '74000000-0000-4000-8000-000000000006'$q$, '23514', 'estado desconocido rechazado');
+
 select 'OK: todas las pruebas de post_occurrence pasaron' as resultado;
 
 rollback;

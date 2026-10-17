@@ -14,8 +14,7 @@
  * - saveBudget / deleteBudget / copyBudgets: presupuestos compartidos por
  *   categoría y mes.
  * - leaveHousehold / removeMember: salir o quitar a alguien (solo con el
- *   saldo en cero; lo valida la base, 0010). dismissDepartureNotice cierra el
- *   aviso de suscripciones sin cobro automático.
+ *   saldo en cero; lo valida la base, 0010).
  */
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -329,18 +328,4 @@ export async function removeMember(input: unknown): Promise<LeaveResult> {
   if (error) return leaveError(error.message);
   revalidatePath("/", "layout");
   return { ok: true };
-}
-
-/** Cierra el aviso de una salida (para todo el hogar). */
-export async function dismissDepartureNotice(id: unknown): Promise<{ ok: boolean }> {
-  await requireUser();
-  const parsed = z.uuid().safeParse(id);
-  if (!parsed.success) return { ok: false };
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("household_departures")
-    .update({ notice_dismissed_at: new Date().toISOString() })
-    .eq("id", parsed.data);
-  revalidatePath("/household");
-  return { ok: !error };
 }

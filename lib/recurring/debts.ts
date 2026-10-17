@@ -101,7 +101,6 @@ export async function syncDebtRecurring(
       frequency: "monthly" as const,
       interval: 1,
       anchor_date: anchor,
-      auto_post: false,
       status: "active" as const,
       debt_id: debt.id,
     };
@@ -161,7 +160,8 @@ export async function markDebtOccurrencePaid(
     .from("recurring_occurrences")
     .select("id")
     .eq("recurring_item_id", item.id)
-    .eq("status", "scheduled")
+    // Por pagar o vencida: el pago de ese mes la confirma.
+    .in("status", ["scheduled", "overdue"])
     .gte("due_on", from)
     .lte("due_on", to)
     .limit(1)

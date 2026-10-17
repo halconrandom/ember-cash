@@ -3,8 +3,10 @@
 /**
  * Calendario (06/16-calendar.png): mes de lunes a domingo, tres tipos de
  * cargo, "+N más", el día seleccionado (hoy y seleccionado a la vez) y el
- * resumen del mes. "Marcar como pagado" registra la transacción. "Reprogramar"
- * mueve solo la ocurrencia elegida.
+ * resumen del mes. Los vencimientos de hoy dicen "Por pagar" y los que
+ * pasaron sin confirmar, "Vencida". "Marcar como pagado" abre el modal con la
+ * fecha real de pago y la cuenta: es lo único que crea la transacción.
+ * "Reprogramar" mueve solo la ocurrencia elegida.
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -18,8 +20,6 @@ import { Badge } from "@/components/ui/chip";
 import { DateField } from "@/components/ui/date-field";
 import { Icon } from "@/components/ui/icon";
 import type { IconName } from "@/components/ui/icon-registry";
-import { SelectField } from "@/components/ui/select-field";
-import { ACCOUNT_TYPE_ICON } from "@/lib/categories";
 import type { AccountSummary } from "@/lib/accounts/queries";
 import type { CurrencyCode } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
@@ -37,7 +37,8 @@ import { monthBounds } from "@/lib/transactions/dates";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
 
-import { markOccurrencesPaid, rescheduleOccurrence } from "./actions";
+import { rescheduleOccurrence } from "./actions";
+import { MarkPaidModal, StateBadge } from "./mark-paid-modal";
 
 const TONE: Record<CalendarKind, string> = {
   payment_due: "bg-negative-tint text-negative-text",
@@ -98,14 +99,13 @@ export function CalendarView({
   const [rescheduleOn, setRescheduleOn] = useState(false);
   const [nextDate, setNextDate] = useState(initialDay);
   const [message, setMessage] = useState<string | null>(null);
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const [paying, setPaying] = useState<AgendaItem | null>(null);
   const usable = status === "error" ? null : rate;
 
   const cells = calendarCells(month, events);
   const dayEvents = events.filter((event) => event.dueOn === day);
   const selected =
     dayEvents.find((event) => event.occurrenceId === selectedId) ?? dayEvents[0] ?? null;
-  const needsAccount = dayEvents.some((event) => !event.accountId);
   const { from, to } = monthBounds(month);
   const inMonth = events.filter((event) => event.dueOn >= from && event.dueOn <= to);
 
@@ -124,23 +124,6 @@ export function CalendarView({
     setNextDate(date);
     setMessage(null);
     router.replace(`${pathname}${withFilters(params, { day: date })}`, { scroll: false });
-  }
-
-  function markPaid() {
-    setMessage(null);
-    startTransition(async () => {
-      const result = await markOccurrencesPaid(
-        dayEvents.map((event) => event.occurrenceId),
-        needsAccount ? accountId : null,
-      );
-      setMessage(
-        result.ok
-          ? t("markPaidDone", { count: result.count })
-          : result.error === "accountRequired"
-            ? t("accountRequired")
-            : t("markPaidFailed"),
-      );
-    });
   }
 
   function reschedule() {
@@ -306,8 +289,9 @@ export function CalendarView({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="text-body text-ink block font-semibold">{event.name}</span>
-                        <span className="text-footnote text-ink-3">
+                        <span className="text-footnote text-ink-3 flex flex-wrap items-center gap-2">
                           {t(`legend.${event.calendarKind}`)}
+                          <StateBadge state={event.state} />
                         </span>
                       </span>
                       <MoneyAmount
@@ -334,29 +318,15 @@ export function CalendarView({
               )}
             />
           </div>
-          {needsAccount && dayEvents.length > 0 && (
-            <SelectField
-              label={t("accountForDay")}
-              icon={
-                ACCOUNT_TYPE_ICON[
-                  accounts.find((account) => account.id === accountId)?.type ?? "checking"
-                ]
-              }
-              value={accountId}
-              onChange={setAccountId}
-              options={accounts.map((account) => ({
-                value: account.id,
-                label: `${account.name} · ${account.currency}`,
-              }))}
-              placeholder={t("chooseAccount")}
-            />
-          )}
           <div className="flex flex-wrap gap-3">
             <Button
               icon="check"
               variant="secondary"
-              onClick={markPaid}
-              disabled={pending || dayEvents.length === 0}
+              onClick={() => {
+                setMessage(null);
+                setPaying(selected);
+              }}
+              disabled={pending || !selected}
             >
               {t("markPaid")}
             </Button>
@@ -380,6 +350,12 @@ export function CalendarView({
             </div>
           )}
           {message && <p className="text-callout text-ink-2">{message}</p>}
+          <MarkPaidModal
+            event={paying}
+            accounts={accounts}
+            today={today}
+            onClose={() => setPaying(null)}
+          />
         </Card>
 
         <Card className="space-y-4">

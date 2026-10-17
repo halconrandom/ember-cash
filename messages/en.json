@@ -206,10 +206,7 @@
       "generic": "Couldn't complete it. Try again."
     },
     "formerMember": "Former member",
-    "formerMemberName": "{name} (former member)",
-    "departureTitle": "{name} left the household",
-    "departureAutoPost": "{count, plural, one {Auto-charge was turned off for this shared subscription: {names}. It's now recorded manually from Subscriptions.} other {Auto-charge was turned off for these shared subscriptions: {names}. They're now recorded manually from Subscriptions.}}",
-    "departureDismiss": "Got it"
+    "formerMemberName": "{name} (former member)"
   },
   "scope": {
     "label": "Space",
@@ -870,10 +867,7 @@
       "starts": "First date",
       "ends": "Ends",
       "endsNever": "No end date",
-      "account": "Account",
-      "noAccount": "No account",
-      "autoPost": "Record it automatically on the due date",
-      "confirmHint": "Bills and paydays stay pending until you confirm them on the calendar.",
+      "confirmHint": "Nothing is recorded automatically: each charge stays Due until you mark it as paid, with the actual date and account.",
       "pause": "Pause",
       "resume": "Resume",
       "cancelItem": "Cancel",
@@ -893,11 +887,12 @@
       "subtitleTooLong": "The detail can be up to 120 characters",
       "iconRequired": "Choose an icon",
       "categoryRequired": "Choose a category",
-      "accountRequired": "Choose an account to record it automatically",
       "intervalInvalid": "Enter a number from 1 to 52",
       "dateRequired": "Choose a valid date",
       "endsBeforeStart": "The end date can't be before the first date"
-    }
+    },
+    "markPaid": "Mark as paid",
+    "overdueLabel": "Overdue"
   },
   "calendar": {
     "addPayment": "Add payment",
@@ -915,12 +910,7 @@
     "noEvents": "Nothing on this day",
     "totalToday": "Total today",
     "totalDay": "Day total",
-    "accountForDay": "Account to record",
-    "chooseAccount": "Choose an account",
     "markPaid": "Mark as paid",
-    "markPaidDone": "{count, plural, =0 {Nothing to record} one {# payment recorded} other {# payments recorded}}",
-    "markPaidFailed": "Couldn't record the payment. Try again.",
-    "accountRequired": "Choose an account to record the payment.",
     "reschedule": "Reschedule",
     "rescheduleHint": "Only “{name}” moves. The series stays the same.",
     "rescheduleDate": "New date",
@@ -939,5 +929,25 @@
     "errorTitle": "Couldn't load the calendar",
     "errorDescription": "Check your connection and try again.",
     "retry": "Retry"
+  },
+  "occurrences": {
+    "due": "Due",
+    "overdue": "Overdue",
+    "markPaid": "Mark as paid",
+    "markPaidTitle": "Mark as paid",
+    "dueOn": "Due {date}",
+    "paidOn": "Payment date",
+    "account": "Account",
+    "saving": "Recording...",
+    "cancel": "Cancel",
+    "close": "Close",
+    "noAccounts": "Create an account in Settings first to record the payment.",
+    "markPaidDone": "Payment recorded for {name}",
+    "errors": {
+      "accountRequired": "Choose an account.",
+      "futureDate": "The payment date can't be in the future.",
+      "forbidden": "You don't have permission to record this payment.",
+      "failed": "Couldn't record the payment. Try again."
+    }
   }
 }

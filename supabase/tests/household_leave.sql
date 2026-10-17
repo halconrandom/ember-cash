@@ -57,12 +57,12 @@ select set_config('test.hl_t1', public.save_transaction(null, current_setting('t
 set constraints all immediate;
 set constraints all deferred;
 
--- Suscripción compartida de B con cobro automático.
+-- Suscripción compartida de B.
 select pg_temp.hl_login('00000000-0000-4000-d100-00000000000b');
 insert into public.recurring_items (id, household_id, kind, name, category_key, amount_minor, currency,
-  account_id, frequency, anchor_date, auto_post)
+  account_id, frequency, anchor_date)
 values ('84000000-0000-4000-8000-000000000001', current_setting('test.hl_h')::uuid, 'subscription', 'Streaming',
-  'subscriptions', 30000, 'COP', '83000000-0000-4000-8000-000000000001', 'monthly', current_date, true);
+  'subscriptions', 30000, 'COP', '83000000-0000-4000-8000-000000000001', 'monthly', current_date);
 
 -- 1. Con saldo pendiente no puede salir ni ser quitada.
 select pg_temp.hl_expect_error($q$select public.leave_household(current_setting('test.hl_h')::uuid)$q$,
@@ -109,11 +109,11 @@ select pg_temp.hl_expect((select count(*) = 2 from public.transaction_splits whe
   'los repartos con B se conservan');
 select pg_temp.hl_expect((select count(*) = 2 from public.settlements where household_id = current_setting('test.hl_h')::uuid),
   'las liquidaciones con B se conservan');
-select pg_temp.hl_expect((select display_name = 'Bea' and removed_by is null and auto_post_disabled = array['Streaming']
+select pg_temp.hl_expect((select display_name = 'Bea' and removed_by is null
   from public.household_departures where household_id = current_setting('test.hl_h')::uuid),
-  'la salida guarda el nombre y las suscripciones apagadas');
-select pg_temp.hl_expect((select not auto_post from public.recurring_items where id = '84000000-0000-4000-8000-000000000001'),
-  'la suscripción de B queda sin cobro automático y sigue en el hogar');
+  'la salida guarda el nombre');
+select pg_temp.hl_expect((select household_id = current_setting('test.hl_h')::uuid from public.recurring_items
+  where id = '84000000-0000-4000-8000-000000000001'), 'la suscripción de B sigue en el hogar');
 
 -- 6. Gasto con reparto de un ex miembro: solo categoría y nota.
 select public.save_transaction(current_setting('test.hl_t1')::uuid, current_setting('test.hl_h')::uuid,
@@ -188,14 +188,21 @@ select pg_temp.hl_expect((select count(*) = 2 and sum(share_minor) = 1001 and ma
 select pg_temp.hl_expect((select count(*) = 1 and min(user_id::text) = '00000000-0000-4000-d100-00000000000a' from public.transaction_splits
   where transaction_id = current_setting('test.hl_p3')::uuid), 'post_occurrence: anterior al hogar, todo para quien paga');
 
--- 10. post_occurrence con un pagador que ya no es miembro: rechazado. Como
--- el cron: sin usuario (auth.uid() nulo), el pagador es el dueño (B).
+-- 10. La suscripción de B (ex miembro) no se registra sola: sin usuario,
+-- post_occurrence falla (0011). A sí puede marcarla como pagada.
 select set_config('role', 'postgres', true);
 select set_config('request.jwt.claims', '', true);
 insert into public.recurring_occurrences (id, recurring_item_id, due_on)
 values ('85000000-0000-4000-8000-000000000004', '84000000-0000-4000-8000-000000000001', current_date);
 select pg_temp.hl_expect_error($q$select public.post_occurrence('85000000-0000-4000-8000-000000000004', '83000000-0000-4000-8000-000000000001')$q$,
-  'payer_not_member', 'el cron no registra a nombre de un ex miembro');
+  'not_authenticated', 'nada se registra a nombre de un ex miembro sin confirmar');
+select pg_temp.hl_login('00000000-0000-4000-d100-00000000000a');
+select set_config('test.hl_p4', public.post_occurrence('85000000-0000-4000-8000-000000000004', '83000000-0000-4000-8000-000000000001')::text, true);
+set constraints all immediate;
+set constraints all deferred;
+select pg_temp.hl_expect((select paid_by = '00000000-0000-4000-d100-00000000000a' from public.transactions
+  where id = current_setting('test.hl_p4')::uuid), 'quien marca como pagado es quien paga');
+select set_config('role', 'postgres', true);
 
 -- 11. Borrar el hogar (cascada) no choca con el bloqueo.
 delete from public.households where id = current_setting('test.hl_h')::uuid;

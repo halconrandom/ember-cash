@@ -1,7 +1,8 @@
 /**
  * Lecturas de suscripciones y del calendario. Antes de leer, deja al día los
  * pagos de deuda y materializa los vencimientos del rango, así la pantalla no
- * depende de que el cron ya haya corrido.
+ * depende de que el cron ya haya corrido. Los vencimientos pendientes
+ * (programados o vencidos) llevan su estado visible (lib/recurring/state.ts).
  */
 import "server-only";
 
@@ -23,6 +24,7 @@ import { syncDebtRecurring } from "./debts";
 import { ensureOccurrences } from "./ensure";
 import { recurringIcon } from "./schema";
 import { HORIZON_DAYS, occurrenceDates } from "./schedule";
+import { occurrenceState, type OccurrenceState, type PendingStatus } from "./state";
 import { periodEquivalent } from "./totals";
 
 type ItemRow = {
@@ -39,7 +41,6 @@ type ItemRow = {
   interval: number;
   anchor_date: string;
   ends_on: string | null;
-  auto_post: boolean;
   status: RecurringStatus;
   household_id: string | null;
 };
@@ -59,8 +60,6 @@ export type SubscriptionItem = {
   endsOn: string | null;
   nextDate: string | null;
   status: "active" | "paused";
-  autoPost: boolean;
-  accountId: string | null;
   categoryKey: CategoryKey | null;
 };
 
@@ -73,7 +72,10 @@ export type AgendaItem = {
   dueOn: string;
   kind: RecurringKind;
   calendarKind: CalendarKind;
+  /** Cuenta sugerida al marcar como pagado (la del recurrente, si tiene). */
   accountId: string | null;
+  /** Por pagar (hoy), Vencida o próxima. */
+  state: OccurrenceState;
 };
 
 function amountOf(row: ItemRow, override: number | null): Money {
@@ -111,8 +113,6 @@ function toSubscription(row: ItemRow, today: string): SubscriptionItem {
     endsOn: row.ends_on,
     nextDate: next,
     status: row.status === "paused" ? "paused" : "active",
-    autoPost: row.auto_post,
-    accountId: row.account_id,
     categoryKey: row.category_key as CategoryKey | null,
   };
 }
@@ -146,7 +146,8 @@ export async function listSubscriptions(
 
   const activeIds = rows.filter((row) => row.status === "active").map((row) => row.id);
   const until = addDays(today, 13);
-  const upcoming = await agenda(rows, activeIds, today, until);
+  // Sin límite hacia atrás: los vencidos sin confirmar siguen apareciendo.
+  const upcoming = await agenda(rows, activeIds, null, until, today);
   return { items, upcoming };
 }
 
@@ -184,6 +185,7 @@ export async function listCalendar(
     rows.map((row) => row.id),
     from,
     until,
+    today,
   );
   const nextPayday =
     events
@@ -192,23 +194,28 @@ export async function listCalendar(
   return { events, nextPayday };
 }
 
-/** Vencimientos programados de esos ítems, con el monto del ítem o el override. */
+/**
+ * Vencimientos pendientes (programados o vencidos) de esos ítems, con el
+ * monto del ítem o el override. `from` nulo: sin límite hacia atrás.
+ */
 async function agenda(
   rows: ItemRow[],
   ids: string[],
-  from: string,
+  from: string | null,
   until: string,
+  today: string,
 ): Promise<AgendaItem[]> {
   if (ids.length === 0) return [];
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("recurring_occurrences")
-    .select("id, recurring_item_id, due_on, amount_override_minor")
+    .select("id, recurring_item_id, due_on, amount_override_minor, status")
     .in("recurring_item_id", ids)
-    .eq("status", "scheduled")
-    .gte("due_on", from)
+    .in("status", ["scheduled", "overdue"])
     .lte("due_on", until)
     .order("due_on");
+  if (from) query = query.gte("due_on", from);
+  const { data, error } = await query;
   if (error) throw new Error(`No se pudieron leer los vencimientos: ${error.message}`);
   const byId = new Map(rows.map((row) => [row.id, row]));
   const items: AgendaItem[] = [];
@@ -225,6 +232,7 @@ async function agenda(
       kind: item.kind,
       calendarKind: calendarKind(item.kind),
       accountId: item.account_id,
+      state: occurrenceState(row.status as PendingStatus, row.due_on, today),
     });
   }
   return items;

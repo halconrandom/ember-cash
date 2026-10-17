@@ -65,13 +65,12 @@ async function SubscriptionsContent({ searchParams }: { searchParams: SearchPara
 
   return (
     <>
-      <SubscriptionsView items={items} upcoming={upcoming} today={today} />
+      <SubscriptionsView items={items} upcoming={upcoming} today={today} accounts={accounts} />
       <SubscriptionModal
         key={sub ?? "closed"}
         open={sub === "new" || Boolean(editing)}
         editing={editing}
         lockedKind="subscription"
-        accounts={accounts}
         today={today}
         param="sub"
       />

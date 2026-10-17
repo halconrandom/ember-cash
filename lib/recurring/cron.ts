@@ -1,11 +1,11 @@
 /**
- * Corrida diaria: materializa 90 días hacia adelante (en la zona de cada
- * perfil) y registra las transacciones de hoy.
+ * Corrida diaria: deja al día los pagos de deuda, materializa 90 días hacia
+ * adelante (en la zona de cada perfil) y marca como vencidos ("overdue") los
+ * vencimientos con fecha pasada que nadie confirmó.
  *
- * Solo se auto-registran suscripciones y pagos de deuda con auto_post.
- * Las facturas (bill) y los días de cobro (income) quedan pendientes hasta
- * que alguien los confirma, aunque la columna auto_post esté en true.
- * Los pagos de deuda que crea la app nacen con auto_post en false.
+ * Nunca crea transacciones (regla desde 0.10.2): la única forma de
+ * registrar un pago es "Marcar como pagado". La base también lo impide:
+ * post_occurrence exige un usuario y la service role no puede ejecutarla.
  */
 import "server-only";
 
@@ -16,10 +16,8 @@ import { syncDebtRecurring } from "./debts";
 import { ensureOccurrences } from "./ensure";
 import { HORIZON_DAYS } from "./schedule";
 
-const AUTO_KINDS = ["subscription", "debt_payment"] as const;
-
 export type CronResult =
-  { ok: true; inserted: number; posted: number; skipped: number } | { ok: false; error: string };
+  { ok: true; inserted: number; overdue: number } | { ok: false; error: string };
 
 /** Una pasada para todos los perfiles. Un fallo de base vuelve como ok: false. */
 export async function runOccurrencesCron(now: Date = new Date()): Promise<CronResult> {
@@ -36,8 +34,7 @@ async function runOccurrences(now: Date): Promise<Extract<CronResult, { ok: true
   if (error) throw new Error(`No se pudieron leer los perfiles: ${error.message}`);
 
   let inserted = 0;
-  let posted = 0;
-  let skipped = 0;
+  let overdue = 0;
 
   for (const profile of profiles ?? []) {
     const today = todayIn(profile.timezone, now);
@@ -46,35 +43,14 @@ async function runOccurrences(now: Date): Promise<Extract<CronResult, { ok: true
       from: today,
       ownerId: profile.id,
     });
-
-    const { data: due, error: dueError } = await supabase
-      .from("recurring_occurrences")
-      .select("id, recurring_items!inner(kind, auto_post, status, account_id, owner_id)")
-      .eq("status", "scheduled")
-      .eq("due_on", today)
-      .eq("recurring_items.owner_id", profile.id)
-      .eq("recurring_items.status", "active")
-      .eq("recurring_items.auto_post", true)
-      .in("recurring_items.kind", [...AUTO_KINDS]);
-    if (dueError)
-      throw new Error(`No se pudieron leer los vencimientos de hoy: ${dueError.message}`);
-
-    for (const row of due ?? []) {
-      const item = row.recurring_items;
-      // El embed !inner devuelve el objeto, no un arreglo.
-      const accountId = Array.isArray(item) ? item[0]?.account_id : item.account_id;
-      if (!accountId) {
-        skipped += 1;
-        continue;
-      }
-      const { error: postError } = await supabase.rpc("post_occurrence", {
-        p_occurrence_id: row.id,
-        p_account_id: accountId,
-      });
-      if (postError) skipped += 1;
-      else posted += 1;
-    }
+    // Antes de hoy (día civil de su zona) y sin confirmar: Vencida.
+    const { data: marked, error: markError } = await supabase.rpc("mark_overdue_occurrences", {
+      p_owner: profile.id,
+      p_today: today,
+    });
+    if (markError) throw new Error(`No se pudieron marcar los vencidos: ${markError.message}`);
+    overdue += marked ?? 0;
   }
 
-  return { ok: true, inserted, posted, skipped };
+  return { ok: true, inserted, overdue };
 }

@@ -48,7 +48,7 @@ export type AprKind = "EA" | "nominal";
 export type RecurringKind = "subscription" | "bill" | "income" | "debt_payment";
 export type RecurringFrequency = "weekly" | "monthly" | "yearly";
 export type RecurringStatus = "active" | "paused" | "cancelled";
-export type OccurrenceStatus = "scheduled" | "paid" | "skipped";
+export type OccurrenceStatus = "scheduled" | "overdue" | "paid" | "skipped";
 export type HouseholdRole = "owner" | "member";
 export type Theme = "system" | "light" | "dark";
 /** Idioma de la interfaz (profiles.locale). */

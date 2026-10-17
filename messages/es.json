@@ -206,10 +206,7 @@
       "generic": "No se pudo completar. Intenta de nuevo."
     },
     "formerMember": "Ex miembro",
-    "formerMemberName": "{name} (ex miembro)",
-    "departureTitle": "{name} salió del hogar",
-    "departureAutoPost": "{count, plural, one {Se apagó el cobro automático de esta suscripción compartida: {names}. Ahora se registra a mano desde Suscripciones.} other {Se apagó el cobro automático de estas suscripciones compartidas: {names}. Ahora se registran a mano desde Suscripciones.}}",
-    "departureDismiss": "Entendido"
+    "formerMemberName": "{name} (ex miembro)"
   },
   "scope": {
     "label": "Espacio",
@@ -870,10 +867,7 @@
       "starts": "Primera fecha",
       "ends": "Termina",
       "endsNever": "Sin fecha de fin",
-      "account": "Cuenta",
-      "noAccount": "Sin cuenta",
-      "autoPost": "Registrar sola el día que vence",
-      "confirmHint": "Las facturas y los días de cobro quedan pendientes hasta que los confirmes en el calendario.",
+      "confirmHint": "Nada se registra solo: cada cobro queda Por pagar hasta que lo marques como pagado, con la fecha y la cuenta reales.",
       "pause": "Pausar",
       "resume": "Reanudar",
       "cancelItem": "Cancelar",
@@ -893,11 +887,12 @@
       "subtitleTooLong": "El detalle puede tener hasta 120 caracteres",
       "iconRequired": "Elige un ícono",
       "categoryRequired": "Elige una categoría",
-      "accountRequired": "Elige una cuenta para registrarla sola",
       "intervalInvalid": "Escribe un número entre 1 y 52",
       "dateRequired": "Elige una fecha válida",
       "endsBeforeStart": "La fecha de fin no puede ser anterior a la primera"
-    }
+    },
+    "markPaid": "Marcar como pagado",
+    "overdueLabel": "Vencida"
   },
   "calendar": {
     "addPayment": "Agregar pago",
@@ -915,12 +910,7 @@
     "noEvents": "Nada este día",
     "totalToday": "Total de hoy",
     "totalDay": "Total del día",
-    "accountForDay": "Cuenta para registrar",
-    "chooseAccount": "Elige una cuenta",
     "markPaid": "Marcar como pagado",
-    "markPaidDone": "{count, plural, =0 {Nada por registrar} one {Se registró # pago} other {Se registraron # pagos}}",
-    "markPaidFailed": "No se pudo registrar el pago. Intenta de nuevo.",
-    "accountRequired": "Elige una cuenta para registrar el pago.",
     "reschedule": "Reprogramar",
     "rescheduleHint": "Se mueve solo «{name}». La serie no cambia.",
     "rescheduleDate": "Nueva fecha",
@@ -939,5 +929,25 @@
     "errorTitle": "No se pudo cargar el calendario",
     "errorDescription": "Revisa tu conexión e intenta de nuevo.",
     "retry": "Reintentar"
+  },
+  "occurrences": {
+    "due": "Por pagar",
+    "overdue": "Vencida",
+    "markPaid": "Marcar como pagado",
+    "markPaidTitle": "Marcar como pagado",
+    "dueOn": "Vence el {date}",
+    "paidOn": "Fecha de pago",
+    "account": "Cuenta",
+    "saving": "Registrando...",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "noAccounts": "Primero crea una cuenta en Ajustes para registrar el pago.",
+    "markPaidDone": "Se registró el pago de {name}",
+    "errors": {
+      "accountRequired": "Elige una cuenta.",
+      "futureDate": "La fecha de pago no puede ser futura.",
+      "forbidden": "No tienes permiso para registrar este pago.",
+      "failed": "No se pudo registrar el pago. Intenta de nuevo."
+    }
   }
 }

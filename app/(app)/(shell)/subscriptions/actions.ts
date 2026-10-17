@@ -51,12 +51,10 @@ export async function saveRecurringItem(input: unknown): Promise<RecurringSaveRe
     // Hasta 15 cifras (parseMoney): cabe sin pérdida en un number.
     amount_minor: Number(item.amount.amountMinor),
     currency: item.amount.currency,
-    account_id: item.accountId,
     frequency: item.frequency,
     interval: item.interval,
     anchor_date: item.anchorDate,
     ends_on: item.endsOn,
-    auto_post: item.autoPost,
     household_id: scopeHouseholdId(scope),
   };
   const supabase = await createClient();

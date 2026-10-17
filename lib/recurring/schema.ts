@@ -66,25 +66,15 @@ export const recurringInputSchema = z.object({
   amount: z.string(),
   currency: z.enum(["COP", "USD"]),
   categoryKey: z.string(),
-  accountId: z.string(),
   frequency: z.enum(FORM_FREQUENCIES),
   interval: z.string(),
   anchorDate: z.string(),
   endsOn: z.string(),
-  autoPost: z.boolean(),
 });
 export type RecurringInput = z.infer<typeof recurringInputSchema>;
 
 export type RecurringField =
-  | "name"
-  | "subtitle"
-  | "iconKey"
-  | "amount"
-  | "categoryKey"
-  | "accountId"
-  | "interval"
-  | "anchorDate"
-  | "endsOn";
+  "name" | "subtitle" | "iconKey" | "amount" | "categoryKey" | "interval" | "anchorDate" | "endsOn";
 
 export type RecurringErrorKey =
   | AmountError
@@ -93,7 +83,6 @@ export type RecurringErrorKey =
   | "subtitleTooLong"
   | "iconRequired"
   | "categoryRequired"
-  | "accountRequired"
   | "intervalInvalid"
   | "dateRequired"
   | "endsBeforeStart";
@@ -106,13 +95,11 @@ export type ValidRecurring = {
   iconKey: RecurringIcon;
   amount: Money;
   categoryKey: CategoryKey;
-  accountId: string | null;
   frequency: RecurringFrequency;
   interval: number;
   anchorDate: string;
   /** "Una vez" fuerza el fin al ancla. */
   endsOn: string | null;
-  autoPost: boolean;
 };
 
 export function validateRecurring(
@@ -161,12 +148,6 @@ export function validateRecurring(
     errors.endsOn = "endsBeforeStart";
   }
 
-  // Facturas e ingresos nunca se auto-registran. Una suscripción sí puede,
-  // y entonces necesita cuenta para crear la transacción.
-  const autoPost = input.kind === "subscription" && input.autoPost;
-  const accountId = z.uuid().safeParse(input.accountId).success ? input.accountId : null;
-  if (autoPost && !accountId) errors.accountId = "accountRequired";
-
   if (Object.keys(errors).length > 0 || !amount.ok || !iconKey || !categoryKey) {
     return { ok: false, errors };
   }
@@ -183,12 +164,10 @@ export function validateRecurring(
       iconKey,
       amount: amount.value,
       categoryKey,
-      accountId,
       frequency,
       interval: once ? 1 : interval,
       anchorDate: input.anchorDate,
       endsOn: once ? input.anchorDate : endsOn || null,
-      autoPost,
     },
   };
 }
