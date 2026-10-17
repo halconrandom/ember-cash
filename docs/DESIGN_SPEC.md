@@ -79,6 +79,7 @@ Hero decoration rule: a decorative circle over the hero lightens the gradient (w
 Orange is brand and action first. The graphic orange `#F26B1D` (dark `#FF7A2E`) may encode data only in these two cases:
 
 1. **Progress toward the user's own target**: goal rings and bars (Savings, dashboard goals, shared goal) and debt payoff progress. One meaning: "how far along". Payoff bars use ember-fill `#C6500B`.
+   - **Exception (v0.8.2), debt "paid off" bar in dark mode:** it uses the graphic orange `#FF7A2E` (same as the dark goal rings) instead of ember-fill. Reason: `#C6500B` on the dark progress track `#3B3B40` measured 2.41:1, below the 3:1 of WCAG 1.4.11; `#FF7A2E` measures 4.28:1 on the track and 6.17:1 on surface2. Light mode keeps ember-fill (3.88:1 on track `#EBEBF0`). In code: token `--debt-bar`.
 2. **Expenses in the income/expense pair** (6-month trend), always paired with green income, with a legend and a direct value label.
    Never use orange for: categories (spending bars use the category colors), members, statuses, budget states, or any series that must be told apart from another orange series. One chart never carries two orange meanings, and an orange data mark never sits inside the same component as the primary button. Data orange must have a visible value or label next to it (colour is not the only cue) and reach 3:1 on its surface (3.05 light, 6.88 dark). Text is never `#F26B1D`: use ember-text. If a future theme needs orange for something else, switch progress to ink first.
 

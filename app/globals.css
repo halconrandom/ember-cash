@@ -82,6 +82,8 @@
   --track: #ebebf0;
   /* Barra de presupuesto en estado neutro (por debajo del 80 %). */
   --neutral-bar: #6d6d71;
+  /* Barra de porcentaje pagado de deudas: ember-fill en claro (DESIGN_SPEC §1). */
+  --debt-bar: #c6500b;
 
   /* Miembros del household (A = ink, B = slate). Nunca naranja. */
   --member-a: #1d1d1f;
@@ -179,6 +181,9 @@
   --track: #3b3b40;
   /* La spec no da el gris neutro del presupuesto en oscuro: se usa text3. */
   --neutral-bar: #8a8a90;
+  /* Excepción (DESIGN_SPEC §1): en oscuro la barra de deudas usa el naranja
+     gráfico, porque ember-fill sobre la pista #3B3B40 solo daba 2,41:1. */
+  --debt-bar: #ff7a2e;
 
   --member-a: #e8e8ed;
   --member-a-on: #1d1d1f;
@@ -338,6 +343,7 @@
   --color-expense-bar: var(--expense-bar);
   --color-track: var(--track);
   --color-neutral-bar: var(--neutral-bar);
+  --color-debt-bar: var(--debt-bar);
   --color-member-a: var(--member-a);
   --color-member-a-on: var(--member-a-on);
   --color-member-b: var(--member-b);

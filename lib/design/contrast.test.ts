@@ -70,8 +70,8 @@ const LIGHT_PAIRS: Pair[] = [
   ["nav activa: ember-text / surface", "ember-text", "surface", TEXT, 5.1],
   ["ember (gráfico) / surface", "ember", "surface", GRAPHIC, 3.05],
   // Barra de pagado de deudas (ember-fill) sobre su pista y sobre la fila.
-  ["barra deudas: ember-fill / track", "ember-fill", "track", GRAPHIC, 3.88],
-  ["barra deudas: ember-fill / surface2", "ember-fill", "surface2", GRAPHIC, 4.24],
+  ["barra deudas: debt-bar (ember-fill) / track", "debt-bar", "track", GRAPHIC, 3.88],
+  ["barra deudas: debt-bar (ember-fill) / surface2", "debt-bar", "surface2", GRAPHIC, 4.24],
   // Estados y categorías: texto sobre su tinte
   ["positive-text / tint", "positive-text", "positive-tint", TEXT, 4.71],
   ["positive-text / surface", "positive-text", "surface", TEXT, 5.26],
@@ -122,7 +122,9 @@ const DARK_PAIRS: Pair[] = [
   ["ember-text / ember-50", "ember-text", "ember-50", TEXT, 7.69],
   ["nav activa: ember-text / surface", "ember-text", "surface", TEXT, 8.25],
   ["ember (gráfico) / surface", "ember", "surface", GRAPHIC, 6.88],
-  ["barra deudas: ember-fill / surface2", "ember-fill", "surface2", GRAPHIC, 3.48],
+  // Excepción de la spec: en oscuro la barra de deudas usa #FF7A2E.
+  ["barra deudas: debt-bar (#FF7A2E) / track", "debt-bar", "track", GRAPHIC, 4.28],
+  ["barra deudas: debt-bar (#FF7A2E) / surface2", "debt-bar", "surface2", GRAPHIC, 6.17],
   ["positive / surface", "positive-text", "surface", TEXT, 9.54],
   ["negative / surface", "negative-text", "surface", TEXT, 6.17],
   ["info / surface", "info-text", "surface", TEXT, 6.46],
@@ -202,11 +204,9 @@ describe("contraste de tokens", () => {
     expect(LIGHT["ember-text"]).not.toBe(LIGHT.ember);
   });
 
-  it("PENDIENTE: en oscuro la barra de deudas no llega a 3:1 contra su pista", () => {
-    // ember-fill #C6500B sobre track #3B3B40 = 2,41 (WCAG 1.4.11 pide 3:1).
-    // La spec considera la pista "una guía discreta" (el valor va escrito al
-    // lado), pero el par queda documentado hasta decidir: mantenerlo, aclarar
-    // la pista oscura o usar el naranja gráfico #FF7A2E en oscuro.
-    expect(contrastRatio(DARK["ember-fill"], DARK.track)).toBeCloseTo(2.41, 2);
+  it("la barra de deudas usa ember-fill en claro y el naranja gráfico en oscuro", () => {
+    expect(LIGHT["debt-bar"]).toBe(LIGHT["ember-fill"]);
+    expect(DARK["debt-bar"]).toBe("#FF7A2E");
+    expect(DARK["debt-bar"]).toBe(DARK.ember);
   });
 });

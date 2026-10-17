@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.8.2] - 2026-10-17
+
+### Cambiado
+
+- La barra de porcentaje pagado de las deudas usa, en oscuro, el naranja gráfico #FF7A2E (token `--debt-bar`); en claro sigue con ember-fill #C6500B.
+- El test pendiente de contraste pasa a ser normal: #FF7A2E sobre la pista #3B3B40 da 4,28:1 (y 6,17:1 sobre surface2), por encima de 3:1.
+- Excepción anotada en DESIGN_SPEC.md, junto a la regla del naranja como dato.
+
 ## [0.8.1] - 2026-10-17
 
 ### Cambiado
