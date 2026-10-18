@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.15] - 2026-10-18
+
+### Cambiado
+
+- `lib/db/database.types.ts` incluye `member_write_bypassed`, la función de la migración `0018`.
+
 ## [0.14.14] - 2026-10-17
 
 ### Corregido (M-03: repartos, aportes y liquidaciones dentro del hogar)

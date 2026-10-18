@@ -567,27 +567,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      rate_limits: {
-        Row: {
-          action: string;
-          attempted_at: string;
-          id: number;
-          user_id: string;
-        };
-        Insert: {
-          action: string;
-          attempted_at?: string;
-          id?: never;
-          user_id: string;
-        };
-        Update: {
-          action?: string;
-          attempted_at?: string;
-          id?: never;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
       invite_accept_attempts: {
         Row: {
           attempted_at: string;
@@ -639,6 +618,27 @@ export type Database = {
           onboarded_at?: string | null;
           theme?: string;
           timezone?: string;
+        };
+        Relationships: [];
+      };
+      rate_limits: {
+        Row: {
+          action: string;
+          attempted_at: string;
+          id: number;
+          user_id: string;
+        };
+        Insert: {
+          action: string;
+          attempted_at?: string;
+          id?: never;
+          user_id: string;
+        };
+        Update: {
+          action?: string;
+          attempted_at?: string;
+          id?: never;
+          user_id?: string;
         };
         Relationships: [];
       };
@@ -988,7 +988,6 @@ export type Database = {
       accept_invite: { Args: { p_token: string }; Returns: Json };
       consume_rate_limit: { Args: { p_action: string }; Returns: Json };
       create_household: { Args: { p_name: string }; Returns: string };
-      delete_account_data: { Args: never; Returns: Json };
       dashboard_totals: {
         Args: { p_from: string; p_household_id: string; p_to: string };
         Returns: {
@@ -1000,6 +999,7 @@ export type Database = {
           tx_count: number;
         }[];
       };
+      delete_account_data: { Args: never; Returns: Json };
       get_household_members: {
         Args: { hid: string };
         Returns: {
@@ -1030,7 +1030,7 @@ export type Database = {
         Returns: number;
       };
       max_household_members: { Args: never; Returns: number };
-      purge_old_rate_limits: { Args: never; Returns: number };
+      member_write_bypassed: { Args: never; Returns: boolean };
       post_occurrence: {
         Args: {
           p_account_id: string;
@@ -1039,6 +1039,7 @@ export type Database = {
         };
         Returns: string;
       };
+      purge_old_rate_limits: { Args: never; Returns: number };
       remove_household_member: {
         Args: { hid: string; uid: string };
         Returns: undefined;
