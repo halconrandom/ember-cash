@@ -1,6 +1,6 @@
 # Auditoría de seguridad de Ember Cash
 
-Estado: **cerrado el 17 de octubre de 2026, sobre 0.14.12.** Cada hallazgo de abajo tiene estado final: corregido, aceptado con razón o pendiente. M-02 y M-03 quedan pendientes. La tabla de cierre es la que manda. El relato de la fase 0, más abajo, es el reporte original (versión auditada 0.14.2, commit `cff807d`).
+Estado: **cerrado el 17 de octubre de 2026.** Cada hallazgo de abajo tiene estado final: corregido, aceptado con razón o pendiente. M-02 sigue pendiente. M-03 quedó corregido en 0.14.14. La tabla de cierre es la que manda. El relato de la fase 0, más abajo, es el reporte original (versión auditada 0.14.2, commit `cff807d`).
 
 - Fecha: 17 de octubre de 2026. Versión auditada: 0.14.2 (commit `cff807d`).
 - Producción: https://cash.halcon.dev (Vercel). Un solo proyecto de Supabase, el real, para desarrollo y producción.
@@ -52,29 +52,29 @@ No se encontraron secretos filtrados ni acceso entre hogares o usuarios distinto
 
 ## Cierre
 
-| ID   | Estado final       | Commit o prueba                                                                                                                                                                                                                                                               |
-| ---- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A-01 | Corregido          | 0.14.4, `a8dbfc7`. `scripts/db-test-url.test.ts`. `pnpm test:rls` solo acepta Postgres local.                                                                                                                                                                                 |
-| M-01 | Pendiente          | Sigue el comodín `https://*.supabase.co` y `wss://*.supabase.co` en `lib/security/headers.ts`.                                                                                                                                                                                |
-| M-02 | Pendiente          | No hay `cookieOptions`. Riesgo en la beta: un script que llegara a correr en la página podría leer la cookie de sesión y usarla desde otro equipo, porque no es `httpOnly` ni `Secure`.                                                                                       |
-| M-03 | Pendiente          | Siguen las políticas de `0003_finance_model.sql` dentro del hogar. `household_isolation.sql` separa hogares distintos y no cubre este caso. Riesgo en la beta: un miembro puede cambiar por la API los repartos, las liquidaciones o los aportes del otro y mover el balance. |
-| M-04 | Corregido          | 0.14.8, `5bc5ce6`. Migración `0015_rate_limits.sql`. Test `supabase/tests/rate_limits.sql`.                                                                                                                                                                                   |
-| B-01 | Corregido          | 0.14.6, `4df1588`. `poweredByHeader: false` en `next.config.ts`.                                                                                                                                                                                                              |
-| B-02 | Corregido          | 0.14.5, `52a6e8f`. `CRON_SECRET` de al menos 32 caracteres. Test en `lib/env.test.ts`.                                                                                                                                                                                        |
-| B-03 | Pendiente          | El cupo de escritura de 0015 limita a la persona, pero no hay candado: varias peticiones a la vez siguen pudiendo consultar las fuentes de la tasa.                                                                                                                           |
-| B-04 | Pendiente          | `createInviteLink` sigue sin validar el id con zod y arma el enlace con `x-forwarded-host`.                                                                                                                                                                                   |
-| B-05 | Pendiente          | `img-src` sigue permitiendo `https://*.googleusercontent.com` en `lib/security/headers.ts`.                                                                                                                                                                                   |
-| B-06 | Pendiente          | `Permissions-Policy` sigue negando solo cámara, micrófono, geolocalización, pago y usb.                                                                                                                                                                                       |
-| B-07 | Corregido          | 0.14.7, `10d0e48`. `supabase/tests/definer_scope.sql`. Reconfirmado en 0.14.12, `67f8326`, en `supabase/tests/household_isolation.sql`.                                                                                                                                       |
-| B-08 | Aceptado con razón | `shadcn` sigue en `dependencies` porque el CSS del build lo importa. `braces` no corre en el servidor ni en el navegador, y no hay parche.                                                                                                                                    |
-| B-09 | Pendiente          | `setGoalArchived` y `setAccountArchived` no comprueban que `archived` sea un booleano.                                                                                                                                                                                        |
-| I-01 | Corregido          | 0.14.6, `4df1588`. Los cron responden una clave. El detalle va a `logServerError`.                                                                                                                                                                                            |
-| I-02 | Aceptado con razón | HSTS sin `preload`: agregarlo afectaría a todo `halcon.dev`. Comentario en `lib/security/static-headers.ts`.                                                                                                                                                                  |
-| I-03 | Aceptado con razón | `getSession()` solo saca el token de PostgREST después de `requireUser()` con `getUser()`.                                                                                                                                                                                    |
-| I-04 | Aceptado con razón | No se repitieron esas E2E contra el proyecto real. Desde 0.14.4 (`a8dbfc7`) los tests SQL van a Postgres local.                                                                                                                                                               |
-| I-05 | Aceptado con razón | `max_household_members()` devuelve 2. `rls_auto_enable` no es una RPC útil.                                                                                                                                                                                                   |
-| I-06 | Aceptado con razón | `'unsafe-inline'` en scripts se quedó: el nonce es incompatible con el prerender de Next 16 (0.14.2, `cff807d`).                                                                                                                                                              |
-| I-07 | Pendiente          | El panel no se ve desde el código. La lista está en "Lo que debo hacer yo a mano".                                                                                                                                                                                            |
+| ID   | Estado final       | Commit o prueba                                                                                                                                                                         |
+| ---- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A-01 | Corregido          | 0.14.4, `a8dbfc7`. `scripts/db-test-url.test.ts`. `pnpm test:rls` solo acepta Postgres local.                                                                                           |
+| M-01 | Pendiente          | Sigue el comodín `https://*.supabase.co` y `wss://*.supabase.co` en `lib/security/headers.ts`.                                                                                          |
+| M-02 | Pendiente          | No hay `cookieOptions`. Riesgo en la beta: un script que llegara a correr en la página podría leer la cookie de sesión y usarla desde otro equipo, porque no es `httpOnly` ni `Secure`. |
+| M-03 | Corregido          | 0.14.14. Migración `0018_member_write_scope.sql`. Test `supabase/tests/member_write_scope.sql`. En el proyecto real no rige hasta aplicar esa migración.                                |
+| M-04 | Corregido          | 0.14.8, `5bc5ce6`. Migración `0015_rate_limits.sql`. Test `supabase/tests/rate_limits.sql`.                                                                                             |
+| B-01 | Corregido          | 0.14.6, `4df1588`. `poweredByHeader: false` en `next.config.ts`.                                                                                                                        |
+| B-02 | Corregido          | 0.14.5, `52a6e8f`. `CRON_SECRET` de al menos 32 caracteres. Test en `lib/env.test.ts`.                                                                                                  |
+| B-03 | Pendiente          | El cupo de escritura de 0015 limita a la persona, pero no hay candado: varias peticiones a la vez siguen pudiendo consultar las fuentes de la tasa.                                     |
+| B-04 | Pendiente          | `createInviteLink` sigue sin validar el id con zod y arma el enlace con `x-forwarded-host`.                                                                                             |
+| B-05 | Pendiente          | `img-src` sigue permitiendo `https://*.googleusercontent.com` en `lib/security/headers.ts`.                                                                                             |
+| B-06 | Pendiente          | `Permissions-Policy` sigue negando solo cámara, micrófono, geolocalización, pago y usb.                                                                                                 |
+| B-07 | Corregido          | 0.14.7, `10d0e48`. `supabase/tests/definer_scope.sql`. Reconfirmado en 0.14.12, `67f8326`, en `supabase/tests/household_isolation.sql`.                                                 |
+| B-08 | Aceptado con razón | `shadcn` sigue en `dependencies` porque el CSS del build lo importa. `braces` no corre en el servidor ni en el navegador, y no hay parche.                                              |
+| B-09 | Pendiente          | `setGoalArchived` y `setAccountArchived` no comprueban que `archived` sea un booleano.                                                                                                  |
+| I-01 | Corregido          | 0.14.6, `4df1588`. Los cron responden una clave. El detalle va a `logServerError`.                                                                                                      |
+| I-02 | Aceptado con razón | HSTS sin `preload`: agregarlo afectaría a todo `halcon.dev`. Comentario en `lib/security/static-headers.ts`.                                                                            |
+| I-03 | Aceptado con razón | `getSession()` solo saca el token de PostgREST después de `requireUser()` con `getUser()`.                                                                                              |
+| I-04 | Aceptado con razón | No se repitieron esas E2E contra el proyecto real. Desde 0.14.4 (`a8dbfc7`) los tests SQL van a Postgres local.                                                                         |
+| I-05 | Aceptado con razón | `max_household_members()` devuelve 2. `rls_auto_enable` no es una RPC útil.                                                                                                             |
+| I-06 | Aceptado con razón | `'unsafe-inline'` en scripts se quedó: el nonce es incompatible con el prerender de Next 16 (0.14.2, `cff807d`).                                                                        |
+| I-07 | Pendiente          | El panel no se ve desde el código. La lista está en "Lo que debo hacer yo a mano".                                                                                                      |
 
 ## Hallazgos
 
@@ -128,7 +128,7 @@ Lo que sigue describe el problema original.
 
 ### M-03. Un miembro puede alterar repartos, liquidaciones y aportes del otro (Media)
 
-**Estado final: pendiente.** Riesgo en la beta: un miembro puede cambiar por la API los repartos, las liquidaciones o los aportes del otro y mover el balance. `household_isolation.sql` no cubre este caso: separa hogares distintos.
+**Estado final: corregido en 0.14.14.** Migración `0018_member_write_scope.sql`. Test: `supabase/tests/member_write_scope.sql`. Un miembro solo escribe repartos de transacciones suyas, aportes con su `user_id` (y, si hay transacción, que sea suya) y liquidaciones en las que es quien paga o quien recibe. `save_transaction` sigue creando el reparto de los dos porque es security invoker y quien llama es el dueño. Siguen el escape `ember.account_deletion`, `leave_household`, `remove_household_member` y el candado del ex miembro (solo categoría y nota). En el proyecto real no rige hasta aplicar `0018`.
 
 No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, entre sus dos miembros.
 
@@ -346,12 +346,11 @@ Nada de esto está en el código. No hay llaves que rotar: la fase 0 no encontr�
 Pendiente en código, no se cierra desde el panel:
 
 - M-02. En la beta, un script que llegara a correr en la página podría leer la cookie de sesión y usarla desde otro equipo, porque no es `httpOnly` ni `Secure`.
-- M-03. En la beta, dentro del mismo hogar, un miembro puede cambiar por la API los repartos, las liquidaciones o los aportes del otro y mover el balance. Entre hogares distintos eso no pasa: lo prueba `supabase/tests/household_isolation.sql`.
 - Siguen abiertos, sin ese mismo peso: M-01, B-03, B-04, B-05, B-06 y B-09. El detalle está en la tabla de cierre.
 
 Antes de compartir https://cash.halcon.dev:
 
-- Aplicar en el proyecto real las migraciones `0015_rate_limits.sql`, `0016_consents.sql` y `0017_account_deletion.sql` (`pnpm db:push`). Sin eso, los límites, el consentimiento y el borrado de cuenta no están en la base que usa la app.
+- Aplicar en el proyecto real las migraciones `0015_rate_limits.sql`, `0016_consents.sql`, `0017_account_deletion.sql` y `0018_member_write_scope.sql` (`pnpm db:push`). Sin eso, los límites, el consentimiento, el borrado de cuenta y el cierre de M-03 no están en la base que usa la app.
 - Poner `NEXT_PUBLIC_CONTACT_EMAIL` en Vercel Production, abrir `/privacidad`, `/terminos` y `/.well-known/security.txt`, y enviar un correo de prueba a esa dirección.
 - Leer el aviso y los términos. La franja de borrador ya no está. La revisión del texto sigue siendo tuya.
 - Panel de Supabase Auth (I-07): límites de correos, OTP, verificaciones y refresco de token activos. Alta con contraseña apagada y, si el interruptor existe, protección de contraseñas filtradas activa. Redirect URLs solo `https://cash.halcon.dev/**` y el desarrollo que todavía uses. Site URL `https://cash.halcon.dev`. Anotar la expiración del JWT. No activar CAPTCHA: el login no tiene ese widget.

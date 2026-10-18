@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.14] - 2026-10-17
+
+### Corregido (M-03: repartos, aportes y liquidaciones dentro del hogar)
+
+- Un miembro ya no puede, por la API, crear, editar ni borrar los repartos de una transacción que no es suya, un aporte a nombre de otra persona, ni una liquidación en la que no es quien paga ni quien recibe. Migración `0018_member_write_scope.sql`. Quien guarda su propio gasto compartido sigue creando el reparto de los dos (`save_transaction`).
+- Siguen igual el escape de `delete_account_data`, salir o quitar a un miembro, y el candado de un gasto con un ex miembro (solo categoría y nota).
+- Prueba: `supabase/tests/member_write_scope.sql`.
+
 ## [0.14.13] - 2026-10-17
 
 ### Cambiado (beta, cierre)

@@ -232,9 +232,14 @@ select pg_temp.ad_login('00000000-0000-4000-ad07-00000000000a');
 insert into public.goals (id, household_id, name, icon_key, target_minor, currency, started_on)
 values ('00000000-0000-4000-ad07-0000000000b1', current_setting('test.ad7_h')::uuid, 'Viaje', 'plane', 10000, 'COP', current_date);
 insert into public.goal_contributions (id, goal_id, user_id, amount_minor, currency)
-values
-  ('00000000-0000-4000-ad07-0000000000c1', '00000000-0000-4000-ad07-0000000000b1', '00000000-0000-4000-ad07-00000000000a', 200, 'COP'),
-  ('00000000-0000-4000-ad07-0000000000c2', '00000000-0000-4000-ad07-0000000000b1', '00000000-0000-4000-ad07-00000000000b', 300, 'COP');
+values ('00000000-0000-4000-ad07-0000000000c1', '00000000-0000-4000-ad07-0000000000b1',
+  '00000000-0000-4000-ad07-00000000000a', 200, 'COP');
+-- El aporte de B lo escribe B: desde 0018 nadie inserta un aporte a nombre de otro.
+select pg_temp.ad_login('00000000-0000-4000-ad07-00000000000b');
+insert into public.goal_contributions (id, goal_id, user_id, amount_minor, currency)
+values ('00000000-0000-4000-ad07-0000000000c2', '00000000-0000-4000-ad07-0000000000b1',
+  '00000000-0000-4000-ad07-00000000000b', 300, 'COP');
+select pg_temp.ad_login('00000000-0000-4000-ad07-00000000000a');
 
 -- Liquidación ya registrada entre los dos (parte del historial a conservar).
 insert into public.settlements (id, household_id, from_user, to_user, amount_minor, currency, created_by)

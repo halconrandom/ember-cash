@@ -367,17 +367,18 @@ begin
     where n.nspname = 'public' and p.prosrc like '%ember.account_deletion%'
   loop
     touches_count := touches_count + 1;
+    -- member_write_bypassed (0018) solo lee el ajuste. No lo enciende.
     if fn.proname not in ('forbid_column_change', 'lock_former_member_transaction',
         'lock_former_member_splits', 'lock_former_member_settlement',
-        'enforce_write_rate_limit', 'delete_account_data') then
+        'enforce_write_rate_limit', 'delete_account_data', 'member_write_bypassed') then
       raise exception 'FALLO: % toca ember.account_deletion y no estaba en la lista esperada', fn.proname;
     end if;
     if fn.prosrc like '%set_config%ember.account_deletion%' then
       writers := array_append(writers, fn.proname);
     end if;
   end loop;
-  if touches_count <> 6 then
-    raise exception 'FALLO: se esperaban 6 funciones que mencionan ember.account_deletion, hay %', touches_count;
+  if touches_count <> 7 then
+    raise exception 'FALLO: se esperaban 7 funciones que mencionan ember.account_deletion, hay %', touches_count;
   end if;
   if writers <> array['delete_account_data'] then
     raise exception 'FALLO: la única función que debería ENCENDER ember.account_deletion es delete_account_data, pero son: %', writers;

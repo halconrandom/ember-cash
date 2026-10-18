@@ -12,7 +12,7 @@ El detalle de la auditoría está en `docs/security/AUDIT.md`. Este archivo no l
 
 ## Antes de las pruebas en el sitio
 
-- [ ] En el proyecto de Supabase ya están aplicadas las migraciones `0015_rate_limits.sql`, `0016_consents.sql` y `0017_account_deletion.sql` (`pnpm db:push`). Sin la 0015 los límites de la base no rechazan filas. Sin la 0016 el consentimiento no se guarda. Sin la 0017 eliminar la cuenta no tiene la función. Comprobación de solo lectura: en el SQL editor existen la tabla `consents`, la tabla `rate_limits`, la tabla `deleted_account_sentinel` y las funciones `consume_rate_limit` y `delete_account_data`.
+- [ ] En el proyecto de Supabase ya están aplicadas las migraciones `0015_rate_limits.sql`, `0016_consents.sql`, `0017_account_deletion.sql` y `0018_member_write_scope.sql` (`pnpm db:push`). Sin la 0015 los límites de la base no rechazan filas. Sin la 0016 el consentimiento no se guarda. Sin la 0017 eliminar la cuenta no tiene la función. Sin la 0018 un miembro puede reescribir repartos, aportes y liquidaciones del otro. Comprobación de solo lectura: en el SQL editor existen la tabla `consents`, la tabla `rate_limits`, la tabla `deleted_account_sentinel` y las funciones `consume_rate_limit`, `delete_account_data` y `enforce_split_owner`.
 - [ ] En Vercel, entorno Production, están `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_CONTACT_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY` y `CRON_SECRET`. Las dos últimas no llevan prefijo `NEXT_PUBLIC_`. `CRON_SECRET` tiene al menos 32 caracteres. Si falta el correo de contacto, la app no arranca.
 
 ## Texto legal revisado por una persona
@@ -145,6 +145,6 @@ En cuánto tiempo:
 
 Fuente: `docs/security/AUDIT.md`. No se reescribe en esta lista.
 
-El cierre está en `docs/security/AUDIT.md`. Corregidos: A-01, M-04, B-01, B-02, B-07 e I-01. Aceptados con razón: B-08, I-02, I-03, I-04, I-05 e I-06. Pendientes en código: M-01, M-02, M-03, B-03, B-04, B-05, B-06 y B-09. I-07 es la revisión del panel, en las secciones de MFA, backups y Auth de esta lista. M-04 solo protege en el proyecto real después de aplicar `0015_rate_limits.sql`.
+El cierre está en `docs/security/AUDIT.md`. Corregidos: A-01, M-03, M-04, B-01, B-02, B-07 e I-01. Aceptados con razón: B-08, I-02, I-03, I-04, I-05 e I-06. Pendientes en código: M-01, M-02, B-03, B-04, B-05, B-06 y B-09. I-07 es la revisión del panel, en las secciones de MFA, backups y Auth de esta lista. M-03 y M-04 solo protegen en el proyecto real después de aplicar `0018_member_write_scope.sql` y `0015_rate_limits.sql`.
 
-- [ ] Leíste el cierre de `docs/security/AUDIT.md` y no vas a compartir el enlace creyendo que M-02 y M-03 ya están resueltos.
+- [ ] Leíste el cierre de `docs/security/AUDIT.md` y no vas a compartir el enlace creyendo que M-02 ya está resuelto, ni que M-03 rige en el proyecto real antes del `db:push` de `0018`.
