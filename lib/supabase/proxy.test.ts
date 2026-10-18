@@ -6,6 +6,9 @@ import { isPublicPath } from "./proxy";
 describe("isPublicPath", () => {
   it("deja pasar login, auth y APIs sin sesión", () => {
     expect(isPublicPath("/login")).toBe(true);
+    expect(isPublicPath("/privacidad")).toBe(true);
+    expect(isPublicPath("/terminos")).toBe(true);
+    expect(isPublicPath("/.well-known/security.txt")).toBe(true);
     expect(isPublicPath("/auth/callback")).toBe(true);
     expect(isPublicPath("/api/health")).toBe(true);
     expect(isPublicPath("/offline")).toBe(true);
@@ -18,6 +21,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/onboarding")).toBe(false);
     expect(isPublicPath("/invite/abc")).toBe(false);
     expect(isPublicPath("/login-falso")).toBe(false);
+    expect(isPublicPath("/privacidad-falso")).toBe(false);
   });
 
   it("deja ver /dev solo fuera de producción", () => {

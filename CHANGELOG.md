@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.10] - 2026-10-17
+
+### Añadido (beta, B2: aviso y términos)
+
+- `/privacidad` y `/terminos` son públicas, en el idioma de la cookie, con el texto legal en el orden de las claves. Muestran el aviso de borrador y la versión `2026-10-v1`.
+- El pie del login y Ajustes enlazan esas páginas. `{contactEmail}` sale de `NEXT_PUBLIC_CONTACT_EMAIL`. Si falta o no es un correo, la app no arranca.
+- `/.well-known/security.txt` publica Contact, Expires (un año desde el 2026-10-17), Preferred-Languages y Canonical.
+
 ## [0.14.9] - 2026-10-17
 
 ### Añadido (beta, B1: consentimiento)

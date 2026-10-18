@@ -8,6 +8,7 @@ import { assertNoSecretsInPublicEnv, EnvError, getPublicEnv, isServerSupabaseKey
 const valid = {
   NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon",
+  NEXT_PUBLIC_CONTACT_EMAIL: "contacto@example.com",
   SUPABASE_SERVICE_ROLE_KEY: "service",
   CRON_SECRET: "test-cron-secret-not-real-0000000000",
 };
@@ -39,7 +40,16 @@ describe("getServerEnv", () => {
 
   it("lista todas las que faltan si no hay ninguna", () => {
     expect(() => getServerEnv({})).toThrow(
-      /NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET/,
+      /NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_CONTACT_EMAIL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET/,
+    );
+  });
+
+  it("exige un correo de contacto y rechaza uno que no lo es", () => {
+    expect(() => getServerEnv({ ...valid, NEXT_PUBLIC_CONTACT_EMAIL: "" })).toThrow(
+      /Faltan estas variables: NEXT_PUBLIC_CONTACT_EMAIL/,
+    );
+    expect(() => getServerEnv({ ...valid, NEXT_PUBLIC_CONTACT_EMAIL: "no-es-correo" })).toThrow(
+      /valor inválido: NEXT_PUBLIC_CONTACT_EMAIL/,
     );
   });
 
@@ -54,6 +64,7 @@ describe("getPublicEnv", () => {
   it("lee las variables públicas de process.env", () => {
     // Vitest define valores falsos en vitest.config.mts.
     expect(getPublicEnv().NEXT_PUBLIC_SUPABASE_URL).toBe("http://127.0.0.1:54321");
+    expect(getPublicEnv().NEXT_PUBLIC_CONTACT_EMAIL).toBe("contacto@example.com");
   });
 });
 

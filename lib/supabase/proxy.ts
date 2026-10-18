@@ -17,6 +17,7 @@ import type { Database } from "@/lib/db/types";
 
 /**
  * Rutas que no requieren sesión. Las APIs manejan su propia autenticación.
+ * /privacidad, /terminos y security.txt se leen sin cuenta.
  * /dev/* (design system) solo existe fuera de producción.
  */
 export function isPublicPath(
@@ -25,6 +26,9 @@ export function isPublicPath(
 ): boolean {
   return (
     pathname === "/login" ||
+    pathname === "/privacidad" ||
+    pathname === "/terminos" ||
+    pathname === "/.well-known/security.txt" ||
     pathname === "/offline" ||
     pathname === "/sw.js" ||
     pathname === "/offline.html" ||

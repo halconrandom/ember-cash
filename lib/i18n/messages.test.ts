@@ -62,5 +62,19 @@ describe("messages", () => {
     expect(en.auth.loginNotice).toBe("Test version. Use made-up numbers.");
     expect(es.legal.versionLine).toBe("Versión {version} · Actualizado el {date}");
     expect(en.legal.versionLine).toBe("Version {version} · Updated {date}");
+    expect(es.legal.draftNotice).toBe("Borrador sujeto a revisión legal.");
+    expect(en.legal.draftNotice).toBe("Draft, subject to legal review.");
+    expect(es.legal.privacy.sharedTitle).toBe("Gastos compartidos del hogar");
+    expect(en.legal.privacy.sharedTitle).toBe("Shared household expenses");
+    expect(es.legal.privacy.sharedBody).toBe(
+      "Si borras tu cuenta, los gastos que compartiste con tu hogar se quedan para que los demás miembros puedan seguir con sus cuentas, pero sin tu nombre ni tu correo: aparecen como Usuario eliminado.",
+    );
+    expect(en.legal.privacy.sharedBody).toBe(
+      "If you delete your account, the expenses you shared with your household stay so the other members can keep their books straight, but without your name or email: they show up as Deleted user.",
+    );
+    expect(es.legal.privacy.contactBody).toContain("{contactEmail}");
+    expect(en.legal.privacy.contactBody).toContain("{contactEmail}");
+    expect(es.legal.terms.contactBody).toContain("{contactEmail}");
+    expect(en.legal.terms.contactBody).toContain("{contactEmail}");
   });
 });

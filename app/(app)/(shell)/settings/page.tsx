@@ -1,6 +1,6 @@
 /**
  * Ajustes: apariencia (tema e idioma, guardados en el perfil), cuenta,
- * respaldo y créditos.
+ * respaldo y créditos. Al final, el aviso de privacidad y los términos.
  *
  * Acerca de lleva la atribución de la licencia gratuita de Flaticon
  * (DESIGN_SPEC §6): "designed by {autor} from Flaticon", con enlace.
@@ -9,6 +9,7 @@
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
+import { LegalFooter } from "@/components/legal/legal-footer";
 import { Card, CardTitle } from "@/components/ui/card";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { getAccounts } from "@/lib/accounts/queries";
@@ -98,6 +99,8 @@ export default async function SettingsPage() {
           })}
         </p>
       </Card>
+
+      <LegalFooter className="flex flex-wrap gap-x-4 gap-y-2" />
     </div>
   );
 }

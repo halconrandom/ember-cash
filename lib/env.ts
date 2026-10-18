@@ -42,6 +42,9 @@ export const publicEnvSchema = z.object({
     .string()
     .min(1)
     .refine((value) => !isServerSupabaseKey(value), "es una llave de servidor"),
+  // Correo del aviso, los términos y security.txt. Es público a propósito:
+  // quien lea esas páginas tiene que poder escribir. Vacío cuenta como falta.
+  NEXT_PUBLIC_CONTACT_EMAIL: z.email(),
 });
 
 /** Nombres que nunca deben llevar el prefijo NEXT_PUBLIC_. */
@@ -129,5 +132,6 @@ export function getPublicEnv(): PublicEnv {
   return parseEnv(publicEnvSchema, {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_CONTACT_EMAIL: process.env.NEXT_PUBLIC_CONTACT_EMAIL,
   });
 }

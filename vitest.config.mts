@@ -19,6 +19,7 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
+      NEXT_PUBLIC_CONTACT_EMAIL: "contacto@example.com",
       SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
       CRON_SECRET: "test-cron-secret-not-real-0000000000",
     },

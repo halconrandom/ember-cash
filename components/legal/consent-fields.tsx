@@ -3,9 +3,8 @@
 /**
  * Casilla de consentimiento y la línea de versión. La usan el login y la
  * pantalla que bloquea la app. El texto sale de auth.consent (etiquetas
- * <privacy> y <terms>) y de legal.versionLine. Las páginas /privacidad y
- * /terminos llegan en B2; el enlace ya apunta ahí, sin precargar una ruta
- * que todavía no existe.
+ * <privacy> y <terms>) y de legal.versionLine. Los enlaces abren /privacidad
+ * y /terminos, que son públicas.
  */
 import { useTranslations } from "next-intl";
 import { useId, type ReactNode } from "react";

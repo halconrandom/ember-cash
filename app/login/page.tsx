@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 
+import { LegalFooter } from "@/components/legal/legal-footer";
 import { Card } from "@/components/ui/card";
 import { CenteredPage } from "@/components/ui/centered-page";
 import { safeNextPath } from "@/lib/auth/redirect";
@@ -33,6 +34,7 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
           <LoginContent searchParams={searchParams} />
         </Suspense>
       </Card>
+      <LegalFooter />
     </CenteredPage>
   );
 }

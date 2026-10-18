@@ -76,6 +76,7 @@ Abre [http://localhost:3000](http://localhost:3000).
 | ------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `NEXT_PUBLIC_SUPABASE_URL`      | cliente y servidor              | URL de tu proyecto de Supabase                                                                                           |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor              | Clave pública (`anon`)                                                                                                   |
+| `NEXT_PUBLIC_CONTACT_EMAIL`     | cliente y servidor              | Correo público del aviso, los términos y `/.well-known/security.txt`. Si falta o no es un correo, la app no arranca      |
 | `SUPABASE_SERVICE_ROLE_KEY`     | **solo servidor**               | Nunca con prefijo `NEXT_PUBLIC_` ni en el cliente                                                                        |
 | `CRON_SECRET`                   | **solo servidor**               | Al menos 32 caracteres. Genera uno con `openssl rand -hex 32`                                                            |
 | `TEST_DATABASE_URL`             | solo los tests de base de datos | Postgres **local** (`localhost`), base que termine en `_test`. Ver [Pruebas de base de datos](#pruebas-de-base-de-datos) |

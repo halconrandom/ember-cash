@@ -21,6 +21,7 @@ function walk(dir: string): string[] {
 
 /** Rutas que responden sin sesión y no leen finanzas. */
 const PUBLIC_ROUTES = new Set([
+  "app/.well-known/security.txt/route.ts",
   "app/api/health/route.ts",
   "app/auth/callback/route.ts",
   "app/auth/confirm/route.ts",
@@ -77,7 +78,7 @@ describe("server actions", () => {
 });
 
 describe("páginas", () => {
-  it("fuera del grupo con sesión solo están login, offline y el design system", () => {
+  it("fuera del grupo con sesión solo están login, los textos legales, offline y el design system", () => {
     const pages = walk(join(ROOT, "app"))
       .filter((path) => path.endsWith("page.tsx"))
       .map((path) => relative(ROOT, path));
@@ -86,7 +87,17 @@ describe("páginas", () => {
       "app/dev/design-system/page.tsx",
       "app/login/page.tsx",
       "app/offline/page.tsx",
+      "app/privacidad/page.tsx",
+      "app/terminos/page.tsx",
     ]);
+    for (const file of ["app/privacidad/page.tsx", "app/terminos/page.tsx"]) {
+      const source = readFileSync(join(ROOT, file), "utf8");
+      expect(source, file).not.toMatch(/requireUser\(|getCurrentUser\(/);
+    }
+    expect(readFileSync(join(ROOT, "app/login/page.tsx"), "utf8")).toContain("LegalFooter");
+    expect(readFileSync(join(ROOT, "app/(app)/(shell)/settings/page.tsx"), "utf8")).toContain(
+      "LegalFooter",
+    );
     const design = readFileSync(join(ROOT, "app/dev/design-system/page.tsx"), "utf8");
     expect(design).toContain('process.env.NODE_ENV === "production"');
     expect(design).toContain("notFound(");
