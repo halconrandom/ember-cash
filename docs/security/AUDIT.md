@@ -1,6 +1,6 @@
 # Auditoría de seguridad de Ember Cash
 
-Estado: **fase 2 cerrada en 0.14.6.** A-01 (0.14.4), B-02 (0.14.5) y las fugas B-01 e I-01 (0.14.6) están corregidas. Lo demás sigue abierto en la fase que indica cada hallazgo. El detalle de abajo es el reporte de la fase 0.
+Estado: **B-07 cerrado en 0.14.7.** Antes: A-01 (0.14.4), B-02 (0.14.5) y las fugas B-01 e I-01 (0.14.6). Lo demás sigue abierto en la fase que indica cada hallazgo. El detalle de abajo es el reporte de la fase 0.
 
 - Fecha: 17 de octubre de 2026. Versión auditada: 0.14.2 (commit `cff807d`).
 - Producción: https://cash.halcon.dev (Vercel). Un solo proyecto de Supabase, el real, para desarrollo y producción.
@@ -39,7 +39,7 @@ No se encontraron secretos filtrados ni acceso entre hogares o usuarios distinto
 | B-04 | Baja        | Validación       | `createInviteLink` sin zod y con el origen tomado de `x-forwarded-host`                 | 3    |
 | B-05 | Baja        | Cabeceras        | `img-src` permite `*.googleusercontent.com` sin uso                                     | 5    |
 | B-06 | Baja        | Cabeceras        | `Permissions-Policy` deja abiertas funciones que la app no usa                          | 5    |
-| B-07 | Baja        | RLS              | Dos funciones SECURITY DEFINER responden sobre ids ajenos                               | 3    |
+| B-07 | Baja        | RLS              | Dos funciones SECURITY DEFINER responden sobre ids ajenos (corregido en 0.14.7)         | 3    |
 | B-08 | Baja        | Dependencias     | `braces` vulnerable (alta en `pnpm audit`) vía la CLI de shadcn                         | 5    |
 | B-09 | Baja        | Validación       | Parámetros booleanos y de texto sin validar en algunas acciones                         | 3    |
 | I-01 | Informativa | Fugas            | Los cron devuelven el texto del error a quien ya tiene el secreto (corregido en 0.14.6) | 2    |
@@ -173,14 +173,11 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-07. Dos funciones SECURITY DEFINER responden sobre ids ajenos (Baja)
 
-- **Dónde:**
-  - `0003_finance_model.sql:573` da `EXECUTE` sobre `household_has_member(hid, uid)` a `authenticated`.
-  - `0010_household_leave.sql:211` hace lo mismo con `transaction_has_former_member(tid)`.
+**Estado: corregido en 0.14.7.** Migración `0014_definer_scope.sql`.
 
-  Las dos son SECURITY DEFINER y no comprueban que quien llama sea miembro.
-
+- **Dónde estaba:** `authenticated` podía ejecutar `household_has_member(hid, uid)` y `transaction_has_former_member(tid)`. Las dos son SECURITY DEFINER. La segunda contestaba sobre cualquier id.
 - **Cómo se explota:** cualquier usuario autenticado puede preguntar si el usuario X es miembro del hogar Y, o si la transacción Z incluye a un ex miembro. Hace falta conocer los UUID (no se pueden adivinar), así que el riesgo es bajo.
-- **Corrección (fase 3):** que devuelvan `false` si quien llama no es miembro, o quitarles `EXECUTE` a `authenticated` (las políticas RLS las llaman igual, porque se evalúan con los permisos del dueño).
+- **Corrección (0.14.7):** `search_path` fijo y `auth.uid()`. Si el hogar o la transacción no son del usuario, la respuesta es `false`, igual que si el id no existe. Quien sí es miembro sigue recibiendo la respuesta real (las políticas y el bloqueo de ex miembros la necesitan). Test: `supabase/tests/definer_scope.sql`.
 
 ### B-08. `braces` vulnerable (alta en `pnpm audit`) vía la CLI de shadcn (Baja)
 

@@ -2,6 +2,13 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.7] - 2026-10-17
+
+### Corregido (auditoría, B-07)
+
+- `household_has_member` y `transaction_has_former_member` siguen siendo `security definer` con `search_path` fijo. Comprueban `auth.uid()` y, si el hogar o la transacción no son del usuario, responden `false`, lo mismo que si el id no existiera.
+- Test SQL con dos hogares en Postgres local.
+
 ## [0.14.6] - 2026-10-17
 
 ### Cambiado (auditoría, fase 2: fugas)
@@ -67,15 +74,6 @@ Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog]
 - Desarrollo y producción usan el mismo proyecto de Supabase. El README ya no pide enlazar un proyecto y volver a enlazar otro.
 - `pnpm db:push` pide escribir el ref del proyecto enlazado antes de aplicar migraciones.
 - `pnpm db:seed:demo` se niega a correr contra ese proyecto. `supabase/seed.sql` aborta si se ejecuta.
-
-## [0.14.6] - 2026-10-17
-
-### Cambiado (auditoría, fase 2: fugas)
-
-- Las rutas cron, la exportación y el dashboard responden una clave genérica. El detalle queda en `lib/log/server.ts`, que no imprime el objeto de error ni montos, correos ni tokens.
-- `next.config.ts` apaga `X-Powered-By` y deja explícito que no se publican source maps del navegador.
-- El enlace mágico muestra el mismo resultado si el correo ya tenía cuenta o no. El fallo de envío ya no pide revisar el correo.
-- El service worker se prueba con fetches reales: no guarda `/api`, auth ni datos financieros.
 
 ## [0.14.0] - 2026-10-17
 
