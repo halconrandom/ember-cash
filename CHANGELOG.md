@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.12] - 2026-10-17
+
+### Añadido (beta, B4: aislamiento entre hogares y seguridad)
+
+- `supabase/tests/household_isolation.sql` (Postgres local): DOS hogares reales sin relación (cada uno con dueño y miembro) más un usuario sin hogar, cubriendo transacciones, repartos, liquidaciones, invitaciones, lectura de `households`/`household_members` y lo que exporta `lib/export/backup.ts` (mismas tablas, bajo RLS con la anon key y el access token del usuario, igual que la ruta real).
+- Suplantación probada también por RPC, no solo con insert/update directo: `save_transaction` con un `household_id` ajeno o un `paid_by` de otro hogar; `leave_household` y `remove_household_member` llamados contra un hogar al que quien llama nunca perteneció.
+- Dos tipos de ex miembro, en los dos hogares: salida voluntaria (`leave_household`, queda con su nombre real) y borrado de cuenta (`delete_account_data`, queda reasignado al usuario fantasma, sin nombre). Se confirma que el usuario fantasma —compartido por todos los borrados de cuenta de toda la app— nunca es miembro de ningún hogar, así que no puede servir de puente de visibilidad entre hogares sin relación.
+- B-07 (`docs/security/AUDIT.md`) reconfirmado con los dos hogares y los ex miembros de este archivo: `household_has_member` y `transaction_has_former_member` siguen dando la misma respuesta para "de otro hogar" y "no existe" (la prueba a fondo de `security definer` y `search_path` fijo ya vive en `supabase/tests/definer_scope.sql`).
+- Ajuste de sesión `ember.account_deletion` (0017): se confirma por introspección de `pg_proc` que ninguna función de `public` lo enciende salvo `delete_account_data`, y que no existe ningún `public.set_config` que PostgREST pudiera exponer como RPC (`set_config` vive en `pg_catalog`, fuera de lo que PostgREST traduce desde una petición HTTP). Como defensa en profundidad, se fuerza el ajuste a mano con una sesión autenticada normal (el rol `authenticated` sí puede ejecutar ese `set_config`: no es un privilegio especial) y se confirma que RLS, al ser independiente de ese ajuste, sigue bloqueando la lectura y la escritura cruzada entre hogares igual que siempre.
+
 ## [0.14.11] - 2026-10-17
 
 ### Añadido (beta, B3: eliminar cuenta y datos)
