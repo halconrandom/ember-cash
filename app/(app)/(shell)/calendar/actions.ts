@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
+import { isRateLimitedDbError, limitOr } from "@/lib/security/rate-limit";
 import { rescheduleUpdate } from "@/lib/recurring/schedule";
 import { createClient } from "@/lib/supabase/server";
 import { DATE_PATTERN, todayIn } from "@/lib/transactions/dates";
@@ -31,7 +32,7 @@ const markPaidSchema = z.object({
 
 export type PaidResult =
   | { ok: true; transactionId: string }
-  | { ok: false; error: "accountRequired" | "futureDate" | "failed" | "forbidden" };
+  | { ok: false; error: "accountRequired" | "futureDate" | "failed" | "forbidden" | "rateLimited" };
 
 export async function markOccurrencePaid(input: unknown): Promise<PaidResult> {
   await requireUser();
@@ -50,13 +51,21 @@ export async function markOccurrencePaid(input: unknown): Promise<PaidResult> {
     p_paid_on: paidOn,
   });
   if (error || !data) {
-    return { ok: false, error: error?.code === "42501" ? "forbidden" : "failed" };
+    return {
+      ok: false,
+      error: isRateLimitedDbError(error)
+        ? "rateLimited"
+        : error?.code === "42501"
+          ? "forbidden"
+          : "failed",
+    };
   }
   revalidate();
   return { ok: true, transactionId: data };
 }
 
-export type RescheduleResult = { ok: true } | { ok: false; error: "conflict" | "failed" };
+export type RescheduleResult =
+  { ok: true } | { ok: false; error: "conflict" | "failed" | "rateLimited" };
 
 /** Mueve un vencimiento programado. La serie no cambia. */
 export async function rescheduleOccurrence(id: string, dueOn: string): Promise<RescheduleResult> {
@@ -72,6 +81,7 @@ export async function rescheduleOccurrence(id: string, dueOn: string): Promise<R
     .maybeSingle();
   // Una vencida también se puede mover; vuelve a quedar programada (si la
   // nueva fecha ya pasó, el cron la marca otra vez como vencida).
+  if (isRateLimitedDbError(error)) return { ok: false, error: "rateLimited" };
   if (error || !current || !["scheduled", "overdue"].includes(current.status))
     return { ok: false, error: "failed" };
 
@@ -95,7 +105,7 @@ export async function rescheduleOccurrence(id: string, dueOn: string): Promise<R
       .from("recurring_occurrences")
       .delete()
       .eq("id", occupied.id);
-    if (dropError) return { ok: false, error: "failed" };
+    if (dropError) return { ok: false, error: limitOr(dropError, "failed") };
   }
 
   const { error: updateError } = await supabase
@@ -103,7 +113,14 @@ export async function rescheduleOccurrence(id: string, dueOn: string): Promise<R
     .update({ due_on: next.dueOn, rescheduled_from: next.rescheduledFrom, status: "scheduled" })
     .eq("id", current.id);
   if (updateError)
-    return { ok: false, error: updateError.code === "23505" ? "conflict" : "failed" };
+    return {
+      ok: false,
+      error: isRateLimitedDbError(updateError)
+        ? "rateLimited"
+        : updateError.code === "23505"
+          ? "conflict"
+          : "failed",
+    };
 
   const { error: skipError } = await supabase.from("recurring_occurrences").insert({
     recurring_item_id: current.recurring_item_id,
@@ -111,7 +128,8 @@ export async function rescheduleOccurrence(id: string, dueOn: string): Promise<R
     status: "skipped",
   });
   // Si ya había una fila en la fecha abandonada, el generador tampoco la recrea.
-  if (skipError && skipError.code !== "23505") return { ok: false, error: "failed" };
+  if (skipError && skipError.code !== "23505")
+    return { ok: false, error: limitOr(skipError, "failed") };
 
   revalidate();
   return { ok: true };

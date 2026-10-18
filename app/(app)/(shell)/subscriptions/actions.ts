@@ -10,6 +10,7 @@ import { getLocale } from "next-intl/server";
 import { z } from "zod";
 
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
+import { isRateLimitedDbError } from "@/lib/security/rate-limit";
 import { isLocale } from "@/lib/i18n/config";
 import {
   validateRecurring,
@@ -32,7 +33,7 @@ export type RecurringSaveResult =
   | {
       ok: false;
       fieldErrors?: Partial<Record<RecurringField, RecurringErrorKey>>;
-      error?: "failed";
+      error?: "failed" | "rateLimited";
     };
 
 export async function saveRecurringItem(input: unknown): Promise<RecurringSaveResult> {
@@ -61,6 +62,7 @@ export async function saveRecurringItem(input: unknown): Promise<RecurringSaveRe
   const { data, error } = item.id
     ? await supabase.from("recurring_items").update(values).eq("id", item.id).select("id").single()
     : await supabase.from("recurring_items").insert(values).select("id").single();
+  if (isRateLimitedDbError(error)) return { ok: false, error: "rateLimited" };
   if (error || !data) return { ok: false, error: "failed" };
 
   if (item.id) {
@@ -84,7 +86,10 @@ const statusSchema = z.object({
 });
 
 /** Pausa, reanuda o cancela. Cancelar es reversible (el toast llama con active). */
-export async function setRecurringStatus(id: string, status: "active" | "paused" | "cancelled") {
+export async function setRecurringStatus(
+  id: string,
+  status: "active" | "paused" | "cancelled",
+): Promise<{ ok: boolean; error?: "rateLimited" }> {
   await requireUser();
   const parsed = statusSchema.safeParse({ id, status });
   if (!parsed.success) return { ok: false };
@@ -94,5 +99,6 @@ export async function setRecurringStatus(id: string, status: "active" | "paused"
     .update({ status }, { count: "exact" })
     .eq("id", id);
   revalidate();
+  if (isRateLimitedDbError(error)) return { ok: false, error: "rateLimited" };
   return { ok: !error && count === 1 };
 }

@@ -27,6 +27,7 @@ import { balancesByCurrency, fullSettlement } from "@/lib/household/balance";
 import { listSettlements, listSharedTransactions } from "@/lib/household/queries";
 import { householdErrorKey } from "@/lib/households/errors";
 import { buildInviteUrl, generateInviteToken, hashInviteToken } from "@/lib/households/invites";
+import { isRateLimitedDbError, limitOr, rateLimitText } from "@/lib/security/rate-limit";
 import { SCOPE_COOKIE, SCOPE_COOKIE_MAX_AGE } from "@/lib/scope/constants";
 import { createClient } from "@/lib/supabase/server";
 import { MONTH_PATTERN, todayIn } from "@/lib/transactions/dates";
@@ -49,6 +50,9 @@ export async function createInviteLink(householdId: string): Promise<InviteLinkR
     .insert({ household_id: householdId, token_hash: hashInviteToken(token) });
 
   if (error) {
+    // 8 enlaces por hora (invite_create). El texto ya viene traducido.
+    if (isRateLimitedDbError(error))
+      return { ok: false, error: await rateLimitText("inviteCreate") };
     // 42501 = RLS rechazó el insert: el usuario no administra el hogar.
     const t = await getTranslations("householdErrors");
     return { ok: false, error: t(error.code === "42501" ? "onlyAdminCanInvite" : "inviteFailed") };
@@ -87,6 +91,7 @@ export async function createHouseholdAndSwitch(name: unknown): Promise<CreateHou
   }
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_household", { p_name: parsed.data });
+  if (isRateLimitedDbError(error)) return { ok: false, error: await rateLimitText("write") };
   if (error) return { ok: false, error: t(`householdErrors.${householdErrorKey(error)}`) };
   (await cookies()).set(SCOPE_COOKIE, data, {
     path: "/",
@@ -119,7 +124,8 @@ const settleSchema = z.discriminatedUnion("mode", [
   }),
 ]);
 
-export type SettleResult = { ok: true; ids: string[] } | { ok: false; error: "nothing" | "failed" };
+export type SettleResult =
+  { ok: true; ids: string[] } | { ok: false; error: "nothing" | "failed" | "rateLimited" };
 
 export async function settleUp(input: unknown): Promise<SettleResult> {
   await requireUser();
@@ -166,7 +172,7 @@ export async function settleUp(input: unknown): Promise<SettleResult> {
     .from("settlements")
     .insert(rows.map((r) => ({ ...r, household_id: p.householdId, settled_on: settledOn })))
     .select("id");
-  if (error) return { ok: false, error: "failed" };
+  if (error) return { ok: false, error: limitOr(error, "failed") };
   revalidateShared();
   return { ok: true, ids: data.map((d) => d.id) };
 }
@@ -196,7 +202,7 @@ const budgetSchema = z.object({
   currency: z.enum(CURRENCY_CODES),
 });
 
-export type BudgetResult = { ok: true } | { ok: false; error: "failed" };
+export type BudgetResult = { ok: true } | { ok: false; error: "failed" | "rateLimited" };
 
 /** Crea o actualiza el límite de una categoría en un mes. */
 export async function saveBudget(input: unknown): Promise<BudgetResult> {
@@ -226,12 +232,12 @@ export async function saveBudget(input: unknown): Promise<BudgetResult> {
         category_key: b.categoryKey,
         month: `${b.month}-01`,
       });
-  if (error) return { ok: false, error: "failed" };
+  if (error) return { ok: false, error: limitOr(error, "failed") };
   revalidatePath("/household");
   return { ok: true };
 }
 
-export async function deleteBudget(id: unknown): Promise<{ ok: boolean }> {
+export async function deleteBudget(id: unknown): Promise<{ ok: boolean; error?: "rateLimited" }> {
   await requireUser();
   const parsed = z.uuid().safeParse(id);
   if (!parsed.success) return { ok: false };
@@ -241,11 +247,14 @@ export async function deleteBudget(id: unknown): Promise<{ ok: boolean }> {
     .delete({ count: "exact" })
     .eq("id", parsed.data);
   revalidatePath("/household");
+  if (isRateLimitedDbError(error)) return { ok: false, error: "rateLimited" };
   return { ok: !error && count === 1 };
 }
 
 /** Copia los límites de `fromMonth` a `toMonth` (solo las categorías que faltan). */
-export async function copyBudgets(input: unknown): Promise<{ ok: boolean; count: number }> {
+export async function copyBudgets(
+  input: unknown,
+): Promise<{ ok: boolean; count: number; error?: "rateLimited" }> {
   await requireUser();
   const parsed = z
     .object({
@@ -276,6 +285,7 @@ export async function copyBudgets(input: unknown): Promise<{ ok: boolean; count:
   if (rows.length === 0) return { ok: true, count: 0 };
   const { error } = await supabase.from("budgets").insert(rows);
   revalidatePath("/household");
+  if (isRateLimitedDbError(error)) return { ok: false, count: 0, error: "rateLimited" };
   return { ok: !error, count: error ? 0 : rows.length };
 }
 
@@ -305,6 +315,7 @@ export async function leaveHousehold(householdId: unknown): Promise<LeaveResult>
   if (!parsed.success) return leaveError("generic");
   const supabase = await createClient();
   const { error } = await supabase.rpc("leave_household", { hid: parsed.data });
+  if (isRateLimitedDbError(error)) return { ok: false, error: await rateLimitText("write") };
   if (error) return leaveError(error.message);
   (await cookies()).set(SCOPE_COOKIE, "personal", {
     path: "/",
@@ -325,6 +336,7 @@ export async function removeMember(input: unknown): Promise<LeaveResult> {
     hid: parsed.data.householdId,
     uid: parsed.data.userId,
   });
+  if (isRateLimitedDbError(error)) return { ok: false, error: await rateLimitText("write") };
   if (error) return leaveError(error.message);
   revalidatePath("/", "layout");
   return { ok: true };

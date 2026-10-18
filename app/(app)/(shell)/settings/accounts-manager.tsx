@@ -69,7 +69,11 @@ function AccountItem({ account }: { account: AccountSummary }) {
     startTransition(async () => {
       const result = await renameAccount(account.id, name);
       if (!result.ok) {
-        setError(t(`accounts.errors.${result.error}`));
+        setError(
+          result.error === "rateLimited"
+            ? t("rateLimit.write")
+            : t(`accounts.errors.${result.error}`),
+        );
         return;
       }
       setError(null);

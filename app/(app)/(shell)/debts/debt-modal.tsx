@@ -38,6 +38,7 @@ import { deleteDebt, purgeDebt, restoreDebt, saveDebt } from "./actions";
 
 export function DebtModal({ open, editing }: { open: boolean; editing: DebtSummary | null }) {
   const t = useTranslations("debts");
+  const rate = useTranslations("rateLimit");
   const localeRaw = useLocale();
   const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
   const f = useFormat();
@@ -96,7 +97,9 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
       const result = await saveDebt(input);
       if (!result.ok) {
         if (result.fieldErrors) setErrors(result.fieldErrors);
-        if (result.error) setFormError(t("errors.failed"));
+        if (result.error) {
+          setFormError(result.error === "rateLimited" ? rate("write") : t("errors.failed"));
+        }
         return;
       }
       setSaved(true);

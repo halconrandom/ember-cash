@@ -39,6 +39,7 @@ type Props = {
 
 export function SettleModal({ open, onClose, householdId, transfer, plan, nameOf }: Props) {
   const t = useTranslations("household");
+  const rate = useTranslations("rateLimit");
   const f = useFormat();
   const localeRaw = useLocale();
   const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
@@ -84,7 +85,11 @@ export function SettleModal({ open, onClose, householdId, transfer, plan, nameOf
     startTransition(async () => {
       const result = await settleUp(input);
       if (!result.ok) {
-        setError(t(result.error === "nothing" ? "settleErrors.nothing" : "settleErrors.failed"));
+        setError(
+          result.error === "rateLimited"
+            ? rate("write")
+            : t(result.error === "nothing" ? "settleErrors.nothing" : "settleErrors.failed"),
+        );
         return;
       }
       close();

@@ -17,6 +17,7 @@ import { getLocale } from "next-intl/server";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
+import { isRateLimitedDbError } from "@/lib/security/rate-limit";
 import { isLocale } from "@/lib/i18n/config";
 import { CATEGORY_META } from "@/lib/categories";
 import { recurringFromTransaction } from "@/lib/recurring/from-transaction";
@@ -34,7 +35,7 @@ export type SaveResult =
   | {
       ok: false;
       fieldErrors?: Partial<Record<TransactionField, TransactionErrorKey>>;
-      error?: "forbidden" | "notFound" | "locked" | "failed";
+      error?: "forbidden" | "notFound" | "locked" | "failed" | "rateLimited";
     };
 
 export async function saveTransaction(input: unknown): Promise<SaveResult> {
@@ -69,8 +70,9 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
   if (error) {
     return {
       ok: false,
-      error:
-        error.code === "42501"
+      error: isRateLimitedDbError(error)
+        ? "rateLimited"
+        : error.code === "42501"
           ? "forbidden"
           : error.code === "P0002"
             ? "notFound"
@@ -103,6 +105,7 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
       })
       .select("id")
       .single();
+    if (isRateLimitedDbError(itemError)) return { ok: false, error: "rateLimited" };
     if (itemError || !item) {
       await supabase
         .from("transactions")
@@ -116,6 +119,7 @@ export async function saveTransaction(input: unknown): Promise<SaveResult> {
       status: "paid",
       transaction_id: data,
     });
+    if (isRateLimitedDbError(occurrenceError)) return { ok: false, error: "rateLimited" };
     if (occurrenceError) {
       await supabase.from("recurring_items").delete().eq("id", item.id);
       await supabase

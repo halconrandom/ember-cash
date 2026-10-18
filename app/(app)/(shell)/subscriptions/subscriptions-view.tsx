@@ -86,6 +86,7 @@ export function SubscriptionsView({
   accounts: AccountSummary[];
 }) {
   const t = useTranslations("subscriptions");
+  const rateLimit = useTranslations("rateLimit");
   const f = useFormat();
   const toast = useToast();
   const { rate, status, displayCurrency } = useRate();
@@ -111,7 +112,9 @@ export function SubscriptionsView({
     startTransition(async () => {
       const result = await setRecurringStatus(item.id, "cancelled");
       if (!result.ok) {
-        toast.show({ message: t("cancelFailed") });
+        toast.show({
+          message: result.error === "rateLimited" ? rateLimit("write") : t("cancelFailed"),
+        });
         return;
       }
       toast.show({

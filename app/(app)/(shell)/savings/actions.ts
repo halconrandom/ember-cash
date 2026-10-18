@@ -13,6 +13,7 @@ import { getLocale } from "next-intl/server";
 import { z } from "zod";
 
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
+import { isRateLimitedDbError, limitOr } from "@/lib/security/rate-limit";
 import {
   validateContribution,
   validateGoal,
@@ -35,7 +36,11 @@ async function context() {
 
 export type GoalSaveResult =
   | { ok: true; id: string }
-  | { ok: false; fieldErrors?: Partial<Record<GoalField, GoalErrorKey>>; error?: "failed" };
+  | {
+      ok: false;
+      fieldErrors?: Partial<Record<GoalField, GoalErrorKey>>;
+      error?: "failed" | "rateLimited";
+    };
 
 export async function saveGoal(input: unknown): Promise<GoalSaveResult> {
   const { locale, today } = await context();
@@ -60,12 +65,15 @@ export async function saveGoal(input: unknown): Promise<GoalSaveResult> {
         .insert({ ...values, household_id: scopeHouseholdId(await getScope()), started_on: today })
         .select("id")
         .single();
-  if (error) return { ok: false, error: "failed" };
+  if (error) return { ok: false, error: limitOr(error, "failed") };
   revalidatePath("/savings");
   return { ok: true, id: data.id };
 }
 
-export async function setGoalArchived(id: string, archived: boolean): Promise<{ ok: boolean }> {
+export async function setGoalArchived(
+  id: string,
+  archived: boolean,
+): Promise<{ ok: boolean; error?: "rateLimited" }> {
   await requireUser();
   if (!z.uuid().safeParse(id).success) return { ok: false };
   const supabase = await createClient();
@@ -74,6 +82,7 @@ export async function setGoalArchived(id: string, archived: boolean): Promise<{ 
     .update({ archived_at: archived ? new Date().toISOString() : null }, { count: "exact" })
     .eq("id", id);
   revalidatePath("/savings");
+  if (isRateLimitedDbError(error)) return { ok: false, error: "rateLimited" };
   return { ok: !error && count === 1 };
 }
 
@@ -82,7 +91,7 @@ export type ContributionResult =
   | {
       ok: false;
       fieldErrors?: Partial<Record<ContributionField, ContributionErrorKey>>;
-      error?: "currencyMismatch" | "failed";
+      error?: "currencyMismatch" | "failed" | "rateLimited";
     };
 
 export async function addContribution(input: unknown): Promise<ContributionResult> {
@@ -108,7 +117,7 @@ export async function addContribution(input: unknown): Promise<ContributionResul
     contributed_on: c.contributedOn,
     transaction_id: c.transactionId,
   });
-  if (error) return { ok: false, error: "failed" };
+  if (error) return { ok: false, error: limitOr(error, "failed") };
   revalidatePath("/savings");
   return { ok: true };
 }

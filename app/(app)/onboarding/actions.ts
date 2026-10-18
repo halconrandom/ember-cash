@@ -10,6 +10,7 @@ import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth/session";
 import { householdErrorKey } from "@/lib/households/errors";
 import { extractInviteToken } from "@/lib/households/invites";
+import { isRateLimitedDbError, rateLimitText } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 /** Estado que devuelven las acciones de formulario (para useActionState). */
@@ -23,7 +24,13 @@ export async function chooseAlone(): Promise<FormState> {
     .from("profiles")
     .update({ onboarded_at: new Date().toISOString() })
     .eq("id", user.id);
-  if (error) return { error: (await getTranslations("onboarding.errors"))("saveFailed") };
+  if (error) {
+    return {
+      error: isRateLimitedDbError(error)
+        ? await rateLimitText("write")
+        : (await getTranslations("onboarding.errors"))("saveFailed"),
+    };
+  }
   redirect("/");
 }
 
@@ -37,7 +44,13 @@ export async function createHousehold(_prev: FormState, formData: FormData): Pro
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("create_household", { p_name: name });
-  if (error) return { error: t(`householdErrors.${householdErrorKey(error)}`) };
+  if (error) {
+    return {
+      error: isRateLimitedDbError(error)
+        ? await rateLimitText("write")
+        : t(`householdErrors.${householdErrorKey(error)}`),
+    };
+  }
   redirect("/");
 }
 

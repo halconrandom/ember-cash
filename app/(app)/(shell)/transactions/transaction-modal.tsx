@@ -196,15 +196,17 @@ export function TransactionModal({
         if (result.fieldErrors) setErrors(result.fieldErrors);
         if (result.error) {
           setFormError(
-            tm(
-              result.error === "forbidden"
-                ? "errorForbidden"
-                : result.error === "notFound"
-                  ? "errorNotFound"
-                  : result.error === "locked"
-                    ? "errorLocked"
-                    : "errorFailed",
-            ),
+            result.error === "rateLimited"
+              ? t("rateLimit.write")
+              : tm(
+                  result.error === "forbidden"
+                    ? "errorForbidden"
+                    : result.error === "notFound"
+                      ? "errorNotFound"
+                      : result.error === "locked"
+                        ? "errorLocked"
+                        : "errorFailed",
+                ),
           );
         }
         return;

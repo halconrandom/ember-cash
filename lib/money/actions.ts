@@ -9,6 +9,7 @@
  */
 import { requireUser } from "@/lib/auth/session";
 import type { CurrencyCode } from "@/lib/db/types";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 import type { Rate } from "./convert";
@@ -25,6 +26,10 @@ export async function refreshRate(): Promise<RefreshRateResult> {
   if (latest && Date.now() - new Date(latest.fetchedAt).getTime() < REFRESH_COOLDOWN_MS) {
     return { ok: true, rate: latest };
   }
+  // La escritura de la tasa usa la service role: el disparador no se la
+  // cuenta a esta persona. El cupo de escritura sí, antes de salir a la red.
+  const limit = await consumeRateLimit("write");
+  if (!limit.allowed) return { ok: false, rate: latest };
   const result = await fetchAndStoreRate();
   // Si ambas fuentes fallan se informa el error y se conserva la última tasa.
   return result.ok ? { ok: true, rate: result.rate } : { ok: false, rate: latest };

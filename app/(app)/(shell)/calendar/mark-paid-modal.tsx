@@ -54,6 +54,7 @@ function MarkPaidForm({
   title,
 }: Props & { event: AgendaItem; title: string }) {
   const t = useTranslations("occurrences");
+  const rate = useTranslations("rateLimit");
   const f = useFormat();
   const router = useRouter();
   const toast = useToast();
@@ -74,7 +75,7 @@ function MarkPaidForm({
         paidOn,
       });
       if (!result.ok) {
-        setError(t(`errors.${result.error}`));
+        setError(result.error === "rateLimited" ? rate("write") : t(`errors.${result.error}`));
         return;
       }
       onClose();

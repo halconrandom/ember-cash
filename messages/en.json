@@ -2,6 +2,11 @@
   "common": {
     "appName": "Ember Cash"
   },
+  "rateLimit": {
+    "write": "You did too many actions in a short time. Wait a moment and try again.",
+    "export": "You exported your data several times this hour. Wait a moment and try again.",
+    "inviteCreate": "You created too many invite links. Wait a moment and try again."
+  },
   "metadata": {
     "description": "Personal finance"
   },

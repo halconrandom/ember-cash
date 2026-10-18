@@ -31,6 +31,7 @@ type Props = { debt: DebtSummary | null; accounts: AccountSummary[]; today: stri
 
 export function PaymentModal({ debt, accounts, today }: Props) {
   const t = useTranslations("debts");
+  const rate = useTranslations("rateLimit");
   const localeRaw = useLocale();
   const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
   const f = useFormat();
@@ -88,7 +89,9 @@ export function PaymentModal({ debt, accounts, today }: Props) {
       const result = await recordPayment(input);
       if (!result.ok) {
         if (result.fieldErrors) setErrors(result.fieldErrors);
-        if (result.error) setFormError(t("errors.failed"));
+        if (result.error) {
+          setFormError(result.error === "rateLimited" ? rate("write") : t("errors.failed"));
+        }
         return;
       }
       close();

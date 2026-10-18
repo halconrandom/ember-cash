@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.8] - 2026-10-17
+
+### Seguridad (auditoría, M-04: límites)
+
+- Tabla `rate_limits` y función `consume_rate_limit` (security definer, `search_path` fijo). Exportar: 3 por hora. Crear un enlace: 8 por hora. Aceptar un enlace: 8 cada 15 minutos, en la misma tabla. Escrituras: 120 por minuto, también si llegan directo a la base.
+- La exportación responde 429 con `Retry-After` y un texto en es y en. El resto de acciones muestra ese texto cuando la base rechaza la fila.
+- El cron de purga borra los intentos de más de un día.
+- Los límites de login, enlace mágico y OTP se configuran en el panel de Supabase Auth (no salen del repo).
+
 ## [0.14.7] - 2026-10-17
 
 ### Corregido (auditoría, B-07)

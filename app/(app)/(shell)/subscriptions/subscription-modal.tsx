@@ -134,7 +134,7 @@ export function SubscriptionModal({
       const result = await saveRecurringItem(input);
       if (!result.ok) {
         if (result.fieldErrors) setErrors(result.fieldErrors);
-        setFormError(tm("errorFailed"));
+        setFormError(result.error === "rateLimited" ? t("rateLimit.write") : tm("errorFailed"));
         return;
       }
       setSaved(true);
@@ -147,7 +147,7 @@ export function SubscriptionModal({
     startTransition(async () => {
       const result = await setRecurringStatus(editing.id, status);
       if (!result.ok) {
-        setFormError(tm("errorFailed"));
+        setFormError(result.error === "rateLimited" ? t("rateLimit.write") : tm("errorFailed"));
         return;
       }
       close();

@@ -525,6 +525,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      rate_limits: {
+        Row: {
+          action: string;
+          attempted_at: string;
+          id: number;
+          user_id: string;
+        };
+        Insert: {
+          action: string;
+          attempted_at?: string;
+          id?: never;
+          user_id: string;
+        };
+        Update: {
+          action?: string;
+          attempted_at?: string;
+          id?: never;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       invite_accept_attempts: {
         Row: {
           attempted_at: string;
@@ -923,6 +944,7 @@ export type Database = {
     };
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json };
+      consume_rate_limit: { Args: { p_action: string }; Returns: Json };
       create_household: { Args: { p_name: string }; Returns: string };
       dashboard_totals: {
         Args: { p_from: string; p_household_id: string; p_to: string };
@@ -965,6 +987,7 @@ export type Database = {
         Returns: number;
       };
       max_household_members: { Args: never; Returns: number };
+      purge_old_rate_limits: { Args: never; Returns: number };
       post_occurrence: {
         Args: {
           p_account_id: string;

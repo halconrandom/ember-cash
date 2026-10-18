@@ -14,6 +14,7 @@ import { getLocale } from "next-intl/server";
 import { z } from "zod";
 
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
+import { limitOr } from "@/lib/security/rate-limit";
 import {
   validateDebt,
   validatePayment,
@@ -35,7 +36,11 @@ async function context() {
 
 export type DebtSaveResult =
   | { ok: true; id: string }
-  | { ok: false; fieldErrors?: Partial<Record<DebtField, DebtErrorKey>>; error?: "failed" };
+  | {
+      ok: false;
+      fieldErrors?: Partial<Record<DebtField, DebtErrorKey>>;
+      error?: "failed" | "rateLimited";
+    };
 
 export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
   const { user, locale, today } = await context();
@@ -62,7 +67,7 @@ export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
         .insert({ ...values, started_on: today })
         .select("id")
         .single();
-  if (error) return { ok: false, error: "failed" };
+  if (error) return { ok: false, error: limitOr(error, "failed") };
   await syncDebtRecurring(supabase, { ownerId: user.id, today });
   revalidatePath("/debts");
   revalidatePath("/calendar");
@@ -106,7 +111,11 @@ export async function purgeDebt(id: string): Promise<{ ok: boolean }> {
 
 export type PaymentResult =
   | { ok: true }
-  | { ok: false; fieldErrors?: Partial<Record<PaymentField, PaymentErrorKey>>; error?: "failed" };
+  | {
+      ok: false;
+      fieldErrors?: Partial<Record<PaymentField, PaymentErrorKey>>;
+      error?: "failed" | "rateLimited";
+    };
 
 export async function recordPayment(input: unknown): Promise<PaymentResult> {
   const { user, locale, today } = await context();
@@ -140,7 +149,7 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
       })
       .select("id")
       .single();
-    if (error) return { ok: false, error: "failed" };
+    if (error) return { ok: false, error: limitOr(error, "failed") };
     transactionId = tx.id;
   }
 
@@ -155,7 +164,7 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
   if (error) {
     // Sin pago no debe quedar la transacción suelta.
     if (transactionId) await supabase.from("transactions").delete().eq("id", transactionId);
-    return { ok: false, error: "failed" };
+    return { ok: false, error: limitOr(error, "failed") };
   }
   await markDebtOccurrencePaid(supabase, p.debtId, p.paidOn, transactionId);
   revalidatePath("/debts");

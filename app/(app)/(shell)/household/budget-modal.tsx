@@ -72,6 +72,7 @@ function BudgetForm({
   title,
 }: Props & { draft: BudgetDraft; title: string }) {
   const t = useTranslations("household");
+  const rate = useTranslations("rateLimit");
   const tc = useTranslations("categories");
   const f = useFormat();
   const localeRaw = useLocale();
@@ -101,7 +102,7 @@ function BudgetForm({
         currency,
       });
       if (!result.ok) {
-        setError(t("budgetFailed"));
+        setError(result.error === "rateLimited" ? rate("write") : t("budgetFailed"));
         return;
       }
       onClose();
@@ -115,7 +116,7 @@ function BudgetForm({
     startTransition(async () => {
       const result = await deleteBudget(id);
       if (!result.ok) {
-        setError(t("budgetFailed"));
+        setError(result.error === "rateLimited" ? rate("write") : t("budgetFailed"));
         return;
       }
       onClose();
@@ -212,6 +213,7 @@ function CopyBudgets({
   onClose: () => void;
 }) {
   const t = useTranslations("household");
+  const rate = useTranslations("rateLimit");
   const f = useFormat();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -227,7 +229,7 @@ function CopyBudgets({
         toMonth: draft.month,
       });
       if (!result.ok) {
-        setError(t("budgetFailed"));
+        setError(result.error === "rateLimited" ? rate("write") : t("budgetFailed"));
         return;
       }
       onClose();

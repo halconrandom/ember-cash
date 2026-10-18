@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const lt = vi.fn();
 const del = vi.fn(() => ({ lt }));
+const rpc = vi.fn();
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ from: () => ({ delete: del }) }),
+  createAdminClient: () => ({ from: () => ({ delete: del }), rpc }),
 }));
 
 const { GET } = await import("./route");
@@ -13,6 +14,8 @@ const AUTH = { authorization: "Bearer test-cron-secret-not-real-0000000000" };
 beforeEach(() => {
   lt.mockReset();
   del.mockClear();
+  rpc.mockReset();
+  rpc.mockResolvedValue({ data: 0, error: null });
 });
 
 describe("GET /api/cron/purge-deleted", () => {
@@ -27,10 +30,12 @@ describe("GET /api/cron/purge-deleted", () => {
       error: null,
       count: 1,
     });
+    rpc.mockResolvedValueOnce({ data: 2, error: null });
     const before = Date.now();
     const res = await GET(new Request("http://x/api/cron/purge-deleted", { headers: AUTH }));
-    // 3 transacciones + 1 deuda.
-    expect(await res.json()).toEqual({ ok: true, purged: 4 });
+    // 3 transacciones + 1 deuda + 2 filas de límite.
+    expect(await res.json()).toEqual({ ok: true, purged: 6 });
+    expect(rpc).toHaveBeenCalledWith("purge_old_rate_limits");
     const [column, cutoff] = lt.mock.calls[0];
     expect(column).toBe("deleted_at");
     expect(before - new Date(cutoff).getTime()).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000 - 1000);

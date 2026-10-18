@@ -1,6 +1,6 @@
 -- =============================================================================
--- Límite de accept_invite (0013): 8 intentos en 15 minutos, y la tabla de
--- intentos no es legible por authenticated.
+-- Límite de accept_invite: 8 intentos en 15 minutos, ahora en rate_limits
+-- (0015). La tabla no es legible por authenticated.
 --
 -- Corre dentro de una transacción con ROLLBACK (`pnpm test:rls`).
 -- =============================================================================
@@ -34,10 +34,9 @@ begin
     raise exception 'FALLO: el noveno intento dio %', r;
   end if;
 
-  -- Sin grant, authenticated no lee la tabla (42501), aunque RLS también
-  -- negaría las filas si el grant existiera.
+  -- Sin grant, authenticated no lee los intentos (42501).
   begin
-    perform 1 from public.invite_accept_attempts;
+    perform 1 from public.rate_limits;
     raise exception 'FALLO: authenticated leyó los intentos';
   exception when insufficient_privilege then
     null;
@@ -61,8 +60,9 @@ reset role;
 
 do $$
 begin
-  if (select count(*) from public.invite_accept_attempts
-      where user_id = '00000000-0000-4000-c900-00000000000a') <> 8 then
+  if (select count(*) from public.rate_limits
+      where user_id = '00000000-0000-4000-c900-00000000000a'
+        and action = 'invite_accept') <> 8 then
     raise exception 'FALLO: A no quedó con 8 intentos guardados';
   end if;
 end $$;

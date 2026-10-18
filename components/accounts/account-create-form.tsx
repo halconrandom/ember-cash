@@ -33,7 +33,11 @@ export function AccountCreateForm({
     startTransition(async () => {
       const result = await createAccount({ name, type, currency });
       if (!result.ok) {
-        setError(t(`accounts.errors.${result.error}`));
+        setError(
+          result.error === "rateLimited"
+            ? t("rateLimit.write")
+            : t(`accounts.errors.${result.error}`),
+        );
         return;
       }
       setError(null);

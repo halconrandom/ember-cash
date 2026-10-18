@@ -30,6 +30,7 @@ type Props = { goal: GoalSummary | null; transactions: LinkableTransaction[]; to
 
 export function ContributionModal({ goal, transactions, today }: Props) {
   const t = useTranslations("savings");
+  const rate = useTranslations("rateLimit");
   const localeRaw = useLocale();
   const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
   const f = useFormat();
@@ -72,9 +73,11 @@ export function ContributionModal({ goal, transactions, today }: Props) {
         if (result.fieldErrors) setErrors(result.fieldErrors);
         if (result.error)
           setFormError(
-            result.error === "currencyMismatch"
-              ? t("contribution.errorCurrency")
-              : t("errors.failed"),
+            result.error === "rateLimited"
+              ? rate("write")
+              : result.error === "currencyMismatch"
+                ? t("contribution.errorCurrency")
+                : t("errors.failed"),
           );
         return;
       }

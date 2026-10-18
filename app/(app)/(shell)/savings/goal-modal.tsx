@@ -38,6 +38,7 @@ type Props = { open: boolean; editing: GoalSummary | null; today: string };
 
 export function GoalModal({ open, editing, today }: Props) {
   const t = useTranslations("savings");
+  const rate = useTranslations("rateLimit");
   const localeRaw = useLocale();
   const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
   const f = useFormat();
@@ -79,7 +80,9 @@ export function GoalModal({ open, editing, today }: Props) {
       const result = await saveGoal(input);
       if (!result.ok) {
         if (result.fieldErrors) setErrors(result.fieldErrors);
-        if (result.error) setFormError(t("errors.failed"));
+        if (result.error) {
+          setFormError(result.error === "rateLimited" ? rate("write") : t("errors.failed"));
+        }
         return;
       }
       setSaved(true);
@@ -93,7 +96,9 @@ export function GoalModal({ open, editing, today }: Props) {
     startTransition(async () => {
       const result = await setGoalArchived(id, true);
       if (!result.ok) {
-        toast.show({ message: t("archiveFailed") });
+        toast.show({
+          message: result.error === "rateLimited" ? rate("write") : t("archiveFailed"),
+        });
         return;
       }
       close();

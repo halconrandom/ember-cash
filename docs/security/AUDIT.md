@@ -1,6 +1,6 @@
 # Auditoría de seguridad de Ember Cash
 
-Estado: **B-07 cerrado en 0.14.7.** Antes: A-01 (0.14.4), B-02 (0.14.5) y las fugas B-01 e I-01 (0.14.6). Lo demás sigue abierto en la fase que indica cada hallazgo. El detalle de abajo es el reporte de la fase 0.
+Estado: **M-04 cerrado en 0.14.8.** Antes: B-07 (0.14.7), A-01 (0.14.4), B-02 (0.14.5) y las fugas B-01 e I-01 (0.14.6). Lo demás sigue abierto en la fase que indica cada hallazgo. El detalle de abajo es el reporte de la fase 0.
 
 - Fecha: 17 de octubre de 2026. Versión auditada: 0.14.2 (commit `cff807d`).
 - Producción: https://cash.halcon.dev (Vercel). Un solo proyecto de Supabase, el real, para desarrollo y producción.
@@ -32,7 +32,7 @@ No se encontraron secretos filtrados ni acceso entre hogares o usuarios distinto
 | M-01 | Media       | Cabeceras        | `connect-src` acepta cualquier proyecto `*.supabase.co`                                 | 5    |
 | M-02 | Media       | Sesiones         | Cookies de sesión sin `httpOnly` ni `Secure` explícito                                  | 5    |
 | M-03 | Media       | RLS (integridad) | Un miembro puede alterar repartos, liquidaciones y aportes del otro                     | 3    |
-| M-04 | Media       | Rate limiting    | Sin límites en exportación, acciones de escritura e invitaciones                        | 4    |
+| M-04 | Media       | Rate limiting    | Sin límites en exportación, acciones de escritura e invitaciones (corregido en 0.14.8)  | 4    |
 | B-01 | Baja        | Fugas            | Cabecera `X-Powered-By: Next.js` (corregido en 0.14.6)                                  | 2    |
 | B-02 | Baja        | Secretos         | `CRON_SECRET` acepta un valor de 1 carácter (corregido en 0.14.5)                       | 1    |
 | B-03 | Baja        | Rate limiting    | Varias peticiones a la vez a las fuentes de la tasa cuando está vieja                   | 4    |
@@ -120,7 +120,9 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### M-04. Sin límites en exportación, acciones de escritura e invitaciones (Media)
 
-- **Dónde:**
+**Estado: corregido en 0.14.8.** Migración `0015_rate_limits.sql`. Test: `supabase/tests/rate_limits.sql`.
+
+- **Dónde estaba:**
   - `app/(app)/(shell)/settings/export/route.ts:15`: cada llamada lee 15 tablas completas.
   - Todas las server actions de escritura (lista en la fase 4).
   - `app/(app)/(shell)/household/actions.ts:42` (`createInviteLink`): invitaciones sin límite.
@@ -130,7 +132,7 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
   - `accept_invite`: 8 intentos en 15 minutos por usuario (migración 0013).
   - `refreshRate`: tiene una espera de 15 minutos.
   - El login, el enlace mágico y el OTP los limita Supabase Auth, con los valores del panel (ver I-07).
-- **Corrección (fase 4):** límites con ventana deslizante, respuesta 429 con `Retry-After` y textos en es y en. La opción (tabla en Postgres o Upstash) queda para confirmar.
+- **Corrección (0.14.8):** tabla `rate_limits` en Postgres (sin Redis). `consume_rate_limit` es security definer con `search_path` fijo. Exportar: 3 por hora, con 429 y `Retry-After`. Crear un enlace: 8 por hora. Aceptar: 8 cada 15 minutos, en la misma tabla. Escrituras: 120 por minuto; un disparador las cuenta aunque no pasen por la app. El cron de purga borra filas de más de un día. Login, enlace mágico y OTP siguen en el panel de Supabase (I-07).
 
 ### B-01. Cabecera `X-Powered-By: Next.js` (Baja)
 

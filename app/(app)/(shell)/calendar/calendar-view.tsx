@@ -100,6 +100,7 @@ export function CalendarView({
   accounts: AccountSummary[];
 }) {
   const t = useTranslations("calendar");
+  const rateLimit = useTranslations("rateLimit");
   const f = useFormat();
   const { rate, status, displayCurrency } = useRate();
   const router = useRouter();
@@ -145,7 +146,13 @@ export function CalendarView({
     startTransition(async () => {
       const result = await rescheduleOccurrence(selected.occurrenceId, nextDate);
       if (!result.ok) {
-        setMessage(result.error === "conflict" ? t("rescheduleConflict") : t("rescheduleFailed"));
+        setMessage(
+          result.error === "rateLimited"
+            ? rateLimit("write")
+            : result.error === "conflict"
+              ? t("rescheduleConflict")
+              : t("rescheduleFailed"),
+        );
         return;
       }
       setRescheduleOn(false);
