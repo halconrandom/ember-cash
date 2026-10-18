@@ -1,13 +1,16 @@
 // La exportación responde 429 con Retry-After cuando se agota el cupo.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LEGAL_VERSION } from "@/lib/legal/version";
+
 const rpc = vi.fn();
 const getSession = vi.fn();
 const buildBackupZip = vi.fn();
+const from = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ requireUser: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ rpc, auth: { getSession } }),
+  createClient: async () => ({ rpc, auth: { getSession }, from }),
 }));
 vi.mock("@/lib/export/backup", () => ({ buildBackupZip }));
 vi.mock("@/lib/env", () => ({
@@ -20,14 +23,28 @@ vi.mock("@/lib/log/server", () => ({ logServerError: vi.fn() }));
 vi.mock("next-intl/server", () => ({
   getTranslations: async () => (key: string) => `txt:${key}`,
 }));
-vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    throw new Error(`redirect:${path}`);
+  },
+}));
 
 const { GET } = await import("./route");
+
+const consented = {
+  data: [
+    { type: "privacy", version: LEGAL_VERSION },
+    { type: "terms", version: LEGAL_VERSION },
+  ],
+  error: null,
+};
 
 beforeEach(() => {
   rpc.mockReset();
   getSession.mockReset();
   buildBackupZip.mockReset();
+  from.mockReset();
+  from.mockReturnValue({ select: async () => consented });
 });
 
 describe("GET /settings/export", () => {
@@ -38,6 +55,13 @@ describe("GET /settings/export", () => {
     expect(res.headers.get("Retry-After")).toBe("40");
     expect(res.headers.get("Cache-Control")).toBe("private, no-store");
     expect(await res.text()).toBe("txt:export");
+    expect(buildBackupZip).not.toHaveBeenCalled();
+  });
+
+  it("sin consentimiento no exporta ni gasta el cupo", async () => {
+    from.mockReturnValue({ select: async () => ({ data: [], error: null }) });
+    await expect(GET()).rejects.toThrow("redirect:/");
+    expect(rpc).not.toHaveBeenCalled();
     expect(buildBackupZip).not.toHaveBeenCalled();
   });
 

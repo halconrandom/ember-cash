@@ -20,6 +20,8 @@ const DATE_STYLES = {
   shortMonthYear: { month: "short", year: "numeric" },
   /** "octubre de 2026" / "October 2026" */
   monthYear: { month: "long", year: "numeric" },
+  /** "17 de octubre de 2026" / "October 17, 2026" (legal.versionLine) */
+  long: { day: "numeric", month: "long", year: "numeric" },
   /** "vie" / "Fri" */
   weekday: { weekday: "short" },
   /** "16" */

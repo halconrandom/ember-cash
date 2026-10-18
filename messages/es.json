@@ -90,6 +90,16 @@
     "cardError": "No se pudo cargar esta tarjeta.",
     "retry": "Reintentar"
   },
+  "legal": {
+    "versionLine": "Versión {version} · Actualizado el {date}"
+  },
+  "auth": {
+    "consent": "Soy mayor de 18 años, leí el <privacy>aviso de privacidad</privacy> y los <terms>términos</terms>, y autorizo el tratamiento de mis datos.",
+    "consentError": "Marca esta casilla para crear tu cuenta.",
+    "loginNotice": "Versión de prueba. Usa cifras inventadas.",
+    "consentSubmit": "Continuar",
+    "consentSaveFailed": "No se pudo guardar. Intenta de nuevo."
+  },
   "login": {
     "title": "Inicia sesión",
     "subtitle": "Tus finanzas, claras y en un solo lugar.",

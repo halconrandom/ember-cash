@@ -4,10 +4,12 @@
  * Formulario de login. Google redirige a /auth/callback; el enlace mágico
  * llega por correo y entra por /auth/confirm (según la plantilla de Supabase).
  * Un solo botón primario: "Enviar enlace mágico". Google es secundario.
+ * La casilla es obligatoria: sin ella no se abre Google ni se envía el correo.
  */
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 
+import { ConsentFields } from "@/components/legal/consent-fields";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { magicLinkFailure } from "@/lib/auth/magic-link";
@@ -26,7 +28,10 @@ type Props = {
 
 export function LoginForm({ next, initialError }: Props) {
   const t = useTranslations("login");
+  const auth = useTranslations("auth");
   const [email, setEmail] = useState("");
+  const [accepted, setAccepted] = useState(false);
+  const [consentMissing, setConsentMissing] = useState(false);
   const [pending, setPending] = useState<"google" | "email" | null>(null);
   const [error, setError] = useState<ErrorKey | null>(initialError);
   const [emailError, setEmailError] = useState(false);
@@ -37,6 +42,12 @@ export function LoginForm({ next, initialError }: Props) {
     `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
   async function signInWithGoogle() {
+    // Sin la casilla no se abre Google y no se crea la cuenta.
+    if (!accepted) {
+      setConsentMissing(true);
+      return;
+    }
+    setConsentMissing(false);
     setPending("google");
     setError(null);
     const { error } = await createClient().auth.signInWithOAuth({
@@ -53,11 +64,15 @@ export function LoginForm({ next, initialError }: Props) {
   async function sendMagicLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const address = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
-      setEmailError(true);
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address);
+    setEmailError(!emailOk);
+    // Sin la casilla no se envía el enlace y no se crea la cuenta.
+    if (!accepted) {
+      setConsentMissing(true);
       return;
     }
-    setEmailError(false);
+    setConsentMissing(false);
+    if (!emailOk) return;
     setPending("email");
     setError(null);
     const { error } = await createClient().auth.signInWithOtp({
@@ -86,12 +101,21 @@ export function LoginForm({ next, initialError }: Props) {
         >
           {t("otherEmail")}
         </button>
+        <p className="text-footnote text-ink-2">{auth("loginNotice")}</p>
       </div>
     );
   }
 
   return (
     <div className="mt-6 space-y-5">
+      <ConsentFields
+        checked={accepted}
+        onChange={(value) => {
+          setAccepted(value);
+          if (value) setConsentMissing(false);
+        }}
+        showError={consentMissing}
+      />
       <Button
         variant="secondary"
         className="w-full"
@@ -127,6 +151,7 @@ export function LoginForm({ next, initialError }: Props) {
           {t(`errors.${error}`)}
         </p>
       )}
+      <p className="text-footnote text-ink-2">{auth("loginNotice")}</p>
     </div>
   );
 }

@@ -90,6 +90,16 @@
     "cardError": "This card couldn't load.",
     "retry": "Retry"
   },
+  "legal": {
+    "versionLine": "Version {version} · Updated {date}"
+  },
+  "auth": {
+    "consent": "I am over 18, I read the <privacy>privacy notice</privacy> and the <terms>terms</terms>, and I authorize the processing of my data.",
+    "consentError": "Check this box to create your account.",
+    "loginNotice": "Test version. Use made-up numbers.",
+    "consentSubmit": "Continue",
+    "consentSaveFailed": "Couldn't save. Try again."
+  },
   "login": {
     "title": "Sign in",
     "subtitle": "Your finances, clear and in one place.",

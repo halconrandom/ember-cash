@@ -10,12 +10,17 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { getPublicEnv } from "@/lib/env";
 import { buildBackupZip } from "@/lib/export/backup";
+import { hasCurrentConsent } from "@/lib/legal/consent";
+import { listOwnCurrentConsents } from "@/lib/legal/queries";
 import { logServerError } from "@/lib/log/server";
 import { consumeRateLimit, rateLimitText } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   await requireUser();
+  // Esta ruta no pasa por el layout. Sin consentimiento no se descarga nada
+  // y tampoco se gasta el cupo de exportación.
+  if (!hasCurrentConsent(await listOwnCurrentConsents())) redirect("/");
   // 3 por hora. 429 con Retry-After: el enlace es una descarga, no una acción.
   const limit = await consumeRateLimit("export");
   if (!limit.allowed) {

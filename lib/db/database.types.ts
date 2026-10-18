@@ -123,6 +123,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      consents: {
+        Row: {
+          accepted_at: string;
+          type: string;
+          user_id: string;
+          version: string;
+        };
+        Insert: {
+          accepted_at?: string;
+          type: string;
+          user_id?: string;
+          version: string;
+        };
+        Update: {
+          accepted_at?: string;
+          type?: string;
+          user_id?: string;
+          version?: string;
+        };
+        Relationships: [];
+      };
       currencies: {
         Row: {
           code: string;

@@ -48,4 +48,19 @@ describe("messages", () => {
     );
     expect(mismatched).toEqual([]);
   });
+
+  it("el consentimiento usa el texto legal, sin reescribirlo", () => {
+    expect(es.auth.consent).toBe(
+      "Soy mayor de 18 años, leí el <privacy>aviso de privacidad</privacy> y los <terms>términos</terms>, y autorizo el tratamiento de mis datos.",
+    );
+    expect(en.auth.consent).toBe(
+      "I am over 18, I read the <privacy>privacy notice</privacy> and the <terms>terms</terms>, and I authorize the processing of my data.",
+    );
+    expect(es.auth.consentError).toBe("Marca esta casilla para crear tu cuenta.");
+    expect(en.auth.consentError).toBe("Check this box to create your account.");
+    expect(es.auth.loginNotice).toBe("Versión de prueba. Usa cifras inventadas.");
+    expect(en.auth.loginNotice).toBe("Test version. Use made-up numbers.");
+    expect(es.legal.versionLine).toBe("Versión {version} · Actualizado el {date}");
+    expect(en.legal.versionLine).toBe("Version {version} · Updated {date}");
+  });
 });

@@ -18,5 +18,7 @@ describe("formatDate", () => {
     expect(formatDate("2026-10-16", "es")).toMatch(/^16 (de )?oct/);
     expect(formatDate("2026-10-01", "en", "monthYear")).toBe("October 2026");
     expect(formatDate("2026-10-01", "es", "monthYear")).toBe("octubre de 2026");
+    expect(formatDate("2026-10-17", "en", "long")).toBe("October 17, 2026");
+    expect(formatDate("2026-10-17", "es", "long")).toBe("17 de octubre de 2026");
   });
 });

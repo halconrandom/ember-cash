@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.9] - 2026-10-17
+
+### Añadido (beta, B1: consentimiento)
+
+- Casilla obligatoria en el login, para el correo y para Google. Sin marcarla no se envía el enlace ni se abre Google, y se muestra el error del texto legal.
+- Si la cuenta ya existe (o acaba de entrar con Google) y no tiene el consentimiento de la versión vigente, una pantalla bloquea la app hasta aceptarlo. La exportación tampoco se entrega.
+- Tabla `consents`: tipo (`privacy` o `terms`), versión del texto y fecha. Cada quien solo ve y crea los suyos. No se edita, no se borra y no se guarda la IP.
+- La versión del texto es `2026-10-v1`. Si cambia, se vuelve a pedir. Hay que aplicar la migración (`pnpm db:push`) para que guardar funcione en el proyecto.
+
 ## [0.14.8] - 2026-10-17
 
 ### Seguridad (auditoría, M-04: límites)

@@ -53,6 +53,8 @@ export type HouseholdRole = "owner" | "member";
 export type Theme = "system" | "light" | "dark";
 /** Idioma de la interfaz (profiles.locale). */
 export type ProfileLocale = "es" | "en";
+/** Tipos de consentimiento (consents.type). */
+export type ConsentType = "privacy" | "terms";
 
 // -----------------------------------------------------------------------------
 // Filas con las uniones aplicadas
@@ -72,6 +74,7 @@ export type Profile = Narrow<
   Tables<"profiles">,
   { display_currency: CurrencyCode; theme: Theme; locale: ProfileLocale }
 >;
+export type Consent = Narrow<Tables<"consents">, { type: ConsentType }>;
 export type Household = Tables<"households">;
 export type HouseholdMember = Narrow<Tables<"household_members">, { role: HouseholdRole }>;
 
