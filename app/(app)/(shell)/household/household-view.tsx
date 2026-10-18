@@ -100,11 +100,13 @@ export function HouseholdView(props: Props) {
   const usable = status === "error" ? null : rate;
 
   const ids = members.map((m) => m.userId);
-  // Un ex miembro conserva su nombre con la marca "(ex miembro)".
+  // Un ex miembro conserva su nombre con la marca "(ex miembro)"; quien
+  // borró su cuenta aparece como "Usuario eliminado" (beta, B3), sin nombre.
   const nameOf = (id: string) => {
     const member = members.find((m) => m.userId === id);
     if (member) return member.displayName ?? t("noName");
     const former = props.departures.find((d) => d.userId === id);
+    if (former?.deletedAccount) return t("deletedMember");
     return former?.displayName
       ? t("formerMemberName", { name: former.displayName })
       : t("formerMember");

@@ -263,6 +263,24 @@ export type Database = {
           },
         ];
       };
+      deleted_account_sentinel: {
+        Row: {
+          created_at: string;
+          singleton: boolean;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          singleton?: boolean;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          singleton?: boolean;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       exchange_rates: {
         Row: {
           as_of: string;
@@ -419,6 +437,7 @@ export type Database = {
       };
       household_departures: {
         Row: {
+          deleted_account: boolean;
           display_name: string | null;
           household_id: string;
           id: string;
@@ -428,6 +447,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          deleted_account?: boolean;
           display_name?: string | null;
           household_id: string;
           id?: string;
@@ -437,6 +457,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          deleted_account?: boolean;
           display_name?: string | null;
           household_id?: string;
           id?: string;
@@ -967,6 +988,7 @@ export type Database = {
       accept_invite: { Args: { p_token: string }; Returns: Json };
       consume_rate_limit: { Args: { p_action: string }; Returns: Json };
       create_household: { Args: { p_name: string }; Returns: string };
+      delete_account_data: { Args: never; Returns: Json };
       dashboard_totals: {
         Args: { p_from: string; p_household_id: string; p_to: string };
         Returns: {

@@ -17,6 +17,7 @@ import { getCurrentProfile, requireUser } from "@/lib/auth/session";
 import { getScope } from "@/lib/scope/server";
 
 import { AccountsManager } from "./accounts-manager";
+import { DeleteAccountSection } from "./delete-account-section";
 
 import { LocaleSetting } from "./locale-setting";
 import { ThemeSetting } from "./theme-setting";
@@ -72,6 +73,10 @@ export default async function SettingsPage() {
         </a>
       </Card>
 
+      <Suspense fallback={<SkeletonList rows={2} />}>
+        <DeleteAccountSectionAsync />
+      </Suspense>
+
       <Card className="space-y-2">
         <CardTitle>{t("about")}</CardTitle>
         <p className="text-body text-ink-2">
@@ -108,6 +113,13 @@ export default async function SettingsPage() {
 async function AccountEmail() {
   const user = await requireUser();
   return <p className="text-body text-ink-2">{user.email}</p>;
+}
+
+/** "Privacidad y datos": el botón de exportar reutiliza la ruta existente,
+ * con el texto legal aprobado (account.exportButton). */
+async function DeleteAccountSectionAsync() {
+  const accountT = await getTranslations("account");
+  return <DeleteAccountSection exportLabel={accountT("exportButton")} />;
 }
 
 /** Cuentas del scope actual (incluidas las archivadas). */

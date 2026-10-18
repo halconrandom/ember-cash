@@ -351,7 +351,8 @@
       "generic": "Couldn't complete it. Try again."
     },
     "formerMember": "Former member",
-    "formerMemberName": "{name} (former member)"
+    "formerMemberName": "{name} (former member)",
+    "deletedMember": "Deleted user"
   },
   "scope": {
     "label": "Space",
@@ -376,6 +377,32 @@
     "backupBody": "Downloads a ZIP with one CSV per table. Amounts are integers in minor units (pesos for COP, cents for USD) and each row keeps its currency.",
     "exportCsv": "Export CSV",
     "backupRestore": "There is no automatic import. To restore, keep the identifiers and load the rows again in this order: profiles, households, members, departures, accounts, goals, debts, recurring items, transactions, splits, contributions, payments, occurrences, budgets and settlements. If the file includes TRUNCATED.txt, the download is incomplete. A full project backup lives in Supabase, under Database then Backups."
+  },
+  "account": {
+    "exportNotice": "Before deleting your account, download your data as CSV. You won't be able to recover it afterwards.",
+    "exportButton": "Export CSV",
+    "deleteTitle": "Delete your account?",
+    "deleteBody": "Your account and personal data will be deleted. This can't be undone.",
+    "deleteSharedNote": "Expenses shared with your household are kept without your name or email: you will show up as Deleted user. If you have a pending balance or you manage a household with other members, you must resolve that first.",
+    "deleteConfirm": "Yes, delete my account",
+    "deleteCancel": "Cancel"
+  },
+  "deleteAccount": {
+    "sectionTitle": "Privacy and data",
+    "open": "Delete my account",
+    "itemName": "your account",
+    "confirmWord": "DELETE",
+    "typeLabel": "Type DELETE to confirm",
+    "typeButton": "Confirm",
+    "typeToggle": "I'd rather type DELETE",
+    "holdToggle": "I'd rather hold to confirm",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "errors": {
+      "balanceNotSettled": "You have a pending balance in {household}. Settle up with the other members before deleting your account.",
+      "ownsHouseholdWithMembers": "You manage {household} and it has other members. To delete your account, ask the other member to leave first or wait until you're the only member.",
+      "generic": "Couldn't delete your account. Try again."
+    }
   },
   "languages": {
     "es": "Español",

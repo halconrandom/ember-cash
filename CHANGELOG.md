@@ -2,6 +2,21 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.11] - 2026-10-17
+
+### Añadido (beta, B3: eliminar cuenta y datos)
+
+- Ajustes, sección "Privacidad y datos": recuerda exportar el CSV (texto legal `account.exportNotice`/`exportButton`) y un botón "Eliminar mi cuenta" que abre la confirmación con el texto legal (`account.deleteTitle`, `deleteBody`, `deleteSharedNote`). Dos formas equivalentes de confirmar, iguales a las de otras acciones irreversibles: mantener presionado 2 s, o escribir "ELIMINAR" ("DELETE" en inglés).
+- RPC `delete_account_data` (`supabase/migrations/0017_account_deletion.sql`), `security definer` con `search_path` fijo, sin parámetros (solo actúa sobre `auth.uid()`, nunca sobre un id que mande el cliente). Valida todo antes de tocar nada:
+  - si administra un hogar con más miembros, se bloquea (`owns_household_with_members`), sea cual sea el saldo;
+  - si en un hogar con otro miembro el saldo no está en cero, se bloquea (`balance_not_settled`);
+  - si es el único miembro de un hogar, el hogar entero se borra (en cascada);
+  - si es miembro (nunca dueño) de un hogar con otro miembro y el saldo está en cero, lo compartido de ese hogar (cuentas, metas, recurrentes, presupuestos, transacciones, repartos, liquidaciones, aportes) se reasigna a un usuario fantasma fijo y sale del hogar; el hogar y su historial siguen intactos para quien se queda.
+- Usuario fantasma ("Usuario eliminado"): una cuenta real de Supabase Auth, creada una sola vez con la Admin API (nunca con SQL directo sobre `auth.users`), sin contraseña y con un correo del dominio reservado `.invalid` (nunca resuelve). `deleted_account_sentinel` guarda su id en una sola fila (truco de tabla singleton). `household_departures.deleted_account` marca esa salida para que la pantalla de Hogar muestre "Usuario eliminado" en vez del nombre.
+- Después de que la RPC confirma `ok:true`, una Server Action borra la cuenta de verdad con la Admin API (`createAdminClient`, server-only, después de verificar la sesión con `getUser`), que en cascada se lleva el perfil y todo lo personal que quedaba (transacciones, metas, deudas, cuentas, presupuestos, recurrentes, consentimientos).
+- Por qué hace falta el usuario fantasma: `owner_id` es inmutable (trigger `forbid_column_change`, por diseño) y `transaction_splits.user_id` es parte de su llave primaria, así que una fila compartida no puede quedar "sin dueño". Tres candados que ya existían (`forbid_column_change`, `lock_former_member_transaction/splits/settlement`, `enforce_write_rate_limit`) ahora revisan primero un ajuste de sesión (`ember.account_deletion`, local a la transacción) que solo `delete_account_data` enciende, reasigna y apaga antes de devolver el resultado; ninguna otra vía puede activarlo.
+- Tests en Postgres local (`supabase/tests/account_deletion.sql`): sin usuario fantasma se detiene; sin sesión se detiene; dueño de un hogar con otro miembro se bloquea aunque el saldo esté en cero; saldo pendiente se bloquea y nada cambia; nadie puede borrar a otro (la función no recibe ningún id); único miembro borra el hogar entero; con saldo en cero se reasigna todo (transacciones, repartos, meta compartida, liquidaciones) al fantasma y el saldo de quien se queda no cambia; 225 filas en una sola llamada no chocan con el límite de 120 escrituras por minuto; las funciones siguen siendo `security definer` (las que ya lo eran) con `search_path` fijo.
+
 ## [0.14.10] - 2026-10-17
 
 ### Añadido (beta, B2: aviso y términos)

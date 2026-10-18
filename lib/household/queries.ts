@@ -222,6 +222,8 @@ export type Departure = {
   displayName: string | null;
   removedBy: string | null;
   leftAt: string;
+  /** true si la salida fue por borrar la cuenta (beta, B3): se muestra como "Usuario eliminado". */
+  deletedAccount: boolean;
 };
 
 /** Salidas del hogar (ex miembros), recientes primero. */
@@ -229,7 +231,7 @@ export async function listDepartures(householdId: string): Promise<Departure[]> 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("household_departures")
-    .select("id, user_id, display_name, removed_by, left_at")
+    .select("id, user_id, display_name, removed_by, left_at, deleted_account")
     .eq("household_id", householdId)
     .order("left_at", { ascending: false });
   if (error) throw new Error(`No se pudieron leer las salidas del hogar: ${error.message}`);
@@ -239,5 +241,6 @@ export async function listDepartures(householdId: string): Promise<Departure[]> 
     displayName: d.display_name,
     removedBy: d.removed_by,
     leftAt: d.left_at,
+    deletedAccount: d.deleted_account,
   }));
 }

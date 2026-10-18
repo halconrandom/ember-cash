@@ -351,7 +351,8 @@
       "generic": "No se pudo completar. Intenta de nuevo."
     },
     "formerMember": "Ex miembro",
-    "formerMemberName": "{name} (ex miembro)"
+    "formerMemberName": "{name} (ex miembro)",
+    "deletedMember": "Usuario eliminado"
   },
   "scope": {
     "label": "Espacio",
@@ -376,6 +377,32 @@
     "backupBody": "Descarga un ZIP con un CSV por tabla. Los montos son enteros en unidades menores (pesos en COP, centavos en USD) y cada fila lleva su moneda.",
     "exportCsv": "Exportar CSV",
     "backupRestore": "No hay importación automática. Para restaurar, conserva los identificadores y vuelve a cargar las filas en este orden: perfiles, hogares, miembros, salidas, cuentas, metas, deudas, recurrentes, movimientos, repartos, aportes, pagos, vencimientos, presupuestos y liquidaciones. Si el archivo trae TRUNCATED.txt, la descarga quedó incompleta. El respaldo de todo el proyecto está en Supabase, en Database y luego Backups."
+  },
+  "account": {
+    "exportNotice": "Antes de eliminar tu cuenta, descarga tus datos en CSV. Después no podrás recuperarlos.",
+    "exportButton": "Exportar CSV",
+    "deleteTitle": "¿Eliminar tu cuenta?",
+    "deleteBody": "Se borrarán tu cuenta y tus datos personales. Esto no se puede deshacer.",
+    "deleteSharedNote": "Los gastos compartidos con tu hogar se conservan sin tu nombre ni tu correo: aparecerás como Usuario eliminado. Si tienes saldo pendiente o administras un hogar con más miembros, primero debes resolverlo.",
+    "deleteConfirm": "Sí, eliminar mi cuenta",
+    "deleteCancel": "Cancelar"
+  },
+  "deleteAccount": {
+    "sectionTitle": "Privacidad y datos",
+    "open": "Eliminar mi cuenta",
+    "itemName": "tu cuenta",
+    "confirmWord": "ELIMINAR",
+    "typeLabel": "Escribe ELIMINAR para confirmar",
+    "typeButton": "Confirmar",
+    "typeToggle": "Prefiero escribir ELIMINAR",
+    "holdToggle": "Prefiero mantener presionado",
+    "cancel": "Cancelar",
+    "deleting": "Eliminando...",
+    "errors": {
+      "balanceNotSettled": "Tienes saldo pendiente en {household}. Liquida las cuentas con los demás miembros antes de eliminar tu cuenta.",
+      "ownsHouseholdWithMembers": "Administras {household} y tiene más miembros. Para eliminar tu cuenta, primero pide que el otro miembro se vaya o espera a quedar como único miembro.",
+      "generic": "No se pudo eliminar tu cuenta. Intenta de nuevo."
+    }
   },
   "languages": {
     "es": "Español",
