@@ -1,10 +1,9 @@
 {
   "legal": {
-    "draftNotice": "Draft, subject to legal review.",
     "versionLine": "Version {version} · Updated {date}",
     "privacy": {
       "title": "Privacy notice",
-      "intro": "Ember Cash is a personal finance app in test mode. Here is what data we keep and what we do with it, plain and simple.",
+      "intro": "Ember Cash is a personal finance app. Here is what data we keep and what we do with it, plain and simple.",
       "dataTitle": "What data we keep",
       "dataIntro": "Only what you type into the app:",
       "data1": "Your email address.",
@@ -38,8 +37,6 @@
       "sharedBody": "If you delete your account, the expenses you shared with your household stay so the other members can keep their books straight, but without your name or email: they show up as Deleted user.",
       "deleteTitle": "How to delete your account",
       "deleteBody": "Go to Settings and choose Delete account. You can export your data as CSV first.",
-      "betaTitle": "Test version",
-      "betaBody": "This is a beta for friends. While you test it, use made-up numbers.",
       "contactTitle": "Contact",
       "contactBody": "For questions, complaints or data deletion, write to {contactEmail}.",
       "changesTitle": "Changes to this notice",
@@ -48,14 +45,11 @@
     "terms": {
       "title": "Terms of use",
       "intro": "These are the basic rules for using Ember Cash. They are short on purpose.",
-      "betaTitle": "Test version",
-      "betaBody": "Ember Cash is a beta. It is provided as is, with no guarantee that it will always work or never fail.",
+      "betaBody": "It is provided as is, with no guarantee that it will always work or never fail.",
       "adviceTitle": "Not advice",
       "adviceBody": "Ember Cash does not give financial, accounting or tax advice. Decisions about your money are yours.",
       "ageTitle": "18 and over only",
       "ageBody": "Only people over 18 may use the app.",
-      "testTitle": "Test with made-up numbers",
-      "testBody": "While this is a beta, we recommend using made-up numbers.",
       "noChargesTitle": "No charges, no banks",
       "noChargesBody": "We don't charge anything and we don't connect to your bank. Everything you see is what you typed.",
       "useTitle": "Acceptable use",
@@ -72,8 +66,7 @@
   },
   "auth": {
     "consent": "I am over 18, I read the <privacy>privacy notice</privacy> and the <terms>terms</terms>, and I authorize the processing of my data.",
-    "consentError": "Check this box to create your account.",
-    "loginNotice": "Test version. Use made-up numbers."
+    "consentError": "Check this box to create your account."
   },
   "account": {
     "exportNotice": "Before deleting your account, download your data as CSV. You won't be able to recover it afterwards.",

@@ -16,10 +16,12 @@ afterEach(() => {
 });
 
 describe("páginas legales", () => {
-  it("el aviso en español incluye el borrador, lo compartido, la versión y el correo", () => {
+  it("el aviso en español incluye lo compartido, la versión y el correo, sin borrador ni prueba", () => {
     const { container } = renderWithIntl(<PrivacyPage />, "es");
     expect(container.querySelector("h1")?.textContent).toBe("Aviso de privacidad");
-    expect(container.textContent).toContain("Borrador sujeto a revisión legal.");
+    expect(container.textContent).not.toContain("Borrador sujeto a revisión legal.");
+    expect(container.textContent).not.toContain("versión de prueba");
+    expect(container.textContent).not.toContain("cifras inventadas");
     expect(container.querySelector("h2")?.textContent).not.toBe("");
     const headings = [...container.querySelectorAll("h2")].map((node) => node.textContent);
     expect(headings).toContain("Gastos compartidos del hogar");
@@ -38,7 +40,12 @@ describe("páginas legales", () => {
   it("los términos en inglés agrupan el uso aceptable y muestran el correo", () => {
     const { container } = renderWithIntl(<TermsPage />, "en");
     expect(container.querySelector("h1")?.textContent).toBe("Terms of use");
-    expect(container.textContent).toContain("Draft, subject to legal review.");
+    expect(container.textContent).not.toContain("Draft, subject to legal review.");
+    expect(container.textContent).not.toContain("Test version");
+    expect(container.textContent).not.toContain("made-up");
+    expect(container.textContent).toContain(
+      "It is provided as is, with no guarantee that it will always work or never fail.",
+    );
     expect(container.textContent).toContain("Version 2026-10-v1 · Updated October 17, 2026");
     const items = [...container.querySelectorAll("li")].map((node) => node.textContent);
     expect(items).toEqual([
@@ -60,5 +67,8 @@ describe("páginas legales", () => {
     const headings = [...container.querySelectorAll("h2")].map((node) => node.textContent);
     expect(headings).toContain("Shared household expenses");
     expect(container.textContent).toContain("Deleted user");
+    expect(container.textContent).not.toContain("Draft, subject to legal review.");
+    expect(container.textContent).not.toContain("Test version");
+    expect(container.textContent).not.toContain("made-up");
   });
 });

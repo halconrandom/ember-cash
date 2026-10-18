@@ -2,9 +2,9 @@
 
 Lista para quien va a abrir https://cash.halcon.dev a unos amigos. Cada casilla se marca solo después de hacer la comprobación de esa misma casilla. Nada de aquí cambia el código.
 
-Versión de la app al armar esta lista: 0.14.11. Producción: https://cash.halcon.dev. Desarrollo y producción usan el mismo proyecto de Supabase.
+Versión de la app: 0.14.12 para el aislamiento de B4 (`67f8326`). Producción: https://cash.halcon.dev. Desarrollo y producción usan el mismo proyecto de Supabase.
 
-Ya están en el repositorio el bloque A (límites en Postgres, 0.14.8), B1 (consentimiento, 0.14.9), B2 (aviso, términos y security.txt, 0.14.10) y B3 (eliminar cuenta, 0.14.11). La sección [Aislamiento entre hogares (B4)](#aislamiento-entre-hogares-b4) está pendiente: ese trabajo va en paralelo y esta lista no lo da por hecho.
+Ya están en el repositorio el bloque A (límites en Postgres, 0.14.8), B1 (consentimiento, 0.14.9), B2 (aviso, términos y security.txt, 0.14.10), B3 (eliminar cuenta, 0.14.11) y B4 (aislamiento, 0.14.12). Las páginas legales ya no muestran la franja de borrador ni un aviso de versión de prueba. La revisión humana del texto sigue en esta lista.
 
 Los tests SQL (`pnpm test:rls` y `pnpm test:db:fresh`) corren solo contra el Postgres local de `TEST_DATABASE_URL`. No los lances contra el proyecto de Supabase, ni escribas datos de prueba ahí salvo la cuenta de prueba que se indica más abajo.
 
@@ -17,9 +17,9 @@ El detalle de la auditoría está en `docs/security/AUDIT.md`. Este archivo no l
 
 ## Texto legal revisado por una persona
 
-El aviso y los términos publicados siguen siendo un borrador. La frase de la página es "Borrador sujeto a revisión legal." No la quites hasta que una persona haya revisado el texto y el cambio de copy sea deliberado. No inventes NIT, razón social ni dirección.
+La franja "Borrador sujeto a revisión legal." ya no está en las páginas. La revisión del texto sigue siendo tuya: no depende de esa franja. No inventes NIT, razón social ni dirección.
 
-- [ ] Alguien distinto de quien escribió el borrador leyó https://cash.halcon.dev/privacidad y https://cash.halcon.dev/terminos sin iniciar sesión. Vio el aviso de borrador, la versión `2026-10-v1` y la fecha 17 de octubre de 2026.
+- [ ] Alguien distinto de quien escribió el texto leyó https://cash.halcon.dev/privacidad y https://cash.halcon.dev/terminos sin iniciar sesión. La versión que se ve es `2026-10-v1`, con fecha 17 de octubre de 2026.
 - [ ] En el aviso está el apartado "Gastos compartidos del hogar" y el párrafo que explica que, al borrar la cuenta, lo compartido queda como "Usuario eliminado".
 - [ ] Si la revisión cambia el texto, se sube `LEGAL_VERSION` en `lib/legal/version.ts`. Quien ya aceptó la versión anterior vuelve a ver la pantalla de consentimiento. Hasta esa revisión, las casillas de abajo pueden avanzar, pero el enlace no se comparte como texto legal cerrado.
 
@@ -37,7 +37,7 @@ Código de B1. La casilla es obligatoria para el correo y para Google. Sin conse
 
 - [ ] En local, `pnpm test:rls` incluye `supabase/tests/consents.sql` y pasa. No lo corras contra Supabase.
 - [ ] En https://cash.halcon.dev/login, sin marcar la casilla, "Continuar con Google" no abre Google y "Enviar enlace mágico" no envía el correo. Aparece "Marca esta casilla para crear tu cuenta."
-- [ ] Con una cuenta de prueba nueva (correo que controlas, cifras inventadas), al entrar la app no deja usar el resto hasta aceptar. Después, en `consents` hay dos filas de ese usuario: `privacy` y `terms`, las dos con versión `2026-10-v1`.
+- [ ] Con una cuenta de prueba nueva (correo que controlas, cifras que no sean las tuyas), al entrar la app no deja usar el resto hasta aceptar. Después, en `consents` hay dos filas de ese usuario: `privacy` y `terms`, las dos con versión `2026-10-v1`.
 - [ ] Con otra sesión, ese segundo usuario no puede leer ni editar las filas del primero. El test SQL local ya cubre ese caso. En el proyecto real basta con no usar el SQL editor con un rol que se salte RLS para "comprobarlo".
 
 ## Eliminar cuenta probado con una cuenta de prueba
@@ -53,15 +53,19 @@ La función `delete_account_data` no recibe un id: solo actúa sobre la sesión.
 
 ## Aislamiento entre hogares (B4)
 
-**Pendiente.** B4 se está haciendo en paralelo. No marques estas casillas en esta pasada. Cuando esa rama cierre, el criterio es el de `docs/PROMPT_BETA.md` (sub-fase B4), corrido solo contra Postgres local:
+En el repositorio desde 0.14.12, commit `67f8326`. La prueba es `supabase/tests/household_isolation.sql`. Corre con `pnpm test:rls` y `pnpm test:db:fresh`, solo contra Postgres local. Las casillas marcadas son lo que ese archivo afirma. Lo que no afirma queda sin marcar.
 
-- [ ] Hay una prueba SQL con dos hogares y un usuario sin hogar: lectura, inserción, edición, borrado y RPC cruzadas, incluidos intentos de suplantar `household_id`, `user_id` y `paid_by`, en todas las tablas y funciones. El comando que la corre está escrito en el README o junto a `pnpm test:rls`.
-- [ ] Hay tests automáticos de que `SUPABASE_SERVICE_ROLE_KEY` y `CRON_SECRET` solo existen en el servidor, y de que no hay claves en el cliente ni en el service worker.
-- [ ] La única cookie es la de sesión de Supabase Auth: sin analítica, sin scripts ni fuentes de terceros y sin cookies extra, incluido el service worker. Un test falla si aparece un script de terceros. Por eso el aviso no lleva banner de cookies.
+- [x] Dos hogares sin relación (H1: A administra y B es miembro; H2: D administra y G es miembro) y un usuario S sin hogar. A no lee cuentas, transacciones, repartos, liquidaciones, invitaciones, miembros ni el hogar de H2. D no lee eso de H1. S no ve ninguna de esas tablas.
+- [x] Suplantación por RPC, no solo por insert directo: `save_transaction` con `household_id` del otro hogar falla; `save_transaction` con `paid_by` de alguien del otro hogar falla; `leave_household` y `remove_household_member` contra un hogar al que quien llama no pertenece fallan. S tampoco puede esas RPC contra H1.
+- [x] B, después de salir de H1 con el saldo en cero, no ve H2. G borra su cuenta en H2 y queda reasignado al usuario fantasma. Ese fantasma no es miembro de ningún hogar, y A sigue sin ver las transacciones ni las salidas de H2.
+- [x] Con la sesión de A, la lectura de las tablas que este archivo carga (perfiles, hogares, miembros, salidas, cuentas, transacciones, repartos y liquidaciones) no incluye filas de H2. Es el mismo criterio de RLS que usa la exportación.
+- [x] Ninguna función de `public` enciende `ember.account_deletion` salvo `delete_account_data`, y no existe `public.set_config`. Si A fuerza el ajuste a mano, RLS sigue bloqueando la lectura y la escritura de H2.
+- [x] `household_has_member` y `transaction_has_former_member` responden igual para "de otro hogar" y "no existe" con los hogares de este archivo. La prueba de `security definer` y `search_path` sigue en `supabase/tests/definer_scope.sql`.
+- [ ] Este archivo no prueba inserción, edición y borrado cruzados de todas las tablas y funciones. Metas, deudas, recurrentes y presupuestos con dos hogares quedan en `rls_finance.sql`, y el propio archivo dice que no los repite.
+- [ ] Este archivo no prueba que `SUPABASE_SERVICE_ROLE_KEY` y `CRON_SECRET` estén fuera del cliente y del service worker. Eso sigue en `pnpm build` (`scripts/check-client-bundle.mjs`), `lib/security/server-boundary.test.ts` y el hook de pre-commit, desde 0.14.5.
+- [ ] Este archivo no mira cookies ni HTML. No hay un test que falle si aparece un script de terceros.
 
-Lo que ya existe no cierra B4. La auditoría de fase 0, en solo lectura, no encontró acceso entre hogares (`docs/security/AUDIT.md`, "Comprobado y correcto"). En local ya corren `supabase/tests/rls_enabled.sql`, `rls_households.sql`, `rls_finance.sql` y `definer_scope.sql` (B-07, 0.14.7). Desde 0.14.5, `pnpm build` revisa el bundle (`scripts/check-client-bundle.mjs`), `lib/security/server-boundary.test.ts` frena imports de servidor en el cliente y el hook de pre-commit frena secretos. Falta la suite cruzada de B4 y el test de scripts de terceros.
-
-- [ ] RLS entre hogares probado: esta casilla se marca solo cuando las tres de arriba están hechas y en verde en local.
+- [x] RLS entre hogares probado en el alcance de `household_isolation.sql`: lectura cruzada, las RPC de suplantación de arriba, ex miembros, el usuario fantasma y el candado del borrado. No cubre todas las tablas.
 
 ## MFA en Supabase, GitHub y Vercel
 
@@ -118,16 +122,9 @@ Tres rutas, las tres comparan `Authorization: Bearer <CRON_SECRET>` en tiempo co
 - [ ] http://cash.halcon.dev redirige a https.
 - [ ] La respuesta de HTTPS trae `strict-transport-security`. En local la auditoría midió HSTS de dos años. Confírmalo en el host público.
 
-## Mensaje de versión de prueba en el login
-
-El texto es `auth.loginNotice`: "Versión de prueba. Usa cifras inventadas." En inglés: "Test version. Use made-up numbers."
-
-- [ ] En https://cash.halcon.dev/login, sin sesión, esa frase se ve en el formulario.
-- [ ] Después de pedir el enlace mágico, la frase sigue visible en la pantalla de "te enviamos un enlace".
-
 ## Si alguien pide borrar sus datos
 
-El aviso publicado dice: entrar a Ajustes, elegir eliminar la cuenta, y que antes se puede exportar el CSV. El contacto es el correo de `NEXT_PUBLIC_CONTACT_EMAIL`. El borrador no fija un número de días. El plan de operación, hasta que la revisión legal lo escriba en el aviso, es este.
+El aviso publicado dice: entrar a Ajustes, elegir eliminar la cuenta, y que antes se puede exportar el CSV. El contacto es el correo de `NEXT_PUBLIC_CONTACT_EMAIL`. El texto no fija un número de días. El plan de operación, hasta que la revisión legal lo escriba en el aviso, es este.
 
 Qué hacer:
 
@@ -139,7 +136,7 @@ Qué hacer:
 En cuánto tiempo:
 
 - Por la app, termina en la misma sesión.
-- Si la petición llega por correo y la persona no puede hacerlo sola, trátala como un reclamo de supresión de la Ley 1581 de 2012, artículo 15: quince días hábiles desde el día siguiente a recibirlo. Si no alcanzas, avisa el motivo y una fecha nueva, como máximo ocho días hábiles más. Dilo en la respuesta. Ese plazo no está impreso en el aviso. Quien revise el borrador decide si el texto legal debe decirlo antes de quitar "Borrador sujeto a revisión legal."
+- Si la petición llega por correo y la persona no puede hacerlo sola, trátala como un reclamo de supresión de la Ley 1581 de 2012, artículo 15: quince días hábiles desde el día siguiente a recibirlo. Si no alcanzas, avisa el motivo y una fecha nueva, como máximo ocho días hábiles más. Dilo en la respuesta. Ese plazo no está impreso en el aviso. Quien revise el texto decide si debe decirlo.
 
 - [ ] Leíste este plan y sabes desde qué buzón vas a responder.
 - [ ] Tienes a mano el correo de contacto y comprobaste que lees esa bandeja (casilla de correo de más arriba).
@@ -148,8 +145,6 @@ En cuánto tiempo:
 
 Fuente: `docs/security/AUDIT.md`. No se reescribe en esta lista.
 
-Cerrado en código, según ese documento: A-01 (0.14.4), B-02 (0.14.5), B-01 e I-01 (0.14.6), B-07 (0.14.7), M-04 (0.14.8). Esas casillas no se reabren aquí. M-04 solo protege en el proyecto real después de aplicar `0015_rate_limits.sql`.
+El cierre está en `docs/security/AUDIT.md`. Corregidos: A-01, M-04, B-01, B-02, B-07 e I-01. Aceptados con razón: B-08, I-02, I-03, I-04, I-05 e I-06. Pendientes en código: M-01, M-02, M-03, B-03, B-04, B-05, B-06 y B-09. I-07 es la revisión del panel, en las secciones de MFA, backups y Auth de esta lista. M-04 solo protege en el proyecto real después de aplicar `0015_rate_limits.sql`.
 
-Siguen abiertos allí y esta lista no los cierra: M-01, M-02, M-03, B-03, B-04, B-05, B-06, B-08, B-09, I-02, I-03, I-04, I-05 e I-06. I-07 es la revisión del panel cubierta en las secciones de MFA, backups y Auth.
-
-- [ ] Leíste el resumen de `docs/security/AUDIT.md` y no vas a compartir el enlace creyendo que esos hallazgos abiertos ya están resueltos.
+- [ ] Leíste el cierre de `docs/security/AUDIT.md` y no vas a compartir el enlace creyendo que M-02 y M-03 ya están resueltos.

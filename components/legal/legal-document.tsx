@@ -1,6 +1,6 @@
 /**
  * Aviso de privacidad o términos. Solo pinta las claves de legal.privacy o
- * legal.terms, en su orden, más legal.draftNotice y legal.versionLine.
+ * legal.terms, en su orden, más legal.versionLine.
  * {version}, {date} y {contactEmail} llegan como valores, no escritos a mano.
  */
 import { useTranslations } from "next-intl";
@@ -51,10 +51,7 @@ export function LegalDocument({ section, contactEmail }: Props) {
 
   return (
     <article className="max-w-2xl">
-      <p className="border-border bg-surface2 text-callout text-ink rounded-card border px-4 py-3">
-        {legal("draftNotice")}
-      </p>
-      <header className="mt-6 space-y-2">
+      <header className="space-y-2">
         <h1 className="text-title1 text-ink">{t("title")}</h1>
         <p className="text-footnote text-ink-2">
           {legal("versionLine", {

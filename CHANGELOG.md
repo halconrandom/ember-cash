@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.14.13] - 2026-10-17
+
+### Cambiado (beta, cierre)
+
+- `/privacidad` y `/terminos` ya no muestran la franja de borrador. Se quitó `legal.draftNotice`.
+- El login ya no muestra el aviso de versión de prueba. Se quitó `auth.loginNotice`. Del aviso y de los términos salieron los apartados que solo pedían cifras inventadas o decían que era una beta. En los términos queda la frase de que se ofrece tal cual, sin garantía.
+- `docs/security/AUDIT.md` cierra cada hallazgo: corregido, aceptado con razón o pendiente. M-02 y M-03 siguen pendientes.
+- `docs/BETA_CHECKLIST.md` queda en el aislamiento de 0.14.12 y marca solo lo que prueba `household_isolation.sql`.
+
 ## [0.14.12] - 2026-10-17
 
 ### Añadido (beta, B4: aislamiento entre hogares y seguridad)

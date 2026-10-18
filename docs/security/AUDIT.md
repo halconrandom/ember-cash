@@ -1,6 +1,6 @@
 # Auditoría de seguridad de Ember Cash
 
-Estado: **M-04 cerrado en 0.14.8.** Antes: B-07 (0.14.7), A-01 (0.14.4), B-02 (0.14.5) y las fugas B-01 e I-01 (0.14.6). Lo demás sigue abierto en la fase que indica cada hallazgo. El detalle de abajo es el reporte de la fase 0.
+Estado: **cerrado el 17 de octubre de 2026, sobre 0.14.12.** Cada hallazgo de abajo tiene estado final: corregido, aceptado con razón o pendiente. M-02 y M-03 quedan pendientes. La tabla de cierre es la que manda. El relato de la fase 0, más abajo, es el reporte original (versión auditada 0.14.2, commit `cff807d`).
 
 - Fecha: 17 de octubre de 2026. Versión auditada: 0.14.2 (commit `cff807d`).
 - Producción: https://cash.halcon.dev (Vercel). Un solo proyecto de Supabase, el real, para desarrollo y producción.
@@ -50,13 +50,37 @@ No se encontraron secretos filtrados ni acceso entre hogares o usuarios distinto
 | I-06 | Informativa | Cabeceras        | CSP con `'unsafe-inline'` en scripts (decisión tomada)                                  | 5    |
 | I-07 | Informativa | Supabase Auth    | Ajustes del panel de Supabase que no se pueden ver desde el código                      | 4, 6 |
 
----
+## Cierre
+
+| ID   | Estado final       | Commit o prueba                                                                                                                                                                                                                                                               |
+| ---- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A-01 | Corregido          | 0.14.4, `a8dbfc7`. `scripts/db-test-url.test.ts`. `pnpm test:rls` solo acepta Postgres local.                                                                                                                                                                                 |
+| M-01 | Pendiente          | Sigue el comodín `https://*.supabase.co` y `wss://*.supabase.co` en `lib/security/headers.ts`.                                                                                                                                                                                |
+| M-02 | Pendiente          | No hay `cookieOptions`. Riesgo en la beta: un script que llegara a correr en la página podría leer la cookie de sesión y usarla desde otro equipo, porque no es `httpOnly` ni `Secure`.                                                                                       |
+| M-03 | Pendiente          | Siguen las políticas de `0003_finance_model.sql` dentro del hogar. `household_isolation.sql` separa hogares distintos y no cubre este caso. Riesgo en la beta: un miembro puede cambiar por la API los repartos, las liquidaciones o los aportes del otro y mover el balance. |
+| M-04 | Corregido          | 0.14.8, `5bc5ce6`. Migración `0015_rate_limits.sql`. Test `supabase/tests/rate_limits.sql`.                                                                                                                                                                                   |
+| B-01 | Corregido          | 0.14.6, `4df1588`. `poweredByHeader: false` en `next.config.ts`.                                                                                                                                                                                                              |
+| B-02 | Corregido          | 0.14.5, `52a6e8f`. `CRON_SECRET` de al menos 32 caracteres. Test en `lib/env.test.ts`.                                                                                                                                                                                        |
+| B-03 | Pendiente          | El cupo de escritura de 0015 limita a la persona, pero no hay candado: varias peticiones a la vez siguen pudiendo consultar las fuentes de la tasa.                                                                                                                           |
+| B-04 | Pendiente          | `createInviteLink` sigue sin validar el id con zod y arma el enlace con `x-forwarded-host`.                                                                                                                                                                                   |
+| B-05 | Pendiente          | `img-src` sigue permitiendo `https://*.googleusercontent.com` en `lib/security/headers.ts`.                                                                                                                                                                                   |
+| B-06 | Pendiente          | `Permissions-Policy` sigue negando solo cámara, micrófono, geolocalización, pago y usb.                                                                                                                                                                                       |
+| B-07 | Corregido          | 0.14.7, `10d0e48`. `supabase/tests/definer_scope.sql`. Reconfirmado en 0.14.12, `67f8326`, en `supabase/tests/household_isolation.sql`.                                                                                                                                       |
+| B-08 | Aceptado con razón | `shadcn` sigue en `dependencies` porque el CSS del build lo importa. `braces` no corre en el servidor ni en el navegador, y no hay parche.                                                                                                                                    |
+| B-09 | Pendiente          | `setGoalArchived` y `setAccountArchived` no comprueban que `archived` sea un booleano.                                                                                                                                                                                        |
+| I-01 | Corregido          | 0.14.6, `4df1588`. Los cron responden una clave. El detalle va a `logServerError`.                                                                                                                                                                                            |
+| I-02 | Aceptado con razón | HSTS sin `preload`: agregarlo afectaría a todo `halcon.dev`. Comentario en `lib/security/static-headers.ts`.                                                                                                                                                                  |
+| I-03 | Aceptado con razón | `getSession()` solo saca el token de PostgREST después de `requireUser()` con `getUser()`.                                                                                                                                                                                    |
+| I-04 | Aceptado con razón | No se repitieron esas E2E contra el proyecto real. Desde 0.14.4 (`a8dbfc7`) los tests SQL van a Postgres local.                                                                                                                                                               |
+| I-05 | Aceptado con razón | `max_household_members()` devuelve 2. `rls_auto_enable` no es una RPC útil.                                                                                                                                                                                                   |
+| I-06 | Aceptado con razón | `'unsafe-inline'` en scripts se quedó: el nonce es incompatible con el prerender de Next 16 (0.14.2, `cff807d`).                                                                                                                                                              |
+| I-07 | Pendiente          | El panel no se ve desde el código. La lista está en "Lo que debo hacer yo a mano".                                                                                                                                                                                            |
 
 ## Hallazgos
 
 ### A-01. Los tests de base de datos corren contra el proyecto real (Alta)
 
-**Estado: corregido en 0.14.4 (fase 0.5).**
+**Estado final: corregido en 0.14.4 (`a8dbfc7`).**
 
 - `scripts/db-tests.mjs` ya no usa la CLI de Supabase ni `--linked`: corre `psql` contra `TEST_DATABASE_URL`.
 - `scripts/db-test-url.mts` aborta antes de conectarse si el host no es `localhost`, `127.0.0.1` o `::1`, si la URL menciona Supabase o si la base no termina en `_test`. Tiene tests en `scripts/db-test-url.test.ts`.
@@ -86,6 +110,8 @@ Lo que sigue describe el problema original.
 
 ### M-01. `connect-src` acepta cualquier proyecto `*.supabase.co` (Media)
 
+**Estado final: pendiente.** El comodín sigue en `lib/security/headers.ts`.
+
 - **Dónde:** `lib/security/headers.ts:25`. A `connect-src` se agregan `https://*.supabase.co` y `wss://*.supabase.co`, además del origen exacto del proyecto. Medido en la build de producción:
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ydxqaxyloyhlovhwjpcj.supabase.co wss://ydxqaxyloyhlovhwjpcj.supabase.co`.
 - **Cómo se explota:** con `'unsafe-inline'` en scripts (decisión tomada), `connect-src` es la barrera principal contra la exfiltración. Si alguna vez entrara un script inyectado, podría enviar datos con `fetch` a un proyecto de Supabase del atacante (`https://atacante.supabase.co`), porque el comodín lo permite.
@@ -93,12 +119,16 @@ Lo que sigue describe el problema original.
 
 ### M-02. Cookies de sesión sin `httpOnly` ni `Secure` explícito (Media)
 
+**Estado final: pendiente.** Riesgo en la beta: un script que llegara a correr en la página podría leer la cookie de sesión y usarla desde otro equipo, porque no es `httpOnly` ni `Secure`.
+
 - **Dónde:** `lib/supabase/server.ts:29` y `lib/supabase/proxy.ts:59` no pasan `cookieOptions`, así que rigen los valores por defecto de `@supabase/ssr`. Están en `node_modules/@supabase/ssr/dist/main/utils/constants.js`: `{ path: "/", sameSite: "lax", httpOnly: false, maxAge: 400 días }`, sin `secure`.
 - **Cómo se explota:** el access token y el refresh token se pueden leer desde JavaScript (`document.cookie`). Un XSS (más probable con `'unsafe-inline'`) podría robar la sesión completa y usarla desde otra máquina hasta 400 días con el refresh token. Sin `Secure`, la cookie podría viajar por http en una primera visita sin HSTS.
 - **Por qué se puede corregir:** el cliente de Supabase en el navegador solo se usa en `app/login/login-form.tsx`, para iniciar OAuth o el enlace mágico. La sesión se crea en el servidor (`/auth/callback` y `/auth/confirm`), así que las cookies de sesión pueden ser `httpOnly`.
 - **Corrección (fase 5):** `cookieOptions: { httpOnly: true, secure: producción, sameSite: "lax" }` en los clientes de servidor y del proxy. Verificar que el login con Google y con enlace mágico siga funcionando con `next start`. El verificador PKCE lo escribe el navegador y no puede ser `httpOnly`; no es una sesión.
 
 ### M-03. Un miembro puede alterar repartos, liquidaciones y aportes del otro (Media)
+
+**Estado final: pendiente.** Riesgo en la beta: un miembro puede cambiar por la API los repartos, las liquidaciones o los aportes del otro y mover el balance. `household_isolation.sql` no cubre este caso: separa hogares distintos.
 
 No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, entre sus dos miembros.
 
@@ -120,7 +150,7 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### M-04. Sin límites en exportación, acciones de escritura e invitaciones (Media)
 
-**Estado: corregido en 0.14.8.** Migración `0015_rate_limits.sql`. Test: `supabase/tests/rate_limits.sql`.
+**Estado final: corregido en 0.14.8 (`5bc5ce6`).** Migración `0015_rate_limits.sql`. Test: `supabase/tests/rate_limits.sql`.
 
 - **Dónde estaba:**
   - `app/(app)/(shell)/settings/export/route.ts:15`: cada llamada lee 15 tablas completas.
@@ -136,7 +166,7 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-01. Cabecera `X-Powered-By: Next.js` (Baja)
 
-**Estado: corregido en 0.14.6 (fase 2).** `poweredByHeader: false` en `next.config.ts`.
+**Estado final: corregido en 0.14.6 (`4df1588`).** `poweredByHeader: false` en `next.config.ts`.
 
 - **Dónde estaba:** `next.config.ts` no definía `poweredByHeader: false`. En `next start` salía `X-Powered-By: Next.js`.
 - **Cómo se explota:** le dice a un atacante qué framework atacar. No revela la versión.
@@ -144,7 +174,7 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-02. `CRON_SECRET` acepta un valor de 1 carácter (Baja)
 
-**Estado: corregido en 0.14.5 (fase 1).** `CRON_SECRET` exige al menos 32 caracteres (`lib/env-server.ts`), con tests.
+**Estado final: corregido en 0.14.5 (`52a6e8f`).** `CRON_SECRET` exige al menos 32 caracteres (`lib/env-server.ts`), con tests.
 
 - **Dónde:** `lib/env-server.ts:16`, `CRON_SECRET: z.string().min(1)`.
 - **Cómo se explota:** si alguien configura un secreto corto en Vercel, `/api/cron/*` se puede adivinar por fuerza bruta (por ejemplo, forzar `purge-deleted` o consultas a las fuentes de la tasa). La comparación ya es en tiempo constante.
@@ -152,11 +182,15 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-03. Varias peticiones a la vez a las fuentes de la tasa cuando está vieja (Baja)
 
+**Estado final: pendiente.** El cupo de escritura de 0.14.8 limita a la persona. No hay candado de la consulta a las fuentes.
+
 - **Dónde:** `lib/money/actions.ts:22-31`. La espera de 15 minutos se mira antes de pedir, pero no hay bloqueo: si la tasa está vieja y llegan N peticiones a la vez, las N consultan las fuentes externas (datos.gov.co y open.er-api.com) y escriben con la service role.
 - **Cómo se explota:** varias pestañas, o un script con sesión, pulsando "Reintentar" a la vez. Puede llevar a que las fuentes bloqueen la IP de Vercel.
 - **Corrección (fase 4):** un bloqueo (`pg_try_advisory_lock` o una fila con `locked_until`) y un límite por usuario.
 
 ### B-04. `createInviteLink` sin zod y con el origen tomado de `x-forwarded-host` (Baja)
+
+**Estado final: pendiente.** Sigue así en `app/(app)/(shell)/household/actions.ts`.
 
 - **Dónde:** `app/(app)/(shell)/household/actions.ts:42`. `householdId` no se valida con zod (lo frena RLS, pero el borde no se valida). En `:61-63`, el enlace se arma con `x-forwarded-host` o `host` de la petición.
 - **Cómo se explota:** en Vercel, `x-forwarded-host` lo pone la plataforma, así que hoy no se puede falsificar. Detrás de otro proxy que lo dejara pasar, se podría generar un enlace de invitación a un dominio ajeno. Solo lo ve quien administra el hogar.
@@ -164,18 +198,22 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-05. `img-src` permite `*.googleusercontent.com` sin uso (Baja)
 
+**Estado final: pendiente.** Sigue en `lib/security/headers.ts`.
+
 - **Dónde:** `lib/security/headers.ts:57`.
 - **Cómo se explota:** es otro canal de salida para un script inyectado: una imagen hacia un recurso de `googleusercontent.com`. La app no muestra imágenes de perfil (el avatar usa iniciales).
 - **Corrección (fase 5):** quitarlo y dejar `'self' data: blob:`.
 
 ### B-06. `Permissions-Policy` deja abiertas funciones que la app no usa (Baja)
 
+**Estado final: pendiente.** Sigue la lista corta en `lib/security/static-headers.ts`.
+
 - **Dónde:** `lib/security/static-headers.ts:24`. Solo niega `camera`, `microphone`, `geolocation`, `payment` y `usb`.
 - **Corrección (fase 5):** negar también lo demás que no se usa (`accelerometer`, `autoplay`, `bluetooth`, `browsing-topics`, `display-capture`, `fullscreen`, `gyroscope`, `hid`, `magnetometer`, `midi`, `screen-wake-lock`, `serial`, `xr-spatial-tracking`, entre otras) y fijarlo con un test.
 
 ### B-07. Dos funciones SECURITY DEFINER responden sobre ids ajenos (Baja)
 
-**Estado: corregido en 0.14.7.** Migración `0014_definer_scope.sql`.
+**Estado final: corregido en 0.14.7 (`10d0e48`).** Migración `0014_definer_scope.sql`. Reconfirmado en 0.14.12 (`67f8326`), `supabase/tests/household_isolation.sql`.
 
 - **Dónde estaba:** `authenticated` podía ejecutar `household_has_member(hid, uid)` y `transaction_has_former_member(tid)`. Las dos son SECURITY DEFINER. La segunda contestaba sobre cualquier id.
 - **Cómo se explota:** cualquier usuario autenticado puede preguntar si el usuario X es miembro del hogar Y, o si la transacción Z incluye a un ex miembro. Hace falta conocer los UUID (no se pueden adivinar), así que el riesgo es bajo.
@@ -183,11 +221,15 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-08. `braces` vulnerable (alta en `pnpm audit`) vía la CLI de shadcn (Baja)
 
+**Estado final: aceptado con razón.** No corre en el servidor ni en el navegador, y no hay parche. `shadcn` se queda en `dependencies` porque el build importa su CSS.
+
 - **Dónde:** `pnpm audit` reporta `braces <= 3.0.3`, GHSA-vfj7-8cjw-p6xm, por la ruta `shadcn > fast-glob > micromatch > braces`. `shadcn` está en `dependencies` porque `app/globals.css:18` importa `shadcn/tailwind.css`.
 - **Cómo se explota:** es una denegación de servicio con patrones glob anidados. Solo la usa la CLI de shadcn en desarrollo; no corre en el servidor ni en el navegador, y ningún usuario controla esos patrones. Por eso es Baja, aunque `pnpm audit` diga "high". No hay versión corregida.
 - **Corrección (fase 5):** mover `shadcn` a `devDependencies` (el CSS se resuelve en el build, y Vercel instala las de desarrollo para compilar), o fijar un `override` cuando salga el parche. Documentar el motivo.
 
 ### B-09. Parámetros booleanos y de texto sin validar en algunas acciones (Baja)
+
+**Estado final: pendiente.** `archived` sigue sin un `z.boolean()` en archivar meta y archivar cuenta.
 
 - **Dónde:**
   - `app/(app)/(shell)/savings/actions.ts:68` (`setGoalArchived(id, archived)`): `archived` no se valida. Una cadena `"false"` cuenta como verdadera y archiva la meta.
@@ -198,26 +240,34 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### I-01. Los cron devuelven el texto del error a quien ya tiene el secreto (Informativa)
 
-**Estado: corregido en 0.14.6 (fase 2).** La respuesta es `failed` o `all_sources_failed`. El detalle va a `logServerError`.
+**Estado final: corregido en 0.14.6 (`4df1588`).** La respuesta es `failed` o `all_sources_failed`. El detalle va a `logServerError`.
 
 - **Dónde estaba:** `purge-deleted` devolvía `tx.error.message`, `rates` devolvía `details` con el texto de las fuentes y `occurrences` devolvía `result.error`. Solo se veía después de pasar `CRON_SECRET`.
 - **Corrección (0.14.6):** la respuesta es `{ ok: false, error: "failed" }` o `all_sources_failed`. El detalle pasa por `logServerError`, que no imprime el objeto ni montos, correos ni tokens.
 
 ### I-02. HSTS sin `preload` (Informativa)
 
+**Estado final: aceptado con razón.** No se agrega `preload`: afectaría a todo `halcon.dev`, no solo a `cash.`.
+
 - **Dónde:** `lib/security/static-headers.ts:32`: `max-age=63072000; includeSubDomains`. Sin `preload`, a propósito; el comentario explica que quitarlo después es lento.
 - **Fase 5:** decidir si se agrega. `preload` afecta a todo `halcon.dev` y sus subdominios, no solo a `cash.`.
 
 ### I-03. La exportación usa `getSession()` después de `getUser()` (Informativa)
+
+**Estado final: aceptado con razón.** `getSession()` no autoriza. La autorización ya pasó por `getUser()`.
 
 - **Dónde:** `app/(app)/(shell)/settings/export/route.ts:18`.
 - **Por qué está bien:** la autorización ya la hizo `requireUser()` con `getUser()` (validado contra Auth) en la línea 16. `getSession()` solo saca el token para llamar a PostgREST con RLS. Las demás decisiones del servidor usan `getUser()` (`lib/auth/session.ts:16`). El proxy usa `getClaims()`, que valida la firma del JWT, para redirigir.
 
 ### I-04. En fases anteriores las pruebas E2E crearon usuarios temporales en el proyecto real (Informativa)
 
+**Estado final: aceptado con razón.** No se repitió. Desde 0.14.4 los tests SQL van a Postgres local.
+
 Las pruebas con navegador de las fases 6 a 11 crearon usuarios y datos de prueba con la service role contra el proyecto real, y los borraron al final de cada prueba. Desde esta auditoría no se hace más. Las E2E futuras necesitan una base local (ver A-01) o quedarse en lectura.
 
 ### I-05. `rls_auto_enable` y `max_household_members` se pueden ejecutar como anon (Informativa)
+
+**Estado final: aceptado con razón.** No da datos de nadie.
 
 - `rls_auto_enable` es una función de Supabase (disparador de eventos con `search_path=pg_catalog`), no de este proyecto. No se puede llamar como RPC útil.
 - `max_household_members()` devuelve la constante 2.
@@ -225,13 +275,17 @@ Las pruebas con navegador de las fases 6 a 11 crearon usuarios y datos de prueba
 
 ### I-06. CSP con `'unsafe-inline'` en scripts (Informativa, decisión tomada)
 
+**Estado final: aceptado con razón.** El nonce rompe el prerender de Next 16. No se reabre.
+
 - Es necesario porque PPR y nonce son incompatibles en Next 16 (0.14.2).
 - Mitigación: no hay inyección de HTML. El único `dangerouslySetInnerHTML` es el script estático de arranque (`app/layout.tsx:72`), React escapa el resto, los `href` dinámicos son internos con valores validados y los enlaces externos llevan `rel="noopener noreferrer"`.
 - El resto de directivas se ajusta en M-01, B-05 y la fase 5.
 
 ### I-07. Ajustes del panel de Supabase que no se pueden ver desde el código (Informativa)
 
-Hay que revisarlos a mano en las fases 4 y 6:
+**Estado final: pendiente.** Lo haces tú, en "Lo que debo hacer yo a mano".
+
+Hay que revisarlos a mano:
 
 - Rate limits de Auth (correos por hora, OTP, verificaciones, refrescos de token).
 - Protección de contraseñas filtradas (no aplica si solo hay Google y enlace mágico).
@@ -249,7 +303,7 @@ Hay que revisarlos a mano en las fases 4 y 6:
 | ------------------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Historial de git                     | Sin secretos                      | Ninguna de las tres llaves reales aparece en `git log --all -p` (28 commits, incluidos los archivos borrados). No hay JWT, `sb_secret_`, `sk_*`, `AKIA` ni llaves PEM.                                                                                                                                                                  |
 | Archivos versionados                 | Sin `.env` reales                 | `git ls-files` solo trae `.env.example` (sin valores). `.gitignore:34-35` ignora `.env*` salvo la plantilla. No hay logs, volcados ni CSV versionados.                                                                                                                                                                                  |
-| `NEXT_PUBLIC_*`                      | Solo URL y anon key               | Son los únicos dos nombres con ese prefijo en todo el código. La service role y `CRON_SECRET` no lo llevan.                                                                                                                                                                                                                             |
+| `NEXT_PUBLIC_*`                      | URL, anon key y correo            | En la fase 0 eran URL y anon key. Desde 0.14.10 (`b8341d1`) también está `NEXT_PUBLIC_CONTACT_EMAIL`, un correo público del aviso. La service role y `CRON_SECRET` no llevan el prefijo.                                                                                                                                                |
 | Bundle del cliente                   | Sin service role ni `CRON_SECRET` | Búsqueda del valor real en `.next/static` y `public/`: 0 archivos. La anon key sí aparece; es pública por diseño y la protege RLS.                                                                                                                                                                                                      |
 | Service role                         | Solo en servidor                  | `lib/supabase/admin.ts` importa `server-only`. La usan los cron y `lib/money/rates.ts` (guardar la tasa). `getServerEnv()` falla si se llama en el navegador.                                                                                                                                                                           |
 | Source maps                          | No se publican                    | `find .next/static -name '*.map'`: 0. `GET <chunk>.js.map` en `next start` da 404. Revisado en 0.14.6 con `productionBrowserSourceMaps: false`.                                                                                                                                                                                         |
@@ -285,8 +339,26 @@ En la fase 0 no apareció ningún secreto real: ni en el historial, ni en el bun
 | Hook de pre-commit                 | `.githooks/pre-commit` y `scripts/pre-commit-secrets.mjs` (lo activa `pnpm install`)          | Archivos `.env*` (salvo `.env.example`), `*.pem`, `*.key`, `*.p12` o `*.pfx`, y líneas agregadas con secretos.                                                                                                                                                           |
 | `.gitignore`                       | raíz                                                                                          | Además de `.env*` y `*.pem`: `*.key`, `*.p12`, `*.pfx`, credenciales JSON y los ZIP de respaldo exportados.                                                                                                                                                              |
 
-## Lo que queda para ti (se completa en la fase 6)
+## Lo que debo hacer yo a mano
 
-- No hay llaves que rotar: no apareció ninguna en el historial ni en el cliente.
-- Revisar en el panel de Supabase lo de I-07 (los valores concretos se proponen en la fase 4).
-- Decidir la base local de pruebas (A-01) antes de la fase 3.
+Nada de esto está en el código. No hay llaves que rotar: la fase 0 no encontró ninguna en el historial ni en el cliente. La base local de pruebas ya quedó decidida (A-01, 0.14.4).
+
+Pendiente en código, no se cierra desde el panel:
+
+- M-02. En la beta, un script que llegara a correr en la página podría leer la cookie de sesión y usarla desde otro equipo, porque no es `httpOnly` ni `Secure`.
+- M-03. En la beta, dentro del mismo hogar, un miembro puede cambiar por la API los repartos, las liquidaciones o los aportes del otro y mover el balance. Entre hogares distintos eso no pasa: lo prueba `supabase/tests/household_isolation.sql`.
+- Siguen abiertos, sin ese mismo peso: M-01, B-03, B-04, B-05, B-06 y B-09. El detalle está en la tabla de cierre.
+
+Antes de compartir https://cash.halcon.dev:
+
+- Aplicar en el proyecto real las migraciones `0015_rate_limits.sql`, `0016_consents.sql` y `0017_account_deletion.sql` (`pnpm db:push`). Sin eso, los límites, el consentimiento y el borrado de cuenta no están en la base que usa la app.
+- Poner `NEXT_PUBLIC_CONTACT_EMAIL` en Vercel Production, abrir `/privacidad`, `/terminos` y `/.well-known/security.txt`, y enviar un correo de prueba a esa dirección.
+- Leer el aviso y los términos. La franja de borrador ya no está. La revisión del texto sigue siendo tuya.
+- Panel de Supabase Auth (I-07): límites de correos, OTP, verificaciones y refresco de token activos. Alta con contraseña apagada y, si el interruptor existe, protección de contraseñas filtradas activa. Redirect URLs solo `https://cash.halcon.dev/**` y el desarrollo que todavía uses. Site URL `https://cash.halcon.dev`. Anotar la expiración del JWT. No activar CAPTCHA: el login no tiene ese widget.
+- SMTP propio, con plantillas cuyo enlace abre `https://cash.halcon.dev`. Probar un enlace mágico en un buzón real.
+- MFA activo en las cuentas de Supabase, GitHub y Vercel que administran el proyecto.
+- Backups del proyecto en Database, Backups, con una copia reciente.
+- `CRON_SECRET` en Vercel Production. Sin cabecera, `GET /api/cron/rates`, `/api/cron/purge-deleted` y `/api/cron/occurrences` responden 401. No pegues el secreto en el comando.
+- https://cash.halcon.dev con certificado válido, redirección desde http y cabecera `strict-transport-security`.
+- Probar eliminar una cuenta creada solo para eso, no la tuya. El plan si alguien escribe pidiendo el borrado está en `docs/BETA_CHECKLIST.md`.
+- Los tests SQL no se corren contra este proyecto. Van a Postgres local con `pnpm test:rls`.

@@ -58,12 +58,29 @@ describe("messages", () => {
     );
     expect(es.auth.consentError).toBe("Marca esta casilla para crear tu cuenta.");
     expect(en.auth.consentError).toBe("Check this box to create your account.");
-    expect(es.auth.loginNotice).toBe("Versión de prueba. Usa cifras inventadas.");
-    expect(en.auth.loginNotice).toBe("Test version. Use made-up numbers.");
+    expect(es.auth).not.toHaveProperty("loginNotice");
+    expect(en.auth).not.toHaveProperty("loginNotice");
     expect(es.legal.versionLine).toBe("Versión {version} · Actualizado el {date}");
     expect(en.legal.versionLine).toBe("Version {version} · Updated {date}");
-    expect(es.legal.draftNotice).toBe("Borrador sujeto a revisión legal.");
-    expect(en.legal.draftNotice).toBe("Draft, subject to legal review.");
+    expect(es.legal).not.toHaveProperty("draftNotice");
+    expect(en.legal).not.toHaveProperty("draftNotice");
+    expect(es.legal.privacy.intro).toBe(
+      "Ember Cash es una app personal de finanzas. Aquí te contamos, sin vueltas, qué datos guardamos y qué hacemos con ellos.",
+    );
+    expect(en.legal.privacy.intro).toBe(
+      "Ember Cash is a personal finance app. Here is what data we keep and what we do with it, plain and simple.",
+    );
+    expect(es.legal.privacy).not.toHaveProperty("betaTitle");
+    expect(en.legal.privacy).not.toHaveProperty("betaBody");
+    expect(es.legal.terms.betaBody).toBe(
+      "Se ofrece tal cual, sin garantía de que funcione siempre ni de que no falle.",
+    );
+    expect(en.legal.terms.betaBody).toBe(
+      "It is provided as is, with no guarantee that it will always work or never fail.",
+    );
+    expect(es.legal.terms).not.toHaveProperty("betaTitle");
+    expect(es.legal.terms).not.toHaveProperty("testTitle");
+    expect(en.legal.terms).not.toHaveProperty("testBody");
     expect(es.legal.privacy.sharedTitle).toBe("Gastos compartidos del hogar");
     expect(en.legal.privacy.sharedTitle).toBe("Shared household expenses");
     expect(es.legal.privacy.sharedBody).toBe(

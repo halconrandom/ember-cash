@@ -5,6 +5,7 @@
  * llega por correo y entra por /auth/confirm (según la plantilla de Supabase).
  * Un solo botón primario: "Enviar enlace mágico". Google es secundario.
  * La casilla es obligatoria: sin ella no se abre Google ni se envía el correo.
+ * No hay aviso de versión de prueba: se quitó en el cierre de la beta.
  */
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
@@ -28,7 +29,6 @@ type Props = {
 
 export function LoginForm({ next, initialError }: Props) {
   const t = useTranslations("login");
-  const auth = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [consentMissing, setConsentMissing] = useState(false);
@@ -101,7 +101,6 @@ export function LoginForm({ next, initialError }: Props) {
         >
           {t("otherEmail")}
         </button>
-        <p className="text-footnote text-ink-2">{auth("loginNotice")}</p>
       </div>
     );
   }
@@ -151,7 +150,6 @@ export function LoginForm({ next, initialError }: Props) {
           {t(`errors.${error}`)}
         </p>
       )}
-      <p className="text-footnote text-ink-2">{auth("loginNotice")}</p>
     </div>
   );
 }

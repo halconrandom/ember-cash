@@ -29,11 +29,10 @@ function renderForm() {
 }
 
 describe("LoginForm", () => {
-  it("muestra el aviso de versión de prueba", () => {
-    renderForm();
-    expect(screen.getByText("Test version. Use made-up numbers.").textContent).toBe(
-      "Test version. Use made-up numbers.",
-    );
+  it("no muestra aviso de versión de prueba ni de cifras inventadas", () => {
+    const { container } = renderForm();
+    expect(container.textContent).not.toContain("Test version");
+    expect(container.textContent).not.toContain("made-up");
   });
 
   it("sin la casilla no abre Google ni envía el correo", () => {

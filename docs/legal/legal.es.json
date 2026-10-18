@@ -1,10 +1,9 @@
 {
   "legal": {
-    "draftNotice": "Borrador sujeto a revisión legal.",
     "versionLine": "Versión {version} · Actualizado el {date}",
     "privacy": {
       "title": "Aviso de privacidad",
-      "intro": "Ember Cash es una app personal de finanzas en versión de prueba. Aquí te contamos, sin vueltas, qué datos guardamos y qué hacemos con ellos.",
+      "intro": "Ember Cash es una app personal de finanzas. Aquí te contamos, sin vueltas, qué datos guardamos y qué hacemos con ellos.",
       "dataTitle": "Qué datos guardamos",
       "dataIntro": "Solo lo que tú escribes en la app:",
       "data1": "Tu correo electrónico.",
@@ -38,8 +37,6 @@
       "sharedBody": "Si borras tu cuenta, los gastos que compartiste con tu hogar se quedan para que los demás miembros puedan seguir con sus cuentas, pero sin tu nombre ni tu correo: aparecen como Usuario eliminado.",
       "deleteTitle": "Cómo borrar tu cuenta",
       "deleteBody": "Entra a Ajustes y elige Eliminar cuenta. Antes puedes exportar tus datos en CSV.",
-      "betaTitle": "Versión de prueba",
-      "betaBody": "Esta es una beta con amigos. Mientras la pruebas, usa cifras inventadas.",
       "contactTitle": "Contacto",
       "contactBody": "Para consultas, reclamos o borrado de datos, escríbenos a {contactEmail}.",
       "changesTitle": "Cambios en este aviso",
@@ -48,14 +45,11 @@
     "terms": {
       "title": "Términos de uso",
       "intro": "Estas son las reglas básicas para usar Ember Cash. Son cortas a propósito.",
-      "betaTitle": "Versión de prueba",
-      "betaBody": "Ember Cash es una beta. Se ofrece tal cual, sin garantía de que funcione siempre ni de que no falle.",
+      "betaBody": "Se ofrece tal cual, sin garantía de que funcione siempre ni de que no falle.",
       "adviceTitle": "No es asesoría",
       "adviceBody": "Ember Cash no da asesoría financiera, contable ni tributaria. Las decisiones con tu plata son tuyas.",
       "ageTitle": "Solo mayores de 18",
       "ageBody": "Solo pueden usar la app personas mayores de 18 años.",
-      "testTitle": "Prueba con cifras inventadas",
-      "testBody": "Mientras sea una beta, te recomendamos usar cifras inventadas.",
       "noChargesTitle": "Sin cobros ni bancos",
       "noChargesBody": "No cobramos nada y no nos conectamos a tu banco. Todo lo que ves lo escribiste tú.",
       "useTitle": "Uso aceptable",
@@ -72,8 +66,7 @@
   },
   "auth": {
     "consent": "Soy mayor de 18 años, leí el <privacy>aviso de privacidad</privacy> y los <terms>términos</terms>, y autorizo el tratamiento de mis datos.",
-    "consentError": "Marca esta casilla para crear tu cuenta.",
-    "loginNotice": "Versión de prueba. Usa cifras inventadas."
+    "consentError": "Marca esta casilla para crear tu cuenta."
   },
   "account": {
     "exportNotice": "Antes de eliminar tu cuenta, descarga tus datos en CSV. Después no podrás recuperarlos.",
