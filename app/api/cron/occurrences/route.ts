@@ -8,6 +8,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { getServerEnv } from "@/lib/env-server";
+import { logServerError } from "@/lib/log/server";
 import { runOccurrencesCron } from "@/lib/recurring/cron";
 
 /** Compara el encabezado con el secreto en tiempo constante. */
@@ -25,11 +26,14 @@ export async function GET(request: Request) {
 
   try {
     const result = await runOccurrencesCron();
-    if (!result.ok) return Response.json(result, { status: 500 });
+    if (!result.ok) {
+      logServerError("cron.occurrences", new Error(result.error));
+      return Response.json({ ok: false, error: "failed" }, { status: 500 });
+    }
     return Response.json(result);
   } catch (error) {
     // Respaldo si el cron lanza fuera de su propio catch.
-    const message = error instanceof Error ? error.message : "failed";
-    return Response.json({ ok: false, error: message }, { status: 500 });
+    logServerError("cron.occurrences", error);
+    return Response.json({ ok: false, error: "failed" }, { status: 500 });
   }
 }

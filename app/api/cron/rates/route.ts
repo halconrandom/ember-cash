@@ -8,6 +8,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { getServerEnv } from "@/lib/env-server";
+import { logServerError } from "@/lib/log/server";
 import { fetchAndStoreRate } from "@/lib/money/rates";
 
 /** Compara el encabezado con el secreto en tiempo constante. */
@@ -25,10 +26,9 @@ export async function GET(request: Request) {
 
   const result = await fetchAndStoreRate();
   if (!result.ok) {
-    return Response.json(
-      { ok: false, error: "all_sources_failed", details: result.errors },
-      { status: 502 },
-    );
+    // El detalle de las fuentes queda en el log. La respuesta es una clave.
+    logServerError("cron.rates", new Error(result.errors.join("; ")));
+    return Response.json({ ok: false, error: "all_sources_failed" }, { status: 502 });
   }
   return Response.json({ ok: true, rate: result.rate });
 }

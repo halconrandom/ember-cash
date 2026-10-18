@@ -35,4 +35,17 @@ describe("GET /api/cron/purge-deleted", () => {
     expect(column).toBe("deleted_at");
     expect(before - new Date(cutoff).getTime()).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000 - 1000);
   });
+
+  it("un fallo de la base responde failed y no el mensaje", async () => {
+    lt.mockResolvedValueOnce({
+      error: { message: "permission denied", details: "amount 1800000", hint: "ana@correo.com" },
+      count: null,
+    });
+    const res = await GET(new Request("http://x/api/cron/purge-deleted", { headers: AUTH }));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: "failed" });
+    expect(JSON.stringify(body)).not.toContain("1800000");
+    expect(JSON.stringify(body)).not.toContain("ana@correo.com");
+  });
 });

@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
   // botones (p. ej. "Continuar con Google") no responden al toque. No afecta
   // a producción. Rangos de red privada (RFC 1918) y mDNS.
   allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "172.*.*.*", "*.local"],
+  // Sin "X-Powered-By: Next.js": no anunciar el framework (auditoría B-01).
+  poweredByHeader: false,
+  // Explícito: los source maps del navegador no se publican en producción.
+  productionBrowserSourceMaps: false,
   cacheComponents: true,
   partialPrefetching: true,
   // Cabeceras estáticas en todas las rutas. La CSP va en proxy.ts porque

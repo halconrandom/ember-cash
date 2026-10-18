@@ -1,6 +1,6 @@
 # Auditoría de seguridad de Ember Cash
 
-Estado: **Fase 0, reporte (solo lectura).** Nada de lo que sigue está corregido todavía. Cada hallazgo indica en qué fase se corrige.
+Estado: **fase 2 cerrada en 0.14.6.** A-01 (0.14.4), B-02 (0.14.5) y las fugas B-01 e I-01 (0.14.6) están corregidas. Lo demás sigue abierto en la fase que indica cada hallazgo. El detalle de abajo es el reporte de la fase 0.
 
 - Fecha: 17 de octubre de 2026. Versión auditada: 0.14.2 (commit `cff807d`).
 - Producción: https://cash.halcon.dev (Vercel). Un solo proyecto de Supabase, el real, para desarrollo y producción.
@@ -26,29 +26,29 @@ Estado: **Fase 0, reporte (solo lectura).** Nada de lo que sigue está corregido
 
 No se encontraron secretos filtrados ni acceso entre hogares o usuarios distintos. Los hallazgos son de defensa en profundidad, de integridad dentro de un mismo hogar y de operación.
 
-| ID   | Severidad   | Área             | Título                                                                              | Fase |
-| ---- | ----------- | ---------------- | ----------------------------------------------------------------------------------- | ---- |
-| A-01 | Alta        | Operación / BD   | Los tests de base de datos corren contra el proyecto real                           | 3    |
-| M-01 | Media       | Cabeceras        | `connect-src` acepta cualquier proyecto `*.supabase.co`                             | 5    |
-| M-02 | Media       | Sesiones         | Cookies de sesión sin `httpOnly` ni `Secure` explícito                              | 5    |
-| M-03 | Media       | RLS (integridad) | Un miembro puede alterar repartos, liquidaciones y aportes del otro                 | 3    |
-| M-04 | Media       | Rate limiting    | Sin límites en exportación, acciones de escritura e invitaciones                    | 4    |
-| B-01 | Baja        | Fugas            | Cabecera `X-Powered-By: Next.js`                                                    | 2    |
-| B-02 | Baja        | Secretos         | `CRON_SECRET` acepta un valor de 1 carácter (corregido en 0.14.5)                   | 1    |
-| B-03 | Baja        | Rate limiting    | Varias peticiones a la vez a las fuentes de la tasa cuando está vieja               | 4    |
-| B-04 | Baja        | Validación       | `createInviteLink` sin zod y con el origen tomado de `x-forwarded-host`             | 3    |
-| B-05 | Baja        | Cabeceras        | `img-src` permite `*.googleusercontent.com` sin uso                                 | 5    |
-| B-06 | Baja        | Cabeceras        | `Permissions-Policy` deja abiertas funciones que la app no usa                      | 5    |
-| B-07 | Baja        | RLS              | Dos funciones SECURITY DEFINER responden sobre ids ajenos                           | 3    |
-| B-08 | Baja        | Dependencias     | `braces` vulnerable (alta en `pnpm audit`) vía la CLI de shadcn                     | 5    |
-| B-09 | Baja        | Validación       | Parámetros booleanos y de texto sin validar en algunas acciones                     | 3    |
-| I-01 | Informativa | Fugas            | Los cron devuelven el texto del error a quien ya tiene el secreto                   | 2    |
-| I-02 | Informativa | Cabeceras        | HSTS sin `preload` (decisión documentada)                                           | 5    |
-| I-03 | Informativa | Sesiones         | La exportación usa `getSession()` después de `getUser()`                            | 5    |
-| I-04 | Informativa | Operación        | En fases anteriores las pruebas E2E crearon usuarios temporales en el proyecto real | 3    |
-| I-05 | Informativa | RLS              | `rls_auto_enable` y `max_household_members` se pueden ejecutar como anon            | 3    |
-| I-06 | Informativa | Cabeceras        | CSP con `'unsafe-inline'` en scripts (decisión tomada)                              | 5    |
-| I-07 | Informativa | Supabase Auth    | Ajustes del panel de Supabase que no se pueden ver desde el código                  | 4, 6 |
+| ID   | Severidad   | Área             | Título                                                                                  | Fase |
+| ---- | ----------- | ---------------- | --------------------------------------------------------------------------------------- | ---- |
+| A-01 | Alta        | Operación / BD   | Los tests de base de datos corrían contra el proyecto real (corregido en 0.14.4)        | 3    |
+| M-01 | Media       | Cabeceras        | `connect-src` acepta cualquier proyecto `*.supabase.co`                                 | 5    |
+| M-02 | Media       | Sesiones         | Cookies de sesión sin `httpOnly` ni `Secure` explícito                                  | 5    |
+| M-03 | Media       | RLS (integridad) | Un miembro puede alterar repartos, liquidaciones y aportes del otro                     | 3    |
+| M-04 | Media       | Rate limiting    | Sin límites en exportación, acciones de escritura e invitaciones                        | 4    |
+| B-01 | Baja        | Fugas            | Cabecera `X-Powered-By: Next.js` (corregido en 0.14.6)                                  | 2    |
+| B-02 | Baja        | Secretos         | `CRON_SECRET` acepta un valor de 1 carácter (corregido en 0.14.5)                       | 1    |
+| B-03 | Baja        | Rate limiting    | Varias peticiones a la vez a las fuentes de la tasa cuando está vieja                   | 4    |
+| B-04 | Baja        | Validación       | `createInviteLink` sin zod y con el origen tomado de `x-forwarded-host`                 | 3    |
+| B-05 | Baja        | Cabeceras        | `img-src` permite `*.googleusercontent.com` sin uso                                     | 5    |
+| B-06 | Baja        | Cabeceras        | `Permissions-Policy` deja abiertas funciones que la app no usa                          | 5    |
+| B-07 | Baja        | RLS              | Dos funciones SECURITY DEFINER responden sobre ids ajenos                               | 3    |
+| B-08 | Baja        | Dependencias     | `braces` vulnerable (alta en `pnpm audit`) vía la CLI de shadcn                         | 5    |
+| B-09 | Baja        | Validación       | Parámetros booleanos y de texto sin validar en algunas acciones                         | 3    |
+| I-01 | Informativa | Fugas            | Los cron devuelven el texto del error a quien ya tiene el secreto (corregido en 0.14.6) | 2    |
+| I-02 | Informativa | Cabeceras        | HSTS sin `preload` (decisión documentada)                                               | 5    |
+| I-03 | Informativa | Sesiones         | La exportación usa `getSession()` después de `getUser()`                                | 5    |
+| I-04 | Informativa | Operación        | En fases anteriores las pruebas E2E crearon usuarios temporales en el proyecto real     | 3    |
+| I-05 | Informativa | RLS              | `rls_auto_enable` y `max_household_members` se pueden ejecutar como anon                | 3    |
+| I-06 | Informativa | Cabeceras        | CSP con `'unsafe-inline'` en scripts (decisión tomada)                                  | 5    |
+| I-07 | Informativa | Supabase Auth    | Ajustes del panel de Supabase que no se pueden ver desde el código                      | 4, 6 |
 
 ---
 
@@ -134,9 +134,11 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### B-01. Cabecera `X-Powered-By: Next.js` (Baja)
 
-- **Dónde:** `next.config.ts` no define `poweredByHeader: false`. Medido en `next start`: `X-Powered-By: Next.js`.
+**Estado: corregido en 0.14.6 (fase 2).** `poweredByHeader: false` en `next.config.ts`.
+
+- **Dónde estaba:** `next.config.ts` no definía `poweredByHeader: false`. En `next start` salía `X-Powered-By: Next.js`.
 - **Cómo se explota:** le dice a un atacante qué framework atacar. No revela la versión.
-- **Corrección (fase 2):** `poweredByHeader: false` y un test.
+- **Corrección (0.14.6):** `poweredByHeader: false`. Medido de nuevo con `pnpm build` y `next start`: la cabecera no viene en `/api/health`, `/login` ni en un chunk de `/_next/static`. `find .next/static -name '*.map'` da 0, y `GET` de un `chunk.js.map` responde 404. `productionBrowserSourceMaps` queda en `false`.
 
 ### B-02. `CRON_SECRET` acepta un valor de 1 carácter (Baja)
 
@@ -197,11 +199,10 @@ No hay acceso entre hogares distintos. Esto pasa **dentro** de un mismo hogar, e
 
 ### I-01. Los cron devuelven el texto del error a quien ya tiene el secreto (Informativa)
 
-- **Dónde:**
-  - `app/api/cron/purge-deleted/route.ts:27` y `:29` devuelven `tx.error.message`.
-  - `app/api/cron/rates/route.ts:28-31` devuelve `details` con los errores de las fuentes.
-- Solo se ven después de pasar `CRON_SECRET`.
-- **Corrección (fase 2):** respuesta genérica, y el detalle a `console.error`.
+**Estado: corregido en 0.14.6 (fase 2).** La respuesta es `failed` o `all_sources_failed`. El detalle va a `logServerError`.
+
+- **Dónde estaba:** `purge-deleted` devolvía `tx.error.message`, `rates` devolvía `details` con el texto de las fuentes y `occurrences` devolvía `result.error`. Solo se veía después de pasar `CRON_SECRET`.
+- **Corrección (0.14.6):** la respuesta es `{ ok: false, error: "failed" }` o `all_sources_failed`. El detalle pasa por `logServerError`, que no imprime el objeto ni montos, correos ni tokens.
 
 ### I-02. HSTS sin `preload` (Informativa)
 
@@ -252,8 +253,8 @@ Hay que revisarlos a mano en las fases 4 y 6:
 | `NEXT_PUBLIC_*`                      | Solo URL y anon key               | Son los únicos dos nombres con ese prefijo en todo el código. La service role y `CRON_SECRET` no lo llevan.                                                                                                                                                                                                                             |
 | Bundle del cliente                   | Sin service role ni `CRON_SECRET` | Búsqueda del valor real en `.next/static` y `public/`: 0 archivos. La anon key sí aparece; es pública por diseño y la protege RLS.                                                                                                                                                                                                      |
 | Service role                         | Solo en servidor                  | `lib/supabase/admin.ts` importa `server-only`. La usan los cron y `lib/money/rates.ts` (guardar la tasa). `getServerEnv()` falla si se llama en el navegador.                                                                                                                                                                           |
-| Source maps                          | No se publican                    | `find .next/static -name '*.map'`: 0. `GET <chunk>.js.map` en `next start` da 404.                                                                                                                                                                                                                                                      |
-| Service worker                       | No cachea nada autenticado        | `public/sw.js:49-63`: solo `GET` del mismo origen. Excluye RSC, `?_rsc`, `/api/` y `/auth/`. A las navegaciones les sirve red o `offline.html`, nunca HTML guardado. Solo cachea `/_next/static`, íconos, manifest y `offline.html`.                                                                                                    |
+| Source maps                          | No se publican                    | `find .next/static -name '*.map'`: 0. `GET <chunk>.js.map` en `next start` da 404. Revisado en 0.14.6 con `productionBrowserSourceMaps: false`.                                                                                                                                                                                         |
+| Service worker                       | No cachea nada autenticado        | `public/sw.js`: solo `GET` del mismo origen. Excluye RSC, `?_rsc`, `/api/` y `/auth/`. A las navegaciones les sirve red o `offline.html`, nunca HTML guardado. Solo cachea `/_next/static`, íconos, manifest y `offline.html`. En 0.14.6 `lib/pwa/sw-behavior.test.ts` ejecuta el worker con fetches reales.                            |
 | RLS                                  | Activa en las 20 tablas           | Catálogo: `relrowsecurity = true` en todas. `anon` no tiene `SELECT` en ninguna. `invite_accept_attempts` no tiene políticas ni grants (solo la usan funciones).                                                                                                                                                                        |
 | Aislamiento entre usuarios y hogares | Correcto                          | Todas las políticas se basan en `owner_id = auth.uid()` o en `is_household_member(household_id)`. `paid_by` tiene una política restrictiva. `owner_id` es inmutable por trigger. Las referencias pasan por `check_visible_refs`. `profiles` solo deja ver el propio.                                                                    |
 | SECURITY DEFINER                     | `search_path` fijo en todas       | Las 17 funciones definer de `public` tienen `search_path=""`. Las que puede llamar `authenticated` comprueban `auth.uid()` o filtran por membresía (`accept_invite`, `create_household`, `get_household_members`, `leave_household`, `remove_household_member`, `is_household_*`). Las internas no son ejecutables por `authenticated`. |
@@ -264,10 +265,10 @@ Hay que revisarlos a mano en las fases 4 y 6:
 | SSRF                                 | No hay                            | Las únicas peticiones salientes van a URLs fijas: las fuentes de la tasa en `lib/money/rate-sources.ts:24-25` y PostgREST del propio proyecto en la exportación.                                                                                                                                                                        |
 | XSS                                  | Sin puntos de inyección           | Solo un `dangerouslySetInnerHTML` (script estático). No hay `javascript:`. Los `href` son internos o literales y los externos llevan `noopener noreferrer`.                                                                                                                                                                             |
 | CSRF                                 | Cubierto                          | Next compara `Origin` con el host en todas las server actions. La única ruta POST (`/auth/signout`) no cambia datos, y las cookies `SameSite=Lax` no viajan en un POST de otro sitio.                                                                                                                                                   |
-| Errores hacia el cliente             | Genéricos                         | Las acciones devuelven claves de error traducidas (por ejemplo `householdErrorKey`, `leaveError`). Next oculta en producción el mensaje de los errores lanzados (solo queda el digest).                                                                                                                                                 |
-| Logs                                 | Sin montos                        | Solo dos `console.error` (exportación y tarjetas del dashboard), con el objeto de error. No se registran montos ni correos.                                                                                                                                                                                                             |
-| Enumeración de correos               | No revela                         | El enlace mágico usa `signInWithOtp` con `shouldCreateUser: true`: la respuesta es la misma exista o no la cuenta.                                                                                                                                                                                                                      |
-| Exportación CSV                      | Solo lo de la sesión              | Va por PostgREST con el token del usuario (RLS). Neutraliza celdas que empiezan con `=`, `+`, `-` o `@` (inyección de fórmulas), `lib/export/csv.ts:1-8`. Sin caché (`private, no-store`). Exporta los datos del hogar que el usuario ya ve en la app.                                                                                  |
+| Errores hacia el cliente             | Genéricos                         | Las acciones devuelven claves traducidas (`householdErrorKey`, `leaveError`). Los cron, la exportación y el dashboard responden una clave y registran con `logServerError` (0.14.6). Next oculta en producción el mensaje de los errores lanzados (solo queda el digest).                                                               |
+| Logs                                 | Sin montos                        | Cron, exportación y dashboard usan `logServerError` (0.14.6): contexto, tipo, código y mensaje recortado. No se imprime el objeto ni montos, correos ni tokens.                                                                                                                                                                         |
+| Enumeración de correos               | No revela                         | El enlace mágico usa `signInWithOtp` con `shouldCreateUser: true`. Cualquier fallo que no sea 429 es `sendFailed` (`lib/auth/magic-link.ts`): no se reenvía el texto de Supabase. El registro es el mismo enlace. Las invitaciones no buscan un correo.                                                                                 |
+| Exportación CSV                      | Solo lo de la sesión              | Va por PostgREST con el token del usuario (RLS), nunca con la service role. `lib/export/scope.test.ts` fija que el ZIP solo trae las filas de ese token. Neutraliza celdas que empiezan con `=`, `+`, `-` o `@`. Sin caché (`private, no-store`). Si falla, el cliente recibe `export_failed`.                                          |
 | Asignación masiva                    | No hay                            | Las acciones validan con zod y arman a mano el objeto de columnas (por ejemplo `saveDebt`). Las transacciones pasan por RPC. `household_id` sale del scope validado (`getScope` verifica membresía).                                                                                                                                    |
 | `/dev/design-system`                 | Cerrado en producción             | `app/dev/design-system/page.tsx:18` llama a `notFound()` en producción.                                                                                                                                                                                                                                                                 |
 | Cabeceras presentes                  | Sí                                | Medido en `next start`: `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `Referrer-Policy: strict-origin-when-cross-origin`, COOP, CORP, HSTS de 2 años, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` y `frame-src 'none'`.                                                                                |

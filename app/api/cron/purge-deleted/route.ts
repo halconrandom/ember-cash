@@ -8,6 +8,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { getServerEnv } from "@/lib/env-server";
+import { logServerError } from "@/lib/log/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function authorized(header: string | null, secret: string): boolean {
@@ -24,8 +25,14 @@ export async function GET(request: Request) {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const admin = createAdminClient();
   const tx = await admin.from("transactions").delete({ count: "exact" }).lt("deleted_at", cutoff);
-  if (tx.error) return Response.json({ ok: false, error: tx.error.message }, { status: 500 });
+  if (tx.error) {
+    logServerError("cron.purge-deleted", tx.error);
+    return Response.json({ ok: false, error: "failed" }, { status: 500 });
+  }
   const debts = await admin.from("debts").delete({ count: "exact" }).lt("deleted_at", cutoff);
-  if (debts.error) return Response.json({ ok: false, error: debts.error.message }, { status: 500 });
+  if (debts.error) {
+    logServerError("cron.purge-deleted", debts.error);
+    return Response.json({ ok: false, error: "failed" }, { status: 500 });
+  }
   return Response.json({ ok: true, purged: (tx.count ?? 0) + (debts.count ?? 0) });
 }

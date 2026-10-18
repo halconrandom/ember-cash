@@ -8,8 +8,9 @@
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
-import { buildBackupZip } from "@/lib/export/backup";
 import { getPublicEnv } from "@/lib/env";
+import { buildBackupZip } from "@/lib/export/backup";
+import { logServerError } from "@/lib/log/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -35,7 +36,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("[Ember Cash] No se pudo exportar el respaldo.", error);
+    logServerError("export", error);
     return Response.json({ ok: false, error: "export_failed" }, { status: 500 });
   }
 }

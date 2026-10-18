@@ -10,6 +10,7 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { magicLinkFailure } from "@/lib/auth/magic-link";
 import { createClient } from "@/lib/supabase/client";
 
 /** Claves de login.errors. */
@@ -64,8 +65,10 @@ export function LoginForm({ next, initialError }: Props) {
       options: { emailRedirectTo: callbackUrl(), shouldCreateUser: true },
     });
     setPending(null);
-    if (error) {
-      setError(error.status === 429 ? "rateLimited" : "sendFailed");
+    // Mismo resultado si el correo ya tenía cuenta o si se acaba de crear.
+    const failure = magicLinkFailure(error);
+    if (failure) {
+      setError(failure);
       return;
     }
     setSentTo(address);

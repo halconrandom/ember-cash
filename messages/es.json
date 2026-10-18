@@ -102,7 +102,7 @@
       "invalidEmail": "Escribe un correo válido.",
       "googleFailed": "No se pudo abrir el inicio de sesión con Google. Intenta de nuevo.",
       "rateLimited": "Se enviaron demasiados correos. Espera unos minutos e intenta de nuevo.",
-      "sendFailed": "No se pudo enviar el enlace. Revisa el correo e intenta de nuevo.",
+      "sendFailed": "No se pudo enviar el enlace. Intenta de nuevo.",
       "callback": "No se pudo completar el inicio de sesión con Google. Intenta de nuevo.",
       "link": "El enlace no es válido o ya venció. Pide uno nuevo."
     }

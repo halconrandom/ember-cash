@@ -9,7 +9,10 @@ const { GET } = await import("./route");
 /** CRON_SECRET de vitest.config.mts. */
 const AUTH = { authorization: "Bearer test-cron-secret-not-real-0000000000" };
 
-beforeEach(() => fetchAndStoreRate.mockReset());
+// El bloque no devuelve el mock: Vitest trataría esa función como limpieza.
+beforeEach(() => {
+  fetchAndStoreRate.mockReset();
+});
 
 describe("GET /api/cron/rates", () => {
   it("sin el secreto responde 401 y no consulta nada", async () => {
@@ -41,6 +44,6 @@ describe("GET /api/cron/rates", () => {
     fetchAndStoreRate.mockResolvedValue({ ok: false, errors: ["HTTP 503", "sin red"] });
     const res = await GET(new Request("http://x/api/cron/rates", { headers: AUTH }));
     expect(res.status).toBe(502);
-    expect(await res.json()).toMatchObject({ ok: false, error: "all_sources_failed" });
+    expect(await res.json()).toEqual({ ok: false, error: "all_sources_failed" });
   });
 });

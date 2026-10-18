@@ -102,7 +102,7 @@
       "invalidEmail": "Enter a valid email.",
       "googleFailed": "Couldn't open Google sign-in. Try again.",
       "rateLimited": "Too many emails were sent. Wait a few minutes and try again.",
-      "sendFailed": "Couldn't send the link. Check the email and try again.",
+      "sendFailed": "Couldn't send the link. Try again.",
       "callback": "Couldn't finish signing in with Google. Try again.",
       "link": "The link is invalid or has expired. Request a new one."
     }

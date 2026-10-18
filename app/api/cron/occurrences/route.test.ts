@@ -9,7 +9,11 @@ const { GET } = await import("./route");
 /** CRON_SECRET de vitest.config.mts. */
 const AUTH = { authorization: "Bearer test-cron-secret-not-real-0000000000" };
 
-beforeEach(() => runOccurrencesCron.mockReset());
+// El bloque no devuelve el mock: si beforeEach devuelve una función, Vitest
+// la llama al terminar el test y volvería a lanzar el error de la prueba.
+beforeEach(() => {
+  runOccurrencesCron.mockReset();
+});
 
 describe("GET /api/cron/occurrences", () => {
   it("sin el secreto responde 401 y no corre", async () => {
@@ -29,10 +33,25 @@ describe("GET /api/cron/occurrences", () => {
     expect(await res.json()).toEqual({ ok: true, inserted: 3, overdue: 1 });
   });
 
-  it("si la corrida falla responde 500", async () => {
-    runOccurrencesCron.mockResolvedValue({ ok: false, error: "sin base" });
+  it("si la corrida falla responde una clave y no el texto de la base", async () => {
+    runOccurrencesCron.mockResolvedValue({
+      ok: false,
+      error: "No se pudieron leer los perfiles: monto 1800000 de ana@correo.com",
+    });
     const res = await GET(new Request("http://x/api/cron/occurrences", { headers: AUTH }));
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ ok: false, error: "sin base" });
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: "failed" });
+    expect(JSON.stringify(body)).not.toContain("1800000");
+    expect(JSON.stringify(body)).not.toContain("ana@correo.com");
+  });
+
+  it("si la corrida lanza, la respuesta tampoco lleva el mensaje", async () => {
+    runOccurrencesCron.mockRejectedValue(new Error("token eyJhbGciOi.eyJ.firma"));
+    const res = await GET(new Request("http://x/api/cron/occurrences", { headers: AUTH }));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: "failed" });
+    expect(JSON.stringify(body)).not.toContain("eyJ");
   });
 });

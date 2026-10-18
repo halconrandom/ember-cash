@@ -20,6 +20,7 @@ import {
 } from "@/lib/dashboard/queries";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { formatDate } from "@/lib/i18n/format";
+import { logServerError } from "@/lib/log/server";
 import { getScope } from "@/lib/scope/server";
 import { shiftMonth, todayIn } from "@/lib/transactions/dates";
 import { parseFilters } from "@/lib/transactions/filters";
@@ -45,7 +46,7 @@ export async function safe<T>(load: () => Promise<T>): Promise<T | typeof FAILED
     return await load();
   } catch (error) {
     unstable_rethrow(error);
-    console.error("Dashboard: no se pudo cargar una tarjeta", error);
+    logServerError("dashboard", error);
     return FAILED;
   }
 }
