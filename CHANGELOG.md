@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.26.1] - 2026-10-20
+
+### Corrección: el webhook de Telegram compila con `cacheComponents`
+
+- Se quita `export const runtime = "nodejs"` de `POST /api/telegram/webhook`. Con `cacheComponents`, Next 16 rechaza esa opción y el build de Vercel falla. La ruta sigue en Node porque importa `node:crypto`, igual que los cron.
+
 ## [0.26.0] - 2026-10-20
 
 ### Fase T1: bot de Telegram para registrar movimientos por texto

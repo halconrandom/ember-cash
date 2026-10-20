@@ -4,6 +4,9 @@
  * Si el bot no está configurado, responde 404. Si el secreto no coincide,
  * 401, comparado en tiempo constante. El resto responde 200: un 5xx haría
  * que Telegram reintente el mismo update.
+ *
+ * No se declara `runtime`: con cacheComponents Next rechaza esa opción.
+ * El import de node:crypto deja la ruta en Node, igual que los cron.
  */
 import { timingSafeEqual } from "node:crypto";
 
@@ -14,8 +17,6 @@ import { telegramAnswer, telegramEdit, telegramSend } from "@/lib/telegram/api";
 import { isTelegramConfigured } from "@/lib/telegram/config";
 import { telegramGateway } from "@/lib/telegram/db";
 import { handleTelegramUpdate } from "@/lib/telegram/handle";
-
-export const runtime = "nodejs";
 
 /** Compara el secreto del encabezado sin salir en el primer byte distinto. */
 function authorized(header: string | null, secret: string): boolean {
