@@ -59,10 +59,6 @@ export async function saveDisplayCurrency(currency: string): Promise<{ ok: boole
  * actual tiene que seguir entre las habilitadas (si no, el CHECK de la base
  * lo rechaza de todas formas; aquí se valida antes para dar un error claro
  * en vez de uno genérico de la base).
- *
- * `enabled_currencies` todavía no está en `database.types.ts` (falta
- * `pnpm db:types`, que corre después de `db:push`): el cast documenta por
- * qué, y deja de hacer falta en cuanto se regeneren los tipos.
  */
 export async function saveEnabledCurrencies(
   currencies: readonly string[],
@@ -80,7 +76,7 @@ export async function saveEnabledCurrencies(
   if (!known.includes(profile.display_currency)) return { ok: false };
   const { error } = await supabase
     .from("profiles")
-    .update({ enabled_currencies: known } as never)
+    .update({ enabled_currencies: known })
     .eq("id", user.id);
   return { ok: !error };
 }

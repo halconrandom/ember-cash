@@ -16,7 +16,7 @@ import { ThemeSync } from "@/components/theme/theme-provider";
 import { ConsentBoundary } from "@/components/legal/consent-boundary";
 import { ConsentScreen } from "@/components/legal/consent-screen";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { CURRENCY_CODES, enabledCurrenciesOf, type CurrencyCode } from "@/lib/db/types";
+import { CURRENCY_CODES, type CurrencyCode } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { hasCurrentConsent } from "@/lib/legal/consent";
 import { listOwnCurrentConsents } from "@/lib/legal/queries";
@@ -44,11 +44,16 @@ async function AuthGate({ children }: { children: React.ReactNode }) {
   ).includes(profile.display_currency)
     ? (profile.display_currency as CurrencyCode)
     : "COP";
+  // profiles.enabled_currencies llega como string[] (la CLI no estrecha
+  // columnas text[]); se filtra a las del catálogo, igual que display_currency.
+  const enabledCurrencies = profile.enabled_currencies.filter(
+    (c): c is CurrencyCode => (CURRENCY_CODES as readonly string[]).includes(c),
+  );
   return (
     <RateProvider
       initialRates={rates}
       initialDisplayCurrency={displayCurrency}
-      initialEnabledCurrencies={enabledCurrenciesOf(profile)}
+      initialEnabledCurrencies={enabledCurrencies.length > 0 ? enabledCurrencies : ["COP", "USD", "EUR"]}
     >
       <ThemeSync theme={isThemePreference(profile.theme) ? profile.theme : "system"} />
       <LocaleSync locale={isLocale(profile.locale) ? profile.locale : DEFAULT_LOCALE} />

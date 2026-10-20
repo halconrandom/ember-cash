@@ -150,30 +150,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      events: {
-        Row: {
-          created_at: string;
-          id: string;
-          name: string;
-          props: Json;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          name: string;
-          props?: Json;
-          user_id?: string;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          name?: string;
-          props?: Json;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
       currencies: {
         Row: {
           code: string;
@@ -307,6 +283,30 @@ export type Database = {
         Update: {
           created_at?: string;
           singleton?: boolean;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      events: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          props: Json;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          props?: Json;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          props?: Json;
           user_id?: string;
         };
         Relationships: [];
@@ -622,6 +622,7 @@ export type Database = {
           dashboard_hint_dismissed_at: string | null;
           display_currency: string;
           display_name: string | null;
+          enabled_currencies: string[];
           first_steps_dismissed_at: string | null;
           id: string;
           locale: string;
@@ -636,6 +637,7 @@ export type Database = {
           dashboard_hint_dismissed_at?: string | null;
           display_currency?: string;
           display_name?: string | null;
+          enabled_currencies?: string[];
           first_steps_dismissed_at?: string | null;
           id: string;
           locale?: string;
@@ -650,6 +652,7 @@ export type Database = {
           dashboard_hint_dismissed_at?: string | null;
           display_currency?: string;
           display_name?: string | null;
+          enabled_currencies?: string[];
           first_steps_dismissed_at?: string | null;
           id?: string;
           locale?: string;
@@ -1025,6 +1028,7 @@ export type Database = {
     };
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json };
+      account_balance: { Args: { p_account_id: string }; Returns: number };
       consume_rate_limit: { Args: { p_action: string }; Returns: Json };
       create_household: { Args: { p_name: string }; Returns: string };
       dashboard_totals: {

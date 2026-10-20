@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.25.1] - 2026-10-20
+
+### Limpieza: `profiles.enabled_currencies` con los tipos generados
+
+- `database.types.ts` regenerado (incluido en este commit): `Tables<"profiles">` ya trae `enabled_currencies: string[]`.
+- `lib/db/types.ts`: `Profile` ahora estrecha `enabled_currencies` a `CurrencyCode[]`; se quitan `enabledCurrenciesOf()` y `DEFAULT_ENABLED_CURRENCIES` (la reserva de la fase E5).
+- `lib/money/actions.ts` (`saveEnabledCurrencies`): el `update()` ya no necesita el cast `as never`.
+- `app/(app)/layout.tsx`: `getCurrentProfile()` sigue devolviendo la fila sin estrechar (como con `display_currency`, que ya se revalidaba aquí mismo), así que `enabled_currencies` se filtra contra `CURRENCY_CODES` en el mismo punto, con el mismo respaldo `{COP, USD, EUR}` que trae el propio `CHECK` de la base si quedara vacío.
+
 ## [0.25.0] - 2026-10-20
 
 ### Fase E6: modal de suscripción más compacto
