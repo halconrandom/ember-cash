@@ -31,7 +31,7 @@ import {
 import type { DebtSummary } from "@/lib/debts/queries";
 import { goalPercent } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, type Rate } from "@/lib/money/convert";
+import { convert, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
@@ -41,22 +41,26 @@ import { PayoffTimeline } from "./payoff-timeline";
 
 type SortKey = "due" | "balance" | "interest";
 
+/** Referencia estable para no invalidar el useMemo de abajo en cada render. */
+const NO_RATES: readonly Rate[] = [];
+
 /** Importe en la moneda elegida, o null si no se puede convertir. */
-function toDisplay(m: Money, to: CurrencyCode, rate: Rate | null): Money | null {
+function toDisplay(m: Money, to: CurrencyCode, rates: readonly Rate[]): Money | null {
   if (m.currency === to) return m;
+  const rate = latestRateFor(rates, m.currency, to);
   return rate ? convert(m, to, rate) : null;
 }
 
 export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: string }) {
   const t = useTranslations("debts");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [sort, setSort] = useState<SortKey>("due");
   const [method, setMethod] = useState<PayoffMethod>("avalanche");
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? NO_RATES : rates;
   const active = debts.filter((d) => d.balance.amountMinor > 0n);
 
   // Deudas en la moneda elegida (null si alguna no se puede convertir).
@@ -168,7 +172,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
         <StatCard icon="sack-dollar" label={t("totalRemaining")}>
           {totals ? (
             <MoneyAmount
-              kind="total"
+              variant="total"
               value={totals.remaining}
               primaryClassName="text-amount-l"
               secondaryClassName="text-body text-ink-2"
@@ -180,7 +184,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
         <StatCard icon="calendar-clock" label={t("monthlyMinimums")}>
           {totals ? (
             <MoneyAmount
-              kind="total"
+              variant="total"
               value={totals.minimums}
               primaryClassName="text-amount-l"
               secondaryClassName="text-body text-ink-2"
@@ -192,7 +196,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
         <StatCard icon="chart-line-up" label={t("interestThisMonth")} tone="negative">
           {totals ? (
             <MoneyAmount
-              kind="total"
+              variant="total"
               value={totals.interest}
               primaryClassName="text-amount-l"
               secondaryClassName="text-body text-ink-2"
@@ -334,14 +338,15 @@ function StatCard({
 function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
   const t = useTranslations("debts");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? [] : rates;
   const differs = debt.balance.currency !== displayCurrency;
   const dim = status === "updating" && differs ? "opacity-60" : "";
   const shown = (m: Money) => toDisplay(m, displayCurrency, usable) ?? m;
+  const canConvert = (m: Money) => toDisplay(m, displayCurrency, usable) !== null;
 
   const due = debt.dueDay ? nextDueDate(debt.dueDay, today) : null;
   const soon = due ? isDueSoon(due, today) : false;
@@ -382,7 +387,7 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
       <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-[1.1fr_0.6fr_1.1fr_1.5fr]">
         <Stat label={t("remaining")}>
           <AmountText value={shown(debt.balance)} className={dim} />
-          {differs && usable && (
+          {differs && canConvert(debt.balance) && (
             <p className="text-callout text-ink-3 tabular-nums">
               {t("original", { amount: f.money(debt.balance) })}
             </p>
@@ -398,7 +403,7 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
         </Stat>
         <Stat label={t("minPayment")}>
           <AmountText value={shown(debt.minPayment)} className={dim} />
-          {differs && usable && (
+          {differs && canConvert(debt.minPayment) && (
             <p className="text-callout text-ink-3 tabular-nums">
               {t("original", { amount: f.money(debt.minPayment) })}
             </p>

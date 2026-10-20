@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * Estado compartido de moneda en el cliente: la tasa más reciente, su estado
- * (al día, actualizando, error) y la moneda de visualización del usuario.
- * Lo usan el chip de la topbar, el selector COP/USD y <MoneyAmount>.
+ * Estado compartido de moneda en el cliente: las tasas conocidas (fase E2:
+ * USD/COP, EUR/USD y EUR/COP, cada una con su historial por fecha), su
+ * estado (al día, actualizando, error) y la moneda de visualización del
+ * usuario (COP, USD o EUR). Lo usan el chip de la topbar, el selector de
+ * moneda y <MoneyAmount>.
  *
  * - Al perder la red, el estado pasa a "error" (no se puede confirmar la tasa).
- * - refresh(): pide al servidor la tasa más reciente (y la trae de las
- *   fuentes si hace falta). Si falla, queda en "error" y conserva la última
- *   tasa conocida para el tooltip.
+ * - refresh(): pide al servidor las tasas más recientes (y las trae de las
+ *   fuentes si hace falta). Si falla, queda en "error" y conserva las
+ *   últimas tasas conocidas para el tooltip.
  */
 import {
   createContext,
@@ -21,16 +23,16 @@ import {
 } from "react";
 
 import type { CurrencyCode } from "@/lib/db/types";
-import { refreshRate, saveDisplayCurrency } from "@/lib/money/actions";
+import { refreshRates, saveDisplayCurrency } from "@/lib/money/actions";
 import type { Rate } from "@/lib/money/convert";
 
 export type RateStatus = "idle" | "updating" | "error";
 
 type RateContextValue = {
-  /** Última tasa conocida (puede ser vieja). Null si nunca hubo una. */
-  rate: Rate | null;
+  /** Últimas tasas conocidas (pueden ser viejas). Vacío si nunca hubo ninguna. */
+  rates: Rate[];
   status: RateStatus;
-  /** Hora actual (se actualiza cada minuto) para calcular si la tasa es vieja. */
+  /** Hora actual (se actualiza cada minuto) para calcular si una tasa es vieja. */
   now: number;
   displayCurrency: CurrencyCode;
   refresh: () => void;
@@ -40,7 +42,7 @@ type RateContextValue = {
 const RateContext = createContext<RateContextValue | null>(null);
 
 type Props = {
-  initialRate: Rate | null;
+  initialRates: Rate[];
   initialDisplayCurrency: CurrencyCode;
   /** Falso en demos (design system): no guarda nada en el servidor. */
   persist?: boolean;
@@ -50,14 +52,14 @@ type Props = {
 };
 
 export function RateProvider({
-  initialRate,
+  initialRates,
   initialDisplayCurrency,
   persist = true,
   forcedStatus,
   children,
 }: Props) {
-  const [rate, setRate] = useState(initialRate);
-  const [status, setStatus] = useState<RateStatus>(initialRate ? "idle" : "error");
+  const [rates, setRates] = useState(initialRates);
+  const [status, setStatus] = useState<RateStatus>(initialRates.length > 0 ? "idle" : "error");
   const [displayCurrency, setCurrency] = useState(initialDisplayCurrency);
   const [now, setNow] = useState(() => Date.now());
   const [, startTransition] = useTransition();
@@ -80,12 +82,12 @@ export function RateProvider({
     setStatus("updating");
     startTransition(async () => {
       try {
-        const result = await refreshRate();
-        if (result.rate) setRate(result.rate);
+        const result = await refreshRates();
+        if (result.rates.length > 0) setRates(result.rates);
         setStatus(result.ok ? "idle" : "error");
         setNow(Date.now());
       } catch {
-        // Sin red o error del servidor: se conserva la última tasa conocida.
+        // Sin red o error del servidor: se conservan las últimas tasas conocidas.
         setStatus("error");
       }
     });
@@ -101,14 +103,14 @@ export function RateProvider({
 
   const value = useMemo(
     () => ({
-      rate,
+      rates,
       status: forcedStatus ?? status,
       now,
       displayCurrency,
       refresh,
       setDisplayCurrency,
     }),
-    [rate, status, forcedStatus, now, displayCurrency, refresh, setDisplayCurrency],
+    [rates, status, forcedStatus, now, displayCurrency, refresh, setDisplayCurrency],
   );
   return <RateContext.Provider value={value}>{children}</RateContext.Provider>;
 }

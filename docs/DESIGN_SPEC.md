@@ -118,23 +118,28 @@ The design-system sheet (10) shows exactly this scale. Because text2 and text3 a
 - Shadows (light only; dark uses a 1px border): card `0 1px 2px rgba(29,29,31,.04), 0 8px 24px rgba(29,29,31,.04)`; glow (primary button) `0 10px 24px rgba(198,80,11,.25)`; pop (modal) `0 24px 64px rgba(0,0,0,.15), 0 2px 6px rgba(0,0,0,.10)`.
 - Materials: modal scrim `rgba(0,0,0,.32)` light / `.50` dark; blur only on floating layers, solid fallback under `prefers-reduced-transparency`.
 
-## 4. Currency rules
+## 4. Currency rules (phase E2, 3 currencies — supersedes the old 2-currency rule; Ivern's rule, IVERN_FIXES §4)
 
-1. The **selected currency is primary** (large). The original currency, when different, is a small second line: `original US$ 15.99` or `original 95,000 COP`.
-2. `≈` appears only in totals and detail lines (stat card subtitle, hero, "Total today", settle-up), never on list rows.
-3. The Currency column was removed from Transactions. A neutral `USD` badge appears next to the name of items whose original currency is USD. Hovering an amount shows a tooltip: `≈ US$ 21.60 · rate 4,000, as of Oct 16 (sample)`. Filtering by original currency is a select chip **"Currency: All / COP / USD"** in the filter row (filters on the original currency, not the display currency). The hover tooltip is a hover-only state: it is not drawn in the modal screens (07, 17), where the scrim covers the page.
-4. Subscriptions: one currency per column. In COP view every amount is COP and USD items show `original US$ x`; in USD view the reverse. The card and the side list always show the same amount for the same item.
-5. Savings goals show the saved amount in the selected currency; the original line is shown only for goals created in USD while viewing COP (space limit, see limitations).
-6. Never truncate amounts or dates. Test 0, 1, 1,000+ rows, negatives and 12-digit amounts.
-7. **Both figures of a pair carry their symbol**: `original US$ 640 of US$ 1,200`, `US$ 425 of US$ 1,225`. COP figures in a COP-only line may share the unit at the end (`1,700,000 of 4,900,000` in the COP view, where the column is COP).
-8. The add-transaction modal shows the currency **once**: the amount is a bare number with a small unit (`125,000 COP`, `31.25 USD`); no `$` or `US$` prefix. The converted line says `≈ US$ 31.25 at 1 USD = 4,000 COP (sample rate)`.
-9. **Exchange-rate chip**: `1 USD = 4,000 COP`, `as of Oct 16`, and the SAMPLE badge (remove SAMPLE when real rates are used). States (sheet 19/20):
-   - Fresh: neutral chip with date.
-   - Stale (older than 24 h): amber chip, clock icon, old date in amber text and a "Stale" badge; converted amounts stay with a tooltip "rate from Oct 9"; click refreshes.
-   - Updating: "Updating rate..." with refresh icon, same width, converted lines dim to 60%, numbers do not move.
-   - Error: red chip "Rate unavailable" with a Retry action; originals stay primary and each converted line reads "rate unavailable" instead of showing a stale number. The last known rate stays in the tooltip.
-10. Debts timeline axis shows the **year on every label** (`Oct 2026`, `Oct 2027`, `Oct 2028`, with unlabeled grid lines every 6 months), so "Oct 26" can never read as day 26. End-of-bar labels also carry month and year (`Jun 2027`).
-11. Month selector appears where data is monthly (Dashboard, Transactions, Calendar, Household). It is hidden in Savings, Debts and Subscriptions.
+1. **displayCurrency** is the user's own preference — COP, USD or **EUR** — set with the currency toggle and persisted to `profiles.display_currency`. Default: whichever currency used to act as primary (COP).
+2. **Secondary line**: only when the amount's original currency differs from displayCurrency, and at most one per amount. If they match, nothing — no line, no `≈`.
+3. The equivalent is computed **at display time** with the `exchange_rates` rate of the movement's date (never stored on the row). Missing rate for that pair: `Rate unavailable` in text3 — never 0, never an invented number.
+4. A **neutral (slate) badge** with the original currency's code sits next to the secondary line when it differs from displayCurrency. No flags, no emoji.
+5. Formats: COP with no decimals and a small `COP` suffix; USD with a `US$` prefix and 2 decimals; EUR with a `€` prefix and 2 decimals (force `€` if a formatter would otherwise print the code `EUR`). Amounts are always `tabular-nums`.
+6. **List rows** (`<MoneyAmount variant="row">`): the primary figure is in displayCurrency; below, small, `original € 12.50` only if it differs — never `≈` on a row.
+7. **Totals** (`<MoneyAmount variant="total">`, hero, dashboard sums, stat cards): the total is already in displayCurrency, with no secondary conversion line. A small `Converted with today's rates` text, when the sum mixed currencies, opens a sheet with the breakdown by origin currency on tap.
+8. **Savings goals**: always shown in the goal's own currency (`€ 640 of € 1,200`); the ring and the percent are computed in that same currency. If it differs from displayCurrency, one line `≈ … saved` (the saved amount only, never the target).
+9. **Add-transaction modal**: a 3-way segmented control (COP/USD/EUR). Default: the last currency used for that transaction type, or displayCurrency if none yet. The `≈ X` line recalculates on every keystroke — no debounce, no animation. If the amount's currency equals displayCurrency, a neutral line reads `Shown in COP, your currency.` With an empty field, show the bare rate (`1 EUR = … COP · as of Oct 16`) in text3 — never `≈ 0`. The row keeps a fixed `min-height` so the sheet never jumps as the iPhone keyboard opens or closes. Changing the currency with an amount already typed **never converts the number** — it only changes the unit, announced via `aria-live="polite"`.
+10. **Exchange-rate chip**: shows the rate(s) *toward* displayCurrency (up to two, one per other currency), each as `1 {base} = {value} {quote}`, with their date, in one line if it fits; on narrow screens, compressed to `N rates · as of Oct 16`. Tapping it opens the detail. States (sheet 19/20) are unchanged:
+    - Fresh: neutral chip with date.
+    - Stale (older than 24 h, the oldest of the relevant rates): amber chip, clock icon, old date in amber text and a "Stale" badge; converted amounts stay with a tooltip "rate from Oct 9"; click refreshes.
+    - Updating: "Updating rate..." with refresh icon, same width, converted lines dim to 60%, numbers do not move.
+    - Error: red chip "Rate unavailable" with a Retry action; originals stay primary. The last known rate stays in the tooltip.
+11. **Accessibility & mobile**: the secondary line is 12–13 px in text2/text3 (≥ 4.5∶1); the `≈` glyph carries `aria-label="approximately"` (`"aproximadamente"` in Spanish) for screen readers; the amount input uses `inputmode="decimal"` for USD/EUR and `"numeric"` for COP, at 16 px (no iOS zoom); switching displayCurrency never ticks the numbers — a 150 ms cross-fade, or nothing under `prefers-reduced-motion`.
+12. Never truncate amounts or dates. Test 0, 1, 1,000+ rows, negatives and 12-digit amounts. **Both figures of a pair carry their symbol**: `original US$ 640 of US$ 1,200`. COP figures in a COP-only line may share the unit at the end (`1,700,000 of 4,900,000`).
+13. Debts timeline axis shows the **year on every label** (`Oct 2026`, `Oct 2027`, `Oct 2028`, with unlabeled grid lines every 6 months), so "Oct 26" can never read as day 26. End-of-bar labels also carry month and year (`Jun 2027`).
+14. Month selector appears where data is monthly (Dashboard, Transactions, Calendar, Household). It is hidden in Savings, Debts and Subscriptions.
+
+Still binary (COP/USD only) in this phase, pending a design pass of their own: new accounts, debts, recurring items and savings goals (their currency pickers), and the Transactions screen's original-currency filter chip. Budgets and partial settlements already accept the 3 currencies.
 
 ## 5. Components
 

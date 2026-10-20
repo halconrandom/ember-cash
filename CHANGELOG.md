@@ -2,6 +2,24 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.16.0] - 2026-10-19
+
+### Añadido (fase E2: UI de 3 monedas)
+
+- `DESIGN_SPEC.md` §4 reescrito con la regla de Ivern para 3 monedas (displayCurrency COP/USD/EUR, línea secundaria, insignia neutra, tasa de la fecha del movimiento, chip de tasas, accesibilidad).
+- `displayCurrency` pasa de COP/USD a **COP/USD/EUR** en todo el cliente: `<RateProvider>` ahora guarda `rates: Rate[]` (todas las tasas conocidas, no solo una) y el selector de la topbar (`DisplayCurrencyToggle`) tiene las 3 opciones.
+- Migración `0020_profile_eur_display.sql`: el CHECK de `profiles.display_currency` (de `0001_auth_households.sql`) solo dejaba COP/USD; sin esto, elegir EUR en el selector guardaba bien en la app pero fallaba al llegar a la base. Prueba: `supabase/tests/profile_eur_display.sql`.
+- `<MoneyAmount>` se reescribe con `variant="row" | "total"` (antes `kind`): fila muestra el original con una insignia neutra solo si difiere, sin `≈`; total no lleva línea de conversión, sino un texto "Convertido con tasas del día" que abre un sheet (reusa `<Modal>`) con el desglose por moneda de origen. `otherCurrency()` se elimina de `lib/money/convert.ts` (y de los 4 sitios que la usaban como parche de E1).
+- `lib/money/convert.ts` agrega `latestRateFor` y `rateAt` (tasa más reciente o vigente a una fecha, para cualquier par, a partir de una lista de tasas) — los usan `<MoneyAmount>`, el chip de tasas, `lib/dashboard/aggregate.ts`, `lib/household/balance.ts` y `lib/household/budget.ts`, generalizados de una sola tasa a una lista (hacían falta hasta 2 tasas distintas para sumar 3 monedas en una).
+- `goal-card.tsx`: la meta siempre se muestra en su propia moneda; si difiere de displayCurrency, una sola línea "≈ … ahorrado" (solo lo ahorrado).
+- `transaction-modal.tsx`: segmented de 3 monedas (por defecto, la última usada en ese tipo, en `localStorage`); la línea de conversión se recalcula en cada tecla sin animación, con los casos "misma moneda", "tasa faltante" y "campo vacío" (nunca "≈ 0"), extraídos a la función pura `lib/transactions/conversion-line.ts`; cambiar de moneda nunca convierte el monto escrito y se anuncia con `aria-live="polite"`.
+- Presupuestos y liquidación parcial (`household/budget-modal.tsx`, `household/actions.ts`) aceptan las 3 monedas (en E1 habían quedado binarios).
+- Metas, deudas, recurrentes y la cuenta que se crea desde el modal de transacción siguen con selector binario COP/USD (sin diseño propio para EUR todavía): si `displayCurrency` es EUR, su valor por defecto cae a USD en vez de proponer una moneda que su propio selector no ofrece.
+- `lib/money/format.ts` formatea EUR igual que USD (prefijo `€`, 2 decimales).
+- Revisado el cron de tasas (E1): ya registra con `logServerError` cada par que falla, aunque los otros dos funcionen; no hizo falta cambiarlo.
+- Textos nuevos en `messages/es.json` y `messages/en.json` (money, transactions.modal, savings, rateChip).
+- Tests: `lib/transactions/conversion-line.test.ts` (los 4 casos del modal), `components/money/money-amount.test.tsx` reescrito para 3 monedas, y ajustes en los tests de `convert`, `rates`, `aggregate` y `balance` para la nueva firma con `rates: Rate[]`.
+
 ## [0.15.0] - 2026-10-19
 
 ### Añadido (fase E1: EUR)

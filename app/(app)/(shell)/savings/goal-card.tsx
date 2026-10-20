@@ -3,13 +3,11 @@
 /**
  * Tarjeta de meta (03-savings.png): ícono, nombre, fecha objetivo y estado;
  * anillo de progreso; ahorrado, objetivo y equivalente; mensual y restante.
- * Reglas de moneda (spec §4):
- * - Meta en la moneda elegida: ahorrado y objetivo tal cual, y "≈" en la
- *   otra moneda (es una línea de detalle).
- * - Meta en otra moneda: convertido a la moneda elegida y debajo
- *   "original US$ 640,00 de US$ 1.200,00" (los dos importes con su símbolo).
- * - Sin tasa: el original queda como principal y lo convertido dice
- *   "tasa no disponible".
+ * Regla de moneda (fase E2 §4, Ivern): la meta siempre se muestra en su
+ * propia moneda ("€ 640 de € 1.200"); el anillo y el porcentaje también se
+ * calculan en esa moneda. Si difiere de displayCurrency, una sola línea
+ * "≈ … ahorrado" (solo lo ahorrado, con la tasa más reciente); sin esa tasa,
+ * dice "Tasa no disponible", nunca 0.
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -20,23 +18,13 @@ import { Card } from "@/components/ui/card";
 import { Badge, type Tone } from "@/components/ui/chip";
 import { Icon } from "@/components/ui/icon";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import type { CurrencyCode } from "@/lib/db/types";
 import type { GoalSummary } from "@/lib/goals/queries";
 import { goalPercent, goalStatus, type GoalStatus } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert } from "@/lib/money/convert";
+import { convert, latestRateFor } from "@/lib/money/convert";
 import { subtract, type Money } from "@/lib/money/money";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
-
-/**
- * La otra moneda del par COP/USD, para la línea "≈" de la meta (spec §4,
- * binaria). Con EUR en catálogo pero sin UI propia todavía, se mantiene así;
- * la fase de diseño de E1 decide su significado con 3 monedas.
- */
-function otherCurrency(c: CurrencyCode): CurrencyCode {
-  return c === "COP" ? "USD" : "COP";
-}
 
 /** Un color por estado (IVERN_FIXES §3). */
 const STATUS_TONE: Record<GoalStatus, Tone> = {
@@ -48,17 +36,17 @@ const STATUS_TONE: Record<GoalStatus, Tone> = {
 export function GoalCard({ goal, today }: { goal: GoalSummary; today: string }) {
   const t = useTranslations("savings");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
-  const usable = status === "error" ? null : rate;
   const differs = goal.target.currency !== displayCurrency;
-  const canConvert = Boolean(usable);
   const dim = status === "updating" ? "opacity-60" : "";
-  /** En la moneda elegida si se puede; si no, el original. */
-  const shown = (m: Money) => (differs && usable ? convert(m, displayCurrency, usable) : m);
+  const rate =
+    differs && status !== "error"
+      ? latestRateFor(rates, goal.target.currency, displayCurrency)
+      : null;
 
   const percent = goalPercent(goal.saved.amountMinor, goal.target.amountMinor);
   const state = goalStatus({
@@ -101,27 +89,17 @@ export function GoalCard({ goal, today }: { goal: GoalSummary; today: string }) 
         </ProgressRing>
         <div className="min-w-0 space-y-0.5">
           <p className="text-callout text-ink-2">{t("saved")}</p>
-          <Amount value={shown(goal.saved)} className={cn("text-amount-l", differs && dim)} />
-          <p className={cn("text-callout text-ink-2 tabular-nums", differs && dim)}>
-            {t("of", { amount: f.money(shown(goal.target)) })}
+          <Amount value={goal.saved} className="text-amount-l" />
+          <p className="text-callout text-ink-2 tabular-nums">
+            {t("of", { amount: f.money(goal.target) })}
           </p>
-          <p className="text-callout text-ink-3 tabular-nums">
-            {differs ? (
-              canConvert ? (
-                t("originalOf", { saved: f.money(goal.saved), target: f.money(goal.target) })
-              ) : (
-                t("rateUnavailableShort")
-              )
-            ) : canConvert ? (
-              <span className={dim}>
-                {f.money(convert(goal.saved, otherCurrency(goal.saved.currency), usable!), {
-                  approx: true,
-                })}
-              </span>
-            ) : (
-              t("rateUnavailableShort")
-            )}
-          </p>
+          {differs && (
+            <p className={cn("text-callout text-ink-3 tabular-nums", dim)}>
+              {rate
+                ? t("approxSaved", { amount: f.money(convert(goal.saved, displayCurrency, rate)) })
+                : t("rateUnavailableShort")}
+            </p>
+          )}
         </div>
       </div>
 
@@ -130,7 +108,7 @@ export function GoalCard({ goal, today }: { goal: GoalSummary; today: string }) 
           <dt className="text-caption text-ink-2 uppercase">{t("monthly")}</dt>
           <dd className="mt-1">
             {goal.monthly ? (
-              <Amount value={shown(goal.monthly)} className={cn("text-body", differs && dim)} />
+              <Amount value={goal.monthly} className="text-body" />
             ) : (
               <span className="text-body text-ink-3">{t("noMonthly")}</span>
             )}
@@ -139,7 +117,7 @@ export function GoalCard({ goal, today }: { goal: GoalSummary; today: string }) 
         <div>
           <dt className="text-caption text-ink-2 uppercase">{t("remaining")}</dt>
           <dd className="mt-1">
-            <Amount value={shown(remaining)} className={cn("text-body", differs && dim)} />
+            <Amount value={remaining} className="text-body" />
           </dd>
         </div>
       </dl>

@@ -34,13 +34,13 @@ describe("budgetPercent y budgetState (valores del frame)", () => {
 
 describe("spentIn", () => {
   it("convierte los gastos en USD a COP", () => {
-    expect(spentIn([money(100_000n, "COP"), money(1_000n, "USD")], "COP", RATE)).toEqual({
+    expect(spentIn([money(100_000n, "COP"), money(1_000n, "USD")], "COP", [RATE])).toEqual({
       total: money(140_000n, "COP"),
       partial: false,
     });
   });
   it("sin tasa omite lo que no puede convertir", () => {
-    expect(spentIn([money(100_000n, "COP"), money(1_000n, "USD")], "COP", null)).toEqual({
+    expect(spentIn([money(100_000n, "COP"), money(1_000n, "USD")], "COP", [])).toEqual({
       total: money(100_000n, "COP"),
       partial: true,
     });

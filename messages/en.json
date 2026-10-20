@@ -421,7 +421,8 @@
     "stale": "Stale",
     "refreshLabel": "Refresh rate",
     "lastKnown": "Last known rate: {rate}, as of {date}",
-    "rate": "1 USD = {value} COP"
+    "pairRate": "1 {base} = {value} {quote}",
+    "ratesCompact": "{count} rates"
   },
   "skeleton": {
     "loading": "Loading"
@@ -572,6 +573,9 @@
     "rateUnavailable": "rate unavailable",
     "rateFrom": "rate from {date}",
     "detail": "≈ {amount} · rate {rate}, as of {date}",
+    "convertedToday": "Converted with today's rates",
+    "breakdownTitle": "Breakdown by currency",
+    "close": "Close",
     "errors": {
       "empty": "Enter an amount.",
       "invalid": "Enter a valid amount.",
@@ -668,7 +672,11 @@
       "transfer": "Transfer",
       "amount": "Amount",
       "amountCurrency": "Amount currency",
-      "conversion": "<amount></amount> at 1 USD = {rate} COP · {date}",
+      "currencyChanged": "Amount currency: {currency}. The number you typed was not converted.",
+      "atRate": "at 1 {base} = {value} {quote} · {date}",
+      "rateLine": "1 {base} = {value} {quote} · {date}",
+      "approximately": "approximately",
+      "sameCurrency": "Shown in {currency}, your currency.",
       "conversionUnavailable": "Rate unavailable: the original amount is saved",
       "description": "Description",
       "descriptionPlaceholder": "For example: neighborhood market",
@@ -759,6 +767,7 @@
     "saved": "Saved",
     "of": "of {amount}",
     "originalOf": "original {saved} of {target}",
+    "approxSaved": "≈ {amount} saved",
     "monthly": "Monthly",
     "remaining": "Remaining",
     "noMonthly": "No fixed amount",

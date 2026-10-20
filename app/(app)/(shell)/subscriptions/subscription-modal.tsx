@@ -73,7 +73,10 @@ export function SubscriptionModal({
   const [name, setName] = useState(editing?.name ?? "");
   const [subtitle, setSubtitle] = useState(editing?.subtitle ?? "");
   const [iconKey, setIconKey] = useState(editing?.iconKey ?? "refresh");
-  const [currency, setCurrency] = useState(editing?.amount.currency ?? displayCurrency);
+  // Los recurrentes siguen binarios (COP/USD): EUR aún no tiene su propio selector aquí.
+  const [currency, setCurrency] = useState(
+    editing?.amount.currency ?? (displayCurrency === "EUR" ? "USD" : displayCurrency),
+  );
   const [amount, setAmount] = useState(editing ? f.amount(editing.amount) : "");
   const [categoryKey, setCategoryKey] = useState(editing?.categoryKey ?? "");
   const [frequency, setFrequency] = useState<FormFrequency>(

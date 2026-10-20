@@ -10,7 +10,7 @@
  * presupuesto con la tasa más reciente.
  */
 import type { CurrencyCode } from "@/lib/db/types";
-import { convert, divRound, type Rate } from "@/lib/money/convert";
+import { convert, divRound, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 
 export type BudgetState = "ok" | "near" | "over";
@@ -29,17 +29,19 @@ export function budgetState(spentMinor: bigint, limitMinor: bigint): BudgetState
 }
 
 /**
- * Suma en `to` los montos; los de otra moneda se convierten con `rate`. Sin
- * tasa, esos se omiten y `partial` queda en true.
+ * Suma en `to` los montos; los de otra moneda se convierten con la tasa más
+ * reciente de su par. Sin tasa para esa moneda, se omiten y `partial` queda
+ * en true.
  */
 export function spentIn(
   items: readonly Money[],
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): { total: Money; partial: boolean } {
   let total = money(0n, to);
   let partial = false;
   for (const m of items) {
+    const rate = m.currency === to ? null : latestRateFor(rates, m.currency, to);
     if (m.currency === to) total = add(total, m);
     else if (rate) total = add(total, convert(m, to, rate));
     else partial = true;

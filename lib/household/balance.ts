@@ -9,12 +9,13 @@
  * El neto de un miembro es positivo si le deben y negativo si debe. La suma
  * de todos los netos de una moneda es siempre 0.
  *
- * Se lleva por moneda (COP y USD por separado) para que liquidar cada moneda
- * deje exactamente 0, sin depender de la tasa. Para mostrar un total se
- * convierte cada neto con la tasa más reciente (convert, mismo redondeo).
+ * Se lleva por moneda (COP, USD y EUR por separado) para que liquidar cada
+ * moneda deje exactamente 0, sin depender de la tasa. Para mostrar un total
+ * se convierte cada neto con la tasa más reciente de su par (convert, mismo
+ * redondeo); con 3 monedas puede hacer falta más de una tasa a la vez.
  */
 import type { CurrencyCode } from "@/lib/db/types";
-import { convert, type Rate } from "@/lib/money/convert";
+import { convert, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 
 export type SharedExpense = {
@@ -60,19 +61,20 @@ export function balancesByCurrency(
 
 /**
  * Neto de cada miembro en una sola moneda. Devuelve null si hace falta una
- * tasa y no la hay.
+ * tasa (para alguna moneda con saldo distinto de 0) y no la hay.
  */
 export function netsIn(
   balances: CurrencyBalances,
   members: readonly string[],
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): Record<string, Money> | null {
   const out: Record<string, Money> = Object.fromEntries(members.map((m) => [m, money(0n, to)]));
   for (const [currency, byUser] of Object.entries(balances) as [
     CurrencyCode,
     Record<string, bigint>,
   ][]) {
+    const rate = currency === to ? null : latestRateFor(rates, currency, to);
     if (currency !== to && !rate) {
       if (Object.values(byUser).some((v) => v !== 0n)) return null;
       continue;

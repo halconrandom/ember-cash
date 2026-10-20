@@ -48,9 +48,9 @@ export function CategoryCard({ rows, month }: { rows: AggregateRow[]; month: str
   const t = useTranslations("dashboard");
   const tc = useTranslations("categories");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const first = useFirstView();
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? [] : rates;
   const { slices, total, partial } = spendingByCategory(rows, month, displayCurrency, usable);
   const max = slices[0]?.amount.amountMinor ?? 0n;
   /** En COP, solo el número (la unidad va en el total); en USD, con "US$". */

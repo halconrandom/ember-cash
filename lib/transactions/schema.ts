@@ -19,7 +19,7 @@ export const transactionInputSchema = z.object({
   id: z.uuid().nullable(),
   kind: z.enum(["expense", "income", "transfer"]),
   amount: z.string(),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(["COP", "USD", "EUR"]),
   categoryKey: z.string().nullable(),
   description: z.string(),
   note: z.string(),

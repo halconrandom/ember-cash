@@ -111,7 +111,7 @@ function MarkPaidForm({
               <StateBadge state={event.state} />
             </p>
           </div>
-          <MoneyAmount kind="total" value={event.amount} className="shrink-0 text-right" />
+          <MoneyAmount variant="total" value={event.amount} className="shrink-0 text-right" />
         </div>
         {accounts.length === 0 ? (
           <p className="text-callout text-ink-2">{t("noAccounts")}</p>

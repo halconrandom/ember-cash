@@ -69,7 +69,7 @@ async function renderDashboard() {
     SubscriptionsSlot(),
   ]);
   return renderWithIntl(
-    <RateProvider initialRate={RATE} initialDisplayCurrency="COP" persist={false}>
+    <RateProvider initialRates={[RATE]} initialDisplayCurrency="COP" persist={false}>
       {slots.map((slot, i) => (
         <section key={i} data-testid={`slot-${i}`}>
           {slot}

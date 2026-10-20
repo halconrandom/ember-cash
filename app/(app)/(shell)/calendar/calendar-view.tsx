@@ -29,7 +29,7 @@ import type { IconName } from "@/components/ui/icon-registry";
 import type { AccountSummary } from "@/lib/accounts/queries";
 import type { CurrencyCode } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, type Rate } from "@/lib/money/convert";
+import { convert, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 import {
   calendarCells,
@@ -71,9 +71,10 @@ const GLANCE_ICON: Record<CalendarKind, IconName> = {
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
-function sumIn(items: Money[], to: CurrencyCode, rate: Rate | null): Money {
+function sumIn(items: Money[], to: CurrencyCode, rates: readonly Rate[]): Money {
   let total = money(0n, to);
   for (const item of items) {
+    const rate = item.currency === to ? null : latestRateFor(rates, item.currency, to);
     if (item.currency === to) total = add(total, item);
     else if (rate) total = add(total, convert(item, to, rate));
   }
@@ -102,7 +103,7 @@ export function CalendarView({
   const t = useTranslations("calendar");
   const rateLimit = useTranslations("rateLimit");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -114,7 +115,7 @@ export function CalendarView({
   const [nextDate, setNextDate] = useState(initialDay);
   const [message, setMessage] = useState<string | null>(null);
   const [paying, setPaying] = useState<AgendaItem | null>(null);
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? [] : rates;
 
   const cells = calendarCells(month, events);
   const dayEvents = events.filter((event) => event.dueOn === day);
@@ -361,7 +362,7 @@ export function CalendarView({
               {day === today ? t("totalToday") : t("totalDay")}
             </span>
             <MoneyAmount
-              kind="total"
+              variant="total"
               value={sumIn(
                 dayEvents.map((event) => event.amount),
                 displayCurrency,
@@ -429,7 +430,7 @@ export function CalendarView({
                   {t(`glance.${kind}`, { count: group.length })}
                 </span>
                 <MoneyAmount
-                  kind="total"
+                  variant="total"
                   value={sumIn(
                     group.map((event) => event.amount),
                     displayCurrency,

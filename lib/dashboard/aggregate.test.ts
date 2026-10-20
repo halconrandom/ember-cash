@@ -53,7 +53,7 @@ const ROWS: AggregateRow[] = [
 
 describe("monthTotals con COP y USD mezclados", () => {
   it("en COP: el USD se convierte una vez por moneda", () => {
-    const t = monthTotals(ROWS, "2026-10", "COP", RATE);
+    const t = monthTotals(ROWS, "2026-10", "COP", [RATE]);
     expect(t.income).toEqual(money(9_200_000n, "COP")); // 8.800.000 + 100 × 4.000
     expect(t.expenses).toEqual(money(3_713_960n, "COP")); // 2.100.000 + 63.960 + 400.000 + 1.150.000
     expect(t.balance).toEqual(money(5_486_040n, "COP"));
@@ -62,14 +62,14 @@ describe("monthTotals con COP y USD mezclados", () => {
   });
 
   it("en USD", () => {
-    const t = monthTotals(ROWS, "2026-10", "USD", RATE);
+    const t = monthTotals(ROWS, "2026-10", "USD", [RATE]);
     expect(t.income).toEqual(money(230_000n, "USD")); // 2.200,00 + 100,00
     // 3.650.000 COP = US$ 912,50; + 15,99 = 928,49.
     expect(t.expenses).toEqual(money(92_849n, "USD"));
   });
 
   it("sin tasa: solo lo de la moneda elegida, marcado partial", () => {
-    const t = monthTotals(ROWS, "2026-10", "COP", null);
+    const t = monthTotals(ROWS, "2026-10", "COP", []);
     expect(t.income).toEqual(money(8_800_000n, "COP"));
     expect(t.partial).toBe(true);
   });
@@ -77,7 +77,7 @@ describe("monthTotals con COP y USD mezclados", () => {
 
 describe("mes sin datos", () => {
   it("todo en cero, sin categorías", () => {
-    const t = monthTotals(ROWS, "2026-03", "COP", RATE);
+    const t = monthTotals(ROWS, "2026-03", "COP", [RATE]);
     expect(t).toEqual({
       income: money(0n, "COP"),
       expenses: money(0n, "COP"),
@@ -85,7 +85,7 @@ describe("mes sin datos", () => {
       count: 0,
       partial: false,
     });
-    expect(spendingByCategory(ROWS, "2026-03", "COP", RATE)).toEqual({
+    expect(spendingByCategory(ROWS, "2026-03", "COP", [RATE])).toEqual({
       slices: [],
       total: money(0n, "COP"),
       partial: false,
@@ -95,13 +95,13 @@ describe("mes sin datos", () => {
 
 describe("percentChange", () => {
   it("contra un mes anterior vacío no divide por cero: null", () => {
-    const empty = monthTotals(ROWS, "2026-08", "COP", RATE);
+    const empty = monthTotals(ROWS, "2026-08", "COP", [RATE]);
     expect(percentChange(money(9_200_000n, "COP"), empty.income)).toBeNull();
     expect(percentChange(money(0n, "COP"), empty.balance)).toBeNull();
   });
   it("ingresos +15 % y gastos −38,1 % contra septiembre", () => {
-    const oct = monthTotals(ROWS, "2026-10", "COP", RATE);
-    const sep = monthTotals(ROWS, "2026-09", "COP", RATE);
+    const oct = monthTotals(ROWS, "2026-10", "COP", [RATE]);
+    const sep = monthTotals(ROWS, "2026-09", "COP", [RATE]);
     expect(percentChange(oct.income, sep.income)).toBe(15);
     expect(percentChange(oct.expenses, sep.expenses)).toBe(-38.1);
   });
@@ -118,7 +118,7 @@ describe("percentChange", () => {
 
 describe("spendingByCategory", () => {
   it("de mayor a menor, con porcentajes del total", () => {
-    const { slices, total } = spendingByCategory(ROWS, "2026-10", "COP", RATE);
+    const { slices, total } = spendingByCategory(ROWS, "2026-10", "COP", [RATE]);
     expect(total).toEqual(money(3_713_960n, "COP"));
     expect(slices.map((s) => [s.categoryKey, s.amount.amountMinor, s.percent])).toEqual([
       ["housing", 2_100_000n, 57],
@@ -140,7 +140,7 @@ describe("trend y lastMonths", () => {
     ]);
   });
   it("los meses sin datos quedan en 0", () => {
-    const { points } = trend(ROWS, lastMonths("2026-10", 3), "COP", RATE);
+    const { points } = trend(ROWS, lastMonths("2026-10", 3), "COP", [RATE]);
     expect(points.map((p) => [p.month, p.income.amountMinor, p.expenses.amountMinor])).toEqual([
       ["2026-08", 0n, 0n],
       ["2026-09", 8_000_000n, 6_000_000n],

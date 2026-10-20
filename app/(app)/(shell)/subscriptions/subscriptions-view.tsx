@@ -30,7 +30,7 @@ import { useToast } from "@/components/ui/toast";
 import type { AccountSummary } from "@/lib/accounts/queries";
 import type { CurrencyCode, RecurringFrequency } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, type Rate } from "@/lib/money/convert";
+import { convert, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 import type { AgendaItem, SubscriptionItem } from "@/lib/recurring/queries";
 import { daysBetween } from "@/lib/recurring/schedule";
@@ -44,9 +44,10 @@ import { setRecurringStatus } from "./actions";
 
 type Filter = "all" | "monthly" | "yearly";
 
-function sumIn(items: Money[], to: CurrencyCode, rate: Rate | null): Money {
+function sumIn(items: Money[], to: CurrencyCode, rates: readonly Rate[]): Money {
   let total = money(0n, to);
   for (const item of items) {
+    const rate = item.currency === to ? null : latestRateFor(rates, item.currency, to);
     if (item.currency === to) total = add(total, item);
     else if (rate) total = add(total, convert(item, to, rate));
   }
@@ -89,7 +90,7 @@ export function SubscriptionsView({
   const rateLimit = useTranslations("rateLimit");
   const f = useFormat();
   const toast = useToast();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -100,7 +101,7 @@ export function SubscriptionsView({
   const first = useFirstView();
   const cardsEntrance = useEntrance(filter);
   const [, startTransition] = useTransition();
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? [] : rates;
   const active = items.filter((item) => item.status === "active");
 
   const openNew = () =>
@@ -158,7 +159,7 @@ export function SubscriptionsView({
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <SummaryCard icon="refresh" label={t("monthlyTotal")}>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={sumIn(
               active.map((item) => item.monthly),
               displayCurrency,
@@ -169,7 +170,7 @@ export function SubscriptionsView({
         </SummaryCard>
         <SummaryCard icon="calendar" label={t("yearlyTotal")}>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={sumIn(
               active.map((item) => item.yearly),
               displayCurrency,
@@ -382,7 +383,7 @@ export function SubscriptionsView({
           )}
           <div className="border-border flex items-center justify-between gap-3 border-t pt-4">
             <span className="text-body text-ink-2">{t("dueNext")}</span>
-            <MoneyAmount kind="total" value={dueSoon} />
+            <MoneyAmount variant="total" value={dueSoon} />
           </div>
         </Card>
         <MarkPaidModal

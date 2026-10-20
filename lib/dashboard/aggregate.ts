@@ -4,11 +4,12 @@
  * cliente con la tasa más reciente (RateProvider).
  *
  * Conversión: se suma por moneda y cada subtotal se convierte una sola vez
- * (como totalIn). Sin tasa, lo que está en otra moneda no se suma y el
- * resultado queda marcado `partial`.
+ * (como totalIn). Sin tasa para ese par (fase E2: puede haber hasta 2 pares
+ * distintos, uno por cada moneda que no sea `to`), lo que está en esa moneda
+ * no se suma y el resultado queda marcado `partial`.
  */
 import type { CategoryKey, CurrencyCode } from "@/lib/db/types";
-import { convert, divRound, type Rate } from "@/lib/money/convert";
+import { convert, divRound, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, subtract, type Money } from "@/lib/money/money";
 
 export type AggregateRow = {
@@ -24,7 +25,7 @@ export type AggregateRow = {
 export function sumIn(
   items: readonly Money[],
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): { total: Money; partial: boolean } {
   const byCurrency = new Map<CurrencyCode, Money>();
   for (const m of items) {
@@ -34,6 +35,7 @@ export function sumIn(
   let total = money(0n, to);
   let partial = false;
   for (const subtotal of byCurrency.values()) {
+    const rate = subtotal.currency === to ? null : latestRateFor(rates, subtotal.currency, to);
     if (subtotal.currency === to) total = add(total, subtotal);
     else if (rate) total = add(total, convert(subtotal, to, rate));
     else partial = true;
@@ -54,18 +56,18 @@ export function monthTotals(
   rows: readonly AggregateRow[],
   month: string,
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): MonthTotals {
   const inMonth = rows.filter((r) => r.month === month);
   const income = sumIn(
     inMonth.filter((r) => r.kind === "income").map((r) => r.amount),
     to,
-    rate,
+    rates,
   );
   const expenses = sumIn(
     inMonth.filter((r) => r.kind === "expense").map((r) => r.amount),
     to,
-    rate,
+    rates,
   );
   return {
     income: income.total,
@@ -96,7 +98,7 @@ export function spendingByCategory(
   rows: readonly AggregateRow[],
   month: string,
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): { slices: CategorySlice[]; total: Money; partial: boolean } {
   const expenses = rows.filter((r) => r.month === month && r.kind === "expense");
   const keys = [...new Set(expenses.map((r) => r.categoryKey))];
@@ -105,7 +107,7 @@ export function spendingByCategory(
     const s = sumIn(
       expenses.filter((r) => r.categoryKey === key).map((r) => r.amount),
       to,
-      rate,
+      rates,
     );
     partial ||= s.partial;
     return { categoryKey: key, amount: s.total };
@@ -137,11 +139,11 @@ export function trend(
   rows: readonly AggregateRow[],
   months: readonly string[],
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): { points: TrendPoint[]; partial: boolean } {
   let partial = false;
   const points = months.map((month) => {
-    const t = monthTotals(rows, month, to, rate);
+    const t = monthTotals(rows, month, to, rates);
     partial ||= t.partial;
     return { month, income: t.income, expenses: t.expenses };
   });

@@ -421,7 +421,8 @@
     "stale": "Desactualizada",
     "refreshLabel": "Actualizar la tasa",
     "lastKnown": "Última tasa conocida: {rate}, al {date}",
-    "rate": "1 USD = {value} COP"
+    "pairRate": "1 {base} = {value} {quote}",
+    "ratesCompact": "{count} tasas"
   },
   "skeleton": {
     "loading": "Cargando"
@@ -572,6 +573,9 @@
     "rateUnavailable": "tasa no disponible",
     "rateFrom": "tasa del {date}",
     "detail": "≈ {amount} · tasa {rate}, al {date}",
+    "convertedToday": "Convertido con tasas del día",
+    "breakdownTitle": "Desglose por moneda",
+    "close": "Cerrar",
     "errors": {
       "empty": "Escribe un monto.",
       "invalid": "Escribe un monto válido.",
@@ -668,7 +672,11 @@
       "transfer": "Transferencia",
       "amount": "Monto",
       "amountCurrency": "Moneda del monto",
-      "conversion": "<amount></amount> a 1 USD = {rate} COP · {date}",
+      "currencyChanged": "Moneda del monto: {currency}. El monto escrito no se convirtió.",
+      "atRate": "a 1 {base} = {value} {quote} · {date}",
+      "rateLine": "1 {base} = {value} {quote} · {date}",
+      "approximately": "aproximadamente",
+      "sameCurrency": "Se muestra en {currency}, tu moneda.",
       "conversionUnavailable": "Tasa no disponible: se guarda el monto original",
       "description": "Descripción",
       "descriptionPlaceholder": "Por ejemplo: mercado del barrio",
@@ -759,6 +767,7 @@
     "saved": "Ahorrado",
     "of": "de {amount}",
     "originalOf": "original {saved} de {target}",
+    "approxSaved": "≈ {amount} ahorrado",
     "monthly": "Mensual",
     "remaining": "Restante",
     "noMonthly": "Sin aporte fijo",

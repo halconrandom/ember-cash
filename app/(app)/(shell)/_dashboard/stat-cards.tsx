@@ -35,10 +35,10 @@ type Props = {
 export function StatCard({ rows, month, previousMonth, card }: Props) {
   const t = useTranslations("dashboard");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   // Number Ticker solo en la primera carga del dashboard (spec §7).
   const first = useFirstView();
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? [] : rates;
   const current = monthTotals(rows, month, displayCurrency, usable);
   const previous = monthTotals(rows, previousMonth, displayCurrency, usable);
   const prevLabel = f.date(`${previousMonth}-01`, "monthShort");
@@ -73,7 +73,7 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
             <ChangeChip change={change} good={good} prevLabel={prevLabel} hero />
           </div>
           <MoneyAmount
-            kind="total"
+            variant="total"
             ticker={first}
             value={value}
             primaryClassName="text-amount-xl text-white"
@@ -100,7 +100,7 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
         <ChangeChip change={change} good={good} prevLabel={prevLabel} />
       </div>
       <MoneyAmount
-        kind="total"
+        variant="total"
         ticker={first}
         value={value}
         primaryClassName="text-amount-xl"

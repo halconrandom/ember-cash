@@ -3,8 +3,10 @@
 /**
  * Modal para agregar o editar una transacción (07-add-transaction.png).
  * - Pestañas Gasto / Ingreso / Transferencia.
- * - Monto grande con su moneda (COP/USD) y la conversión a la otra moneda con
- *   la tasa actual (spec §4.8: la moneda se muestra una sola vez).
+ * - Monto grande con su moneda (COP/USD/EUR, fase E2) y la conversión a la
+ *   moneda elegida con la tasa actual (la moneda se muestra una sola vez).
+ *   Por defecto, la última moneda usada en ese tipo (o la elegida si nunca
+ *   se usó ninguna); cambiarla no convierte el número ya escrito.
  * - Descripción, categoría en chips, fecha, cuenta, "Pagó" (solo en un hogar)
  *   y notas.
  * - Transferencia: cuenta de origen y destino; no cuenta como ingreso ni gasto.
@@ -22,7 +24,6 @@ import { DateField } from "@/components/ui/date-field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field } from "@/components/ui/field";
 import { Highlight, HighlightBackground } from "@/components/ui/highlight";
-import { SlidingNumber } from "@/components/ui/sliding-number";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -30,11 +31,12 @@ import { SelectField } from "@/components/ui/select-field";
 import { TextareaField } from "@/components/ui/textarea-field";
 import type { AccountSummary } from "@/lib/accounts/queries";
 import { ACCOUNT_TYPE_ICON, CATEGORY_META, categoriesFor } from "@/lib/categories";
-import type { CategoryKey, CurrencyCode } from "@/lib/db/types";
+import { CURRENCY_CODES, type CategoryKey, type CurrencyCode } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert } from "@/lib/money/convert";
+import { money } from "@/lib/money/money";
 import { parseMoney } from "@/lib/money/parse";
+import { resolveConversionLine } from "@/lib/transactions/conversion-line";
 import { withFilters } from "@/lib/transactions/filters";
 import type { TransactionRow } from "@/lib/transactions/queries";
 import {
@@ -48,14 +50,24 @@ import { cn } from "@/lib/utils";
 
 import { saveTransaction } from "./actions";
 
-/**
- * La otra moneda del par COP/USD, para la línea de conversión del monto
- * (spec §4.8, binaria). Con EUR en catálogo pero sin UI propia todavía, se
- * mantiene así; la fase de diseño de E1 decide su significado con 3 monedas.
- */
-function otherCurrency(c: CurrencyCode): CurrencyCode {
-  return c === "COP" ? "USD" : "COP";
+/** Última moneda usada por tipo de transacción (conveniencia del navegador; nunca falla si no hay storage). */
+function readLastCurrency(kind: TransactionKind): CurrencyCode | null {
+  try {
+    const v = localStorage.getItem(`ec:lastCurrency:${kind}`);
+    return (CURRENCY_CODES as readonly string[]).includes(v ?? "") ? (v as CurrencyCode) : null;
+  } catch {
+    return null;
+  }
 }
+function writeLastCurrency(kind: TransactionKind, currency: CurrencyCode): void {
+  try {
+    localStorage.setItem(`ec:lastCurrency:${kind}`, currency);
+  } catch {
+    // Almacenamiento no disponible (privado, bloqueado): se ignora.
+  }
+}
+
+const CURRENCY_OPTIONS = CURRENCY_CODES.map((value) => ({ value, label: value }));
 
 type Member = { userId: string; displayName: string | null };
 
@@ -104,7 +116,7 @@ export function TransactionModal({
   const localeRaw = useLocale();
   const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -114,7 +126,7 @@ export function TransactionModal({
 
   const [kind, setKind] = useState<TransactionKind>(editing?.kind ?? "expense");
   const [currency, setCurrency] = useState<CurrencyCode>(
-    editing?.amount.currency ?? displayCurrency,
+    editing?.amount.currency ?? readLastCurrency(editing?.kind ?? "expense") ?? displayCurrency,
   );
   const [amount, setAmount] = useState(editing ? f.amount(editing.amount) : "");
   const [categoryKey, setCategoryKey] = useState<string | null>(editing?.categoryKey ?? null);
@@ -142,6 +154,8 @@ export function TransactionModal({
 
   function changeKind(next: TransactionKind) {
     setKind(next);
+    // Al crear (no al editar), la moneda vuelve a la última usada en ese tipo.
+    if (!editing) setCurrency(readLastCurrency(next) ?? displayCurrency);
     if (next === "transfer") setRepeat("never");
     if (
       next !== "transfer" &&
@@ -152,29 +166,43 @@ export function TransactionModal({
     setErrors({});
   }
 
-  /** Línea de conversión bajo el monto (spec §4.8). */
+  /**
+   * Línea de conversión bajo el monto (fase E2 §3): se recalcula en cada
+   * tecla, sin debounce ni animación. Campo vacío: solo la tasa, nunca
+   * "≈ 0". Sin tasa: nunca un número inventado.
+   */
   const parsed = parseMoney(amount, currency, locale, { allowZero: true });
-  const conversion =
-    status === "error" || !rate
-      ? tm("conversionUnavailable")
-      : tm.rich("conversion", {
-          // El monto convertido rueda cifra por cifra mientras se escribe
-          // (Sliding Number, spec §7).
-          amount: () => (
-            <SlidingNumber
-              text={f.money(
-                convert(
-                  parsed.ok ? parsed.value : { amountMinor: 0n, currency },
-                  otherCurrency(currency),
-                  rate,
-                ),
-                { approx: true },
-              )}
-            />
-          ),
-          rate: f.number(Number(rate.rate), 2),
-          date: f.date(rate.asOf),
+  const line =
+    status === "error"
+      ? { kind: "unavailable" as const }
+      : resolveConversionLine({
+          amountEmpty: amount.trim() === "",
+          amount: parsed.ok ? parsed.value : money(0n, currency),
+          currency,
+          displayCurrency,
+          rates,
         });
+  const rateText = (r: { base: string; rate: string; quote: string; asOf: string }) => ({
+    base: r.base,
+    value: f.number(Number(r.rate), 2),
+    quote: r.quote,
+    date: f.date(r.asOf),
+  });
+  const conversion =
+    line.kind === "same" ? (
+      tm("sameCurrency", { currency })
+    ) : line.kind === "unavailable" ? (
+      tm("conversionUnavailable")
+    ) : line.kind === "rateOnly" ? (
+      tm("rateLine", rateText(line.rate))
+    ) : (
+      <>
+        <span aria-hidden="true">≈</span>
+        <span className="sr-only">{tm("approximately")}</span>
+        {` ${f.money(line.value)} `}
+        {tm("atRate", rateText(line.rate))}
+      </>
+    );
 
   function submit() {
     const input = {
@@ -281,7 +309,9 @@ export function TransactionModal({
             className="py-8"
           />
           <AccountCreateForm
-            defaultCurrency={displayCurrency}
+            // Las cuentas siguen binarias (COP/USD): EUR aún no tiene su propio
+            // selector de cuenta (fase de diseño pendiente, DESIGN_SPEC §4).
+            defaultCurrency={displayCurrency === "EUR" ? "USD" : displayCurrency}
             onCreated={(id) => setAccountId(id)}
           />
         </div>
@@ -326,19 +356,23 @@ export function TransactionModal({
                 </label>
                 <SegmentedControl
                   label={tm("amountCurrency")}
-                  options={[
-                    { value: "COP", label: "COP" },
-                    { value: "USD", label: "USD" },
-                  ]}
+                  options={CURRENCY_OPTIONS}
                   value={currency}
-                  onChange={setCurrency}
+                  onChange={(next) => {
+                    // Solo cambia la moneda: el monto escrito no se convierte.
+                    setCurrency(next);
+                    writeLastCurrency(kind, next);
+                  }}
                 />
+                <span aria-live="polite" className="sr-only">
+                  {tm("currencyChanged", { currency })}
+                </span>
               </div>
               <div className="mt-3 flex items-baseline justify-center gap-2">
                 <input
                   ref={amountRef}
                   id="tx-amount"
-                  inputMode="decimal"
+                  inputMode={currency === "COP" ? "numeric" : "decimal"}
                   autoComplete="off"
                   placeholder="0"
                   value={amount}
@@ -357,9 +391,9 @@ export function TransactionModal({
               <div className="mt-3 flex justify-center">
                 <span
                   id="tx-amount-conversion"
-                  className="bg-surface text-callout text-ink-2 inline-flex min-h-9 items-center gap-2 rounded-full px-4 tabular-nums"
+                  className="bg-surface text-callout text-ink-2 inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-center tabular-nums"
                 >
-                  <Icon name="exchange" size={16} className="text-ember-text" />
+                  <Icon name="exchange" size={16} className="text-ember-text shrink-0" />
                   {conversion}
                 </span>
               </div>

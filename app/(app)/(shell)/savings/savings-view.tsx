@@ -19,7 +19,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import type { CurrencyCode } from "@/lib/db/types";
 import type { GoalSummary } from "@/lib/goals/queries";
 import { goalPercent } from "@/lib/goals/status";
-import { convert, type Rate } from "@/lib/money/convert";
+import { convert, latestRateFor, type Rate } from "@/lib/money/convert";
 import { add, money, type Money } from "@/lib/money/money";
 import { withFilters } from "@/lib/transactions/filters";
 
@@ -29,11 +29,12 @@ import { GoalCard } from "./goal-card";
 function sumIn(
   items: Money[],
   to: CurrencyCode,
-  rate: Rate | null,
+  rates: readonly Rate[],
 ): { total: Money; partial: boolean } {
   let total = money(0n, to);
   let partial = false;
   for (const m of items) {
+    const rate = m.currency === to ? null : latestRateFor(rates, m.currency, to);
     if (m.currency === to) total = add(total, m);
     else if (rate) total = add(total, convert(m, to, rate));
     else partial = true;
@@ -43,11 +44,11 @@ function sumIn(
 
 export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: string }) {
   const t = useTranslations("savings");
-  const { rate, status, displayCurrency } = useRate();
+  const { rates, status, displayCurrency } = useRate();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const usable = status === "error" ? null : rate;
+  const usable = status === "error" ? [] : rates;
   const openNew = () =>
     router.push(`${pathname}${withFilters(params, { goal: "new" })}`, { scroll: false });
 
@@ -99,7 +100,7 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
         <SummaryCard icon="sack-dollar" label={t("totalSaved")}>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={saved.total}
             primaryClassName="text-amount-xl"
             secondaryClassName="text-body text-ink-2"
@@ -107,7 +108,7 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
         </SummaryCard>
         <SummaryCard icon="calendar" label={t("monthlyContributions")}>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={monthly.total}
             suffix={t("perMonth")}
             primaryClassName="text-amount-xl"

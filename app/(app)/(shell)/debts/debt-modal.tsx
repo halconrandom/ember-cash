@@ -52,8 +52,9 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   const [name, setName] = useState(editing?.name ?? "");
   const [subtitle, setSubtitle] = useState(editing?.subtitle ?? "");
   const [iconKey, setIconKey] = useState<DebtIcon>(editing?.iconKey ?? "credit-card");
+  // Las deudas siguen binarias (COP/USD): EUR aún no tiene su propio selector aquí.
   const [currency, setCurrency] = useState<CurrencyCode>(
-    editing?.original.currency ?? displayCurrency,
+    editing?.original.currency ?? (displayCurrency === "EUR" ? "USD" : displayCurrency),
   );
   const [principal, setPrincipal] = useState(editing ? f.amount(editing.original) : "");
   const [apr, setApr] = useState(

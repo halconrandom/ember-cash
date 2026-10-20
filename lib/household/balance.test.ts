@@ -53,7 +53,7 @@ describe("balance entre dos miembros", () => {
     ];
     const b = balancesByCurrency(expenses);
     expect(b.COP).toEqual({ [A]: 190_000n, [B]: -190_000n });
-    expect(transfersFor(netsIn(b, [A, B], "COP", null)!)).toEqual([
+    expect(transfersFor(netsIn(b, [A, B], "COP", [])!)).toEqual([
       { from: B, to: A, amount: money(190_000n, "COP") },
     ]);
   });
@@ -68,7 +68,7 @@ describe("balance entre dos miembros", () => {
   it("si ambos pagan lo mismo, nadie debe", () => {
     const b = balancesByCurrency([half(A, 100_000n), half(B, 100_000n)]);
     expect(isSettled(b)).toBe(true);
-    expect(transfersFor(netsIn(b, [A, B], "COP", null)!)).toEqual([]);
+    expect(transfersFor(netsIn(b, [A, B], "COP", [])!)).toEqual([]);
   });
 
   it("un gasto no compartido con el otro (anterior a su ingreso) no genera deuda", () => {
@@ -102,18 +102,18 @@ describe("monedas mezcladas", () => {
   });
 
   it("en COP con tasa 4.000: Sofía debe 200.000 − 100.000 = 100.000", () => {
-    const nets = netsIn(balancesByCurrency(expenses), [A, B], "COP", RATE)!;
+    const nets = netsIn(balancesByCurrency(expenses), [A, B], "COP", [RATE])!;
     expect(nets).toEqual({ [A]: money(100_000n, "COP"), [B]: money(-100_000n, "COP") });
     expect(transfersFor(nets)).toEqual([{ from: B, to: A, amount: money(100_000n, "COP") }]);
   });
 
   it("en USD: US$ 25,00", () => {
-    const nets = netsIn(balancesByCurrency(expenses), [A, B], "USD", RATE)!;
+    const nets = netsIn(balancesByCurrency(expenses), [A, B], "USD", [RATE])!;
     expect(transfersFor(nets)).toEqual([{ from: B, to: A, amount: money(2_500n, "USD") }]);
   });
 
   it("sin tasa no se puede sumar: null", () => {
-    expect(netsIn(balancesByCurrency(expenses), [A, B], "COP", null)).toBeNull();
+    expect(netsIn(balancesByCurrency(expenses), [A, B], "COP", [])).toBeNull();
   });
 });
 
@@ -133,7 +133,7 @@ describe("liquidaciones", () => {
     );
     expect(isSettled(after)).toBe(true);
     const otherRate = { ...RATE, rate: "3174.67" };
-    expect(netsIn(after, [A, B], "COP", otherRate)).toEqual({
+    expect(netsIn(after, [A, B], "COP", [otherRate])).toEqual({
       [A]: money(0n, "COP"),
       [B]: money(0n, "COP"),
     });
@@ -142,14 +142,14 @@ describe("liquidaciones", () => {
   it("liquidación parcial en la moneda elegida: baja la deuda sin anularla", () => {
     // Deuda total en COP: 5.000 centavos × 40 = 200.000 + 400.000 = 600.000.
     const partial = [{ fromUser: B, toUser: A, amount: money(250_000n, "COP") }];
-    const nets = netsIn(balancesByCurrency(expenses, partial), [A, B], "COP", RATE)!;
+    const nets = netsIn(balancesByCurrency(expenses, partial), [A, B], "COP", [RATE])!;
     expect(nets[B]).toEqual(money(-350_000n, "COP"));
     expect(transfersFor(nets)).toEqual([{ from: B, to: A, amount: money(350_000n, "COP") }]);
   });
 
   it("pagar de más invierte la deuda", () => {
     const over = [{ fromUser: B, toUser: A, amount: money(700_000n, "COP") }];
-    const nets = netsIn(balancesByCurrency(expenses, over), [A, B], "COP", RATE)!;
+    const nets = netsIn(balancesByCurrency(expenses, over), [A, B], "COP", [RATE])!;
     expect(transfersFor(nets)).toEqual([{ from: A, to: B, amount: money(100_000n, "COP") }]);
   });
 });
@@ -169,7 +169,7 @@ describe("tres miembros", () => {
         splits: [A, B, C].map((u) => ({ userId: u, share: money(20n, "COP") })),
       },
     ];
-    const nets = netsIn(balancesByCurrency(e), [A, B, C], "COP", null)!;
+    const nets = netsIn(balancesByCurrency(e), [A, B, C], "COP", [])!;
     // A: 300 − 120 = 180; B: 60 − 120 = −60; C: −120.
     expect(transfersFor(nets)).toEqual([
       { from: C, to: A, amount: money(120n, "COP") },

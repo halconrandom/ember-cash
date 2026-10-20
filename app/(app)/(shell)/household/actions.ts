@@ -22,7 +22,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
-import { EXPENSE_CATEGORY_KEYS } from "@/lib/db/types";
+import { CURRENCY_CODES, EXPENSE_CATEGORY_KEYS } from "@/lib/db/types";
 import { balancesByCurrency, fullSettlement } from "@/lib/household/balance";
 import { listSettlements, listSharedTransactions } from "@/lib/household/queries";
 import { householdErrorKey } from "@/lib/households/errors";
@@ -120,7 +120,7 @@ const settleSchema = z.discriminatedUnion("mode", [
     fromUser: z.uuid(),
     toUser: z.uuid(),
     amountMinor: minorSchema,
-    currency: z.enum(["COP", "USD"]),
+    currency: z.enum(CURRENCY_CODES),
   }),
 ]);
 
@@ -199,7 +199,7 @@ const budgetSchema = z.object({
   categoryKey: z.enum(EXPENSE_CATEGORY_KEYS),
   month: z.string().regex(MONTH_PATTERN),
   limitMinor: minorSchema,
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
 });
 
 export type BudgetResult = { ok: true } | { ok: false; error: "failed" | "rateLimited" };

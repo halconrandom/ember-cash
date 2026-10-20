@@ -51,8 +51,9 @@ export function GoalModal({ open, editing, today }: Props) {
 
   const [name, setName] = useState(editing?.name ?? "");
   const [iconKey, setIconKey] = useState<GoalIcon>(editing?.iconKey ?? "piggy-bank");
+  // Las metas siguen binarias (COP/USD): EUR aún no tiene su propio selector aquí.
   const [currency, setCurrency] = useState<CurrencyCode>(
-    editing?.target.currency ?? displayCurrency,
+    editing?.target.currency ?? (displayCurrency === "EUR" ? "USD" : displayCurrency),
   );
   const [target, setTarget] = useState(editing ? f.amount(editing.target) : "");
   const [targetDate, setTargetDate] = useState(editing?.targetDate ?? "");

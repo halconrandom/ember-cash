@@ -54,6 +54,32 @@ export function pickLatest(rows: Row[]): Rate | null {
   return toRate(primary ?? sameDay.reduce((a, b) => (b.fetched_at > a.fetched_at ? b : a)));
 }
 
+/**
+ * Todas las tasas conocidas, una por par y fecha de vigencia (si hay primaria
+ * y respaldo para la misma fecha, solo la primaria). Tabla pequeña: RLS deja
+ * leerla entera a cualquier autenticado. La usa <RateProvider> para poder
+ * convertir en el cliente cualquier par, a la fecha de un movimiento o a la
+ * más reciente, sin una consulta por fila.
+ */
+export async function listRates(): Promise<Rate[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("exchange_rates")
+    .select("base, quote, rate, as_of, fetched_at, source")
+    .order("as_of", { ascending: false });
+  if (error) throw new Error(`No se pudieron leer las tasas: ${error.message}`);
+  const groups = new Map<string, Row[]>();
+  for (const row of data) {
+    const key = `${row.base}/${row.quote}/${row.as_of}`;
+    const arr = groups.get(key);
+    if (arr) arr.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.values()]
+    .map((rows) => pickLatest(rows))
+    .filter((r): r is Rate => r !== null);
+}
+
 /** Tasa más reciente para un par (con el cliente del usuario). Por defecto USD/COP. */
 export async function getLatestRate(
   base: CurrencyCode = "USD",

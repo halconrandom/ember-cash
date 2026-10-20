@@ -16,20 +16,18 @@ import { Modal } from "@/components/ui/modal";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SelectField } from "@/components/ui/select-field";
 import { useToast } from "@/components/ui/toast";
-import { EXPENSE_CATEGORY_KEYS, type CategoryKey, type CurrencyCode } from "@/lib/db/types";
+import {
+  CURRENCY_CODES,
+  EXPENSE_CATEGORY_KEYS,
+  type CategoryKey,
+  type CurrencyCode,
+} from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
 import type { Money } from "@/lib/money/money";
 import { parseMoney } from "@/lib/money/parse";
 
 import { copyBudgets, deleteBudget, saveBudget } from "./actions";
-
-/**
- * Monedas de presupuesto en esta UI. EUR ya es válida en la base (fase E1),
- * pero esta pantalla se mantiene binaria hasta que la fase de diseño de E1
- * decida cómo mostrarla con 3 monedas.
- */
-const BUDGET_CURRENCIES: readonly CurrencyCode[] = ["COP", "USD"];
 
 /** Lo que abre el modal: un límite nuevo, uno existente o copiar un mes. */
 export type BudgetDraft = {
@@ -196,7 +194,7 @@ function BudgetForm({
             label={t("budgetCurrency")}
             value={currency}
             onChange={setCurrency}
-            options={BUDGET_CURRENCIES.map((c) => ({ value: c, label: c }))}
+            options={CURRENCY_CODES.map((c) => ({ value: c, label: c }))}
             className="mb-1"
           />
         </div>

@@ -47,8 +47,7 @@ import type {
 } from "@/lib/household/queries";
 import { splitPercents } from "@/lib/household/split";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert } from "@/lib/money/convert";
-import { divRound } from "@/lib/money/convert";
+import { convert, divRound, latestRateFor } from "@/lib/money/convert";
 import { money, type Money } from "@/lib/money/money";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
@@ -96,8 +95,8 @@ export function HouseholdView(props: Props) {
   const { members, transactions, settlements, month } = props;
   const t = useTranslations("household");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
 
   const ids = members.map((m) => m.userId);
   // Un ex miembro conserva su nombre con la marca "(ex miembro)"; quien
@@ -227,7 +226,7 @@ function MemberCard({
         </Badge>
       </div>
       <MoneyAmount
-        kind="total"
+        variant="total"
         value={paid}
         primaryClassName="text-amount-xl"
         secondaryClassName="hidden"
@@ -314,7 +313,7 @@ function SettleCard({
             {t("owes", { from: nameOf(transfer.from), to: nameOf(transfer.to) })}
           </p>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={transfer.amount}
             className="flex-row! flex-wrap items-baseline gap-x-2"
             primaryClassName="text-amount-xl"
@@ -544,8 +543,8 @@ function BudgetCard({
   const t = useTranslations("household");
   const tc = useTranslations("categories");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
   const [draft, setDraft] = useState<BudgetDraft | null>(null);
 
   /** "2.060.000 de 2.400.000 COP" o "US$ 515,00 de US$ 600,00". */
@@ -592,8 +591,11 @@ function BudgetCard({
             const state = budgetState(spentOwn.amountMinor, b.limit.amountMinor);
             const tone = BUDGET_TONE[state];
             // Montos en la moneda elegida si hay tasa.
-            const show = (m: Money) =>
-              m.currency === displayCurrency || !usable ? m : convert(m, displayCurrency, usable);
+            const show = (m: Money) => {
+              if (m.currency === displayCurrency) return m;
+              const rate = latestRateFor(usable, m.currency, displayCurrency);
+              return rate ? convert(m, displayCurrency, rate) : m;
+            };
             return (
               <li key={b.id}>
                 <button
@@ -657,8 +659,8 @@ function GoalCard({
 }) {
   const t = useTranslations("household");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
 
   if (!goal) {
     return (
@@ -673,8 +675,11 @@ function GoalCard({
   }
 
   const percent = goalPercent(goal.saved.amountMinor, goal.target.amountMinor);
-  const show = (m: Money) =>
-    m.currency === displayCurrency || !usable ? m : convert(m, displayCurrency, usable);
+  const show = (m: Money) => {
+    if (m.currency === displayCurrency) return m;
+    const rate = latestRateFor(usable, m.currency, displayCurrency);
+    return rate ? convert(m, displayCurrency, rate) : m;
+  };
 
   return (
     <Card className="space-y-5">

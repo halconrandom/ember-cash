@@ -1,13 +1,19 @@
 "use client";
 
 /**
- * Monto según las reglas de moneda (DESIGN_SPEC §4):
+ * Monto según las reglas de moneda (fase E2, DESIGN_SPEC §4):
  *
- * - kind="row" (filas de listas): primero el importe en la moneda elegida,
- *   sin "≈"; si la moneda original es otra, debajo "original US$ 2,99". Al
- *   pasar el mouse, el tooltip muestra el equivalente con su tasa y fecha.
- * - kind="total" (totales, tarjetas, detalle): `value` ya está en la moneda
- *   elegida; debajo, "≈" con el equivalente en la otra moneda.
+ * - variant="row" (filas de listas): la cifra principal va en displayCurrency;
+ *   si la moneda original difiere, debajo va "original € 12,50" (sin "≈") con
+ *   una insignia neutra del código original. El equivalente se calcula con la
+ *   tasa de exchange_rates de la fecha del movimiento (`date`); sin `date` se
+ *   usa la más reciente. Si falta esa tasa, el original queda como principal
+ *   y la línea dice "Tasa no disponible": nunca 0 ni un número inventado.
+ * - variant="total" (totales, tarjetas hero): `value` ya está en
+ *   displayCurrency (lo convierte quien suma, con `sumIn`/`monthTotals`...).
+ *   Sin línea de conversión; si se pasa `breakdown` (los importes de origen
+ *   que se sumaron) y alguno no está en displayCurrency, un texto pequeño
+ *   "Convertido con tasas del día" abre el desglose por moneda al tocarlo.
  *
  * Con COP, el número va en negrita y "COP" detrás, más pequeño
  * (02-transactions.png). `sign` antepone "+" o "-" (ingreso/gasto) y
@@ -16,33 +22,30 @@
  * Estados de la tasa (de <RateProvider>):
  * - actualizando: las líneas convertidas bajan al 60 % y no se mueven.
  * - vieja: lo convertido lleva el tooltip "tasa del 9 de oct".
- * - error: el original queda como principal y lo convertido dice
- *   "tasa no disponible" (nunca un número viejo).
+ * - error: el original queda como principal (nunca un número viejo).
  */
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { Badge } from "@/components/ui/chip";
+import { Modal } from "@/components/ui/modal";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { Tooltip } from "@/components/ui/tooltip";
-import type { CurrencyCode } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, isStale } from "@/lib/money/convert";
+import { convert, isStale, latestRateFor, rateAt } from "@/lib/money/convert";
 import { money, type Money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
 import { useRate } from "./rate-provider";
 
-/**
- * La otra moneda del par COP/USD, para la línea "≈" y el tooltip (spec §4,
- * binaria). Con EUR en catálogo pero sin UI propia todavía, se mantiene así;
- * la fase de diseño de E1 decide su significado con 3 monedas.
- */
-function otherCurrency(c: CurrencyCode): CurrencyCode {
-  return c === "COP" ? "USD" : "COP";
-}
-
 type Props = {
   value: Money;
-  kind?: "row" | "total";
+  variant?: "row" | "total";
+  /**
+   * Fecha del movimiento (AAAA-MM-DD), solo variant="row": el equivalente se
+   * calcula con la tasa vigente esa fecha. Sin fecha, se usa la más reciente.
+   */
+  date?: string;
   /** Signo de ingreso (+) o gasto (-). El importe se pasa en positivo. */
   sign?: "+" | "-";
   /** Verde (ingresos). */
@@ -64,15 +67,21 @@ type Props = {
   /** Clases del sufijo ("/mes"); por defecto, el mismo estilo del importe. */
   suffixClassName?: string;
   /**
-   * Number Ticker (solo kind="total"): el importe cuenta desde 0 al aparecer.
-   * Se pasa true solo en la primera carga de la pantalla (useFirstView).
+   * Number Ticker (solo variant="total"): el importe cuenta desde 0 al
+   * aparecer. Se pasa true solo en la primera carga de la pantalla (useFirstView).
    */
   ticker?: boolean;
+  /**
+   * variant="total": los importes de origen que se sumaron en `value`, para
+   * el desglose del sheet ("Convertido con tasas del día").
+   */
+  breakdown?: readonly Money[];
 };
 
 export function MoneyAmount({
   value,
-  kind = "row",
+  variant = "row",
+  date,
   sign,
   positive,
   suffix,
@@ -83,14 +92,14 @@ export function MoneyAmount({
   unitClassName,
   suffixClassName,
   ticker,
+  breakdown,
 }: Props) {
-  const { rate, status, now, displayCurrency } = useRate();
+  const { rates, status, now, displayCurrency } = useRate();
   const t = useTranslations("money");
   const f = useFormat();
+  const [open, setOpen] = useState(false);
 
-  const unavailable = status === "error" || !rate;
   const dim = status === "updating" ? "opacity-60" : "";
-  const staleTitle = rate && isStale(rate, now) ? t("rateFrom", { date: f.date(rate.asOf) }) : null;
   const secondaryClass = cn("text-footnote text-ink-3 tabular-nums", secondaryClassName);
 
   /** Importe principal: número (y unidad COP más pequeña). */
@@ -123,62 +132,104 @@ export function MoneyAmount({
             {` ${unit}`}
           </span>
         )}
-        {suffix && <span className={suffixClassName}>{`\u00A0${suffix}`}</span>}
+        {suffix && <span className={suffixClassName}>{` ${suffix}`}</span>}
       </span>
     );
   };
 
-  if (kind === "total") {
-    const other = otherCurrency(value.currency);
-    const convertedText = unavailable
-      ? t("rateUnavailable")
-      : `${f.money(convert(value, other, rate), { approx: true })}${suffix ? ` ${suffix}` : ""}`;
+  if (variant === "total") {
+    const foreign = (breakdown ?? []).filter((m) => m.currency !== value.currency);
     return (
       <span className={cn("inline-flex flex-col", className)}>
         {primary(value, undefined, ticker)}
-        <span className={cn(secondaryClass, dim)}>
-          {staleTitle && !unavailable ? (
-            <Tooltip content={staleTitle}>
-              <span tabIndex={0}>{convertedText}</span>
-            </Tooltip>
-          ) : (
-            convertedText
-          )}
-        </span>
+        {foreign.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className={cn(secondaryClass, dim, "text-left underline-offset-2 hover:underline")}
+            >
+              {t("convertedToday")}
+            </button>
+            <Modal
+              open={open}
+              onClose={() => setOpen(false)}
+              title={t("breakdownTitle")}
+              closeLabel={t("close")}
+            >
+              <ul className="divide-border divide-y">
+                {(breakdown ?? []).map((m, i) => {
+                  const rate =
+                    m.currency === value.currency
+                      ? null
+                      : latestRateFor(rates, m.currency, value.currency);
+                  return (
+                    <li key={i} className="flex items-center justify-between gap-3 py-3">
+                      <span className="text-body text-ink">{f.money(m)}</span>
+                      <span className="text-callout text-ink-2 tabular-nums">
+                        {m.currency === value.currency
+                          ? "—"
+                          : rate
+                            ? t("detail", {
+                                amount: f.money(convert(m, value.currency, rate)),
+                                rate: f.number(Number(rate.rate), 2),
+                                date: f.date(rate.asOf),
+                              })
+                            : t("rateUnavailable")}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Modal>
+          </>
+        )}
       </span>
     );
   }
 
   const differs = value.currency !== displayCurrency;
+  const rate =
+    !differs || status === "error"
+      ? null
+      : date
+        ? rateAt(rates, value.currency, displayCurrency, date)
+        : latestRateFor(rates, value.currency, displayCurrency);
+  const unavailable = differs && !rate;
+  const shown = rate ? convert(value, displayCurrency, rate) : value;
+  const staleTitle = rate && isStale(rate, now) ? t("rateFrom", { date: f.date(rate.asOf) }) : null;
 
-  // Fila sin tasa: el original sigue como principal y no hay tooltip.
+  // Sin tasa: el original sigue como principal y la línea dice "Tasa no disponible".
   if (unavailable) {
     return (
       <span className={cn("inline-flex flex-col items-end", className)}>
         {primary(value)}
-        {differs && <span className={secondaryClass}>{t("rateUnavailable")}</span>}
+        <span className={secondaryClass}>{t("rateUnavailable")}</span>
       </span>
     );
   }
 
-  // Fila con tasa: importe en la moneda elegida y, si difiere, el original
-  // debajo. El tooltip da el equivalente en la otra moneda con tasa y fecha.
-  const shown = convert(value, displayCurrency, rate);
+  if (!differs) {
+    return (
+      <span className={cn("inline-flex flex-col items-end", className)}>{primary(value)}</span>
+    );
+  }
+
+  // Convertido a la moneda elegida: original e insignia debajo, sin "≈".
   const detail = t("detail", {
-    amount: f.money(convert(shown, otherCurrency(displayCurrency), rate)),
-    rate: f.number(Number(rate.rate), 2),
-    date: f.date(rate.asOf),
+    amount: f.money(value),
+    rate: f.number(Number(rate!.rate), 2),
+    date: f.date(rate!.asOf),
   });
   return (
     <span className={cn("inline-flex flex-col items-end", className)}>
       <Tooltip content={staleTitle ?? detail}>
-        <span tabIndex={insideInteractive ? undefined : 0}>
-          {primary(shown, differs ? dim : undefined)}
-        </span>
+        <span tabIndex={insideInteractive ? undefined : 0}>{primary(shown, dim)}</span>
       </Tooltip>
-      {differs && (
-        <span className={secondaryClass}>{t("original", { amount: f.money(value) })}</span>
-      )}
+      <span className={cn(secondaryClass, "inline-flex items-center gap-1.5")}>
+        {t("original", { amount: f.money(value) })}
+        <Badge size="sm">{value.currency}</Badge>
+      </span>
     </span>
   );
 }

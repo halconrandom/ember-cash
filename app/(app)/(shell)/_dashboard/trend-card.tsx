@@ -29,8 +29,8 @@ export function TrendCard({ rows, month }: { rows: AggregateRow[]; month: string
   const f = useFormat();
   const reduce = useReducedMotion();
   const first = useFirstView();
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
   const months = lastMonths(month, 6);
   const { points, partial } = trend(rows, months, displayCurrency, usable);
   const peak = points.reduce(

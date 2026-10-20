@@ -38,7 +38,7 @@ function outline() {
 describe("contorno del día elegido", () => {
   it("es absoluto (no cambia el tamaño de la celda) y se queda en un solo día", () => {
     renderWithIntl(
-      <RateProvider initialRate={RATE} initialDisplayCurrency="USD" persist={false}>
+      <RateProvider initialRates={[RATE]} initialDisplayCurrency="USD" persist={false}>
         <CalendarView
           month="2026-10"
           today="2026-10-16"

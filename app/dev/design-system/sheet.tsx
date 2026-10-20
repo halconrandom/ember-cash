@@ -744,7 +744,7 @@ function MoneyCard({ t }: { t: T }) {
       {/* key: reinicia el proveedor de demo al cambiar la moneda o la tasa. */}
       <RateProvider
         key={`${display}-${status}`}
-        initialRate={rate}
+        initialRates={[rate]}
         initialDisplayCurrency={display}
         persist={false}
         forcedStatus={status === "stale" ? "idle" : status}
@@ -770,7 +770,7 @@ function MoneyCard({ t }: { t: T }) {
           <div className="space-y-3">
             <p className="text-caption text-ink-2 uppercase">{t("moneyTotal")}</p>
             <MoneyAmount
-              kind="total"
+              variant="total"
               value={display === "COP" ? money(3_360_000n, "COP") : money(84000n, "USD")}
               primaryClassName="text-amount-xl"
             />

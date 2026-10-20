@@ -1,19 +1,23 @@
 /**
- * Formato de dinero según DESIGN_SPEC §4 y el idioma:
- * - Decimales según la moneda (COP 0, USD 2), nunca según el idioma.
- * - Separadores según el idioma (es: 125.000 / 15,99; en: 125,000 / 15.99).
- * - Unidad "symbol" (por defecto): US$ delante, COP detrás.
- *   Unidad "code" (modal de transacción, §4.8): el código detrás ("31,25 USD").
- * - "≈" solo cuando se pide (totales y líneas de detalle, §4.2).
- * El formateo es exacto para cualquier tamaño: la parte entera se formatea
+ * Formato de dinero segun DESIGN_SPEC Seccion 4 y el idioma:
+ * - Decimales segun la moneda (COP 0, USD y EUR 2), nunca segun el idioma.
+ * - Separadores segun el idioma (es: 125.000 / 15,99; en: 125,000 / 15.99).
+ * - Unidad "symbol" (por defecto): US$/€ delante, COP detras.
+ *   Unidad "code" (modal de transaccion): el codigo detras ("31,25 USD").
+ * - "approx" (≈) solo cuando se pide (totales y lineas de detalle).
+ * El formateo es exacto para cualquier tamano: la parte entera se formatea
  * como bigint y los decimales se pegan como texto, sin pasar por floats.
- * Entre número y unidad va un espacio que no se parte ( ).
+ * Entre numero y unidad va un espacio que no se parte.
  */
+import type { CurrencyCode } from "@/lib/db/types";
 import { INTL_TAGS, type Locale } from "@/lib/i18n/config";
 
 import { exponentOf, scaleOf, type Money } from "./money";
 
 const NBSP = " ";
+
+/** Monedas que llevan su símbolo delante del número, como USD. */
+const PREFIX_SYMBOL: Partial<Record<CurrencyCode, string>> = { USD: "US$", EUR: "€" };
 
 /** Separador decimal del idioma ("," en es, "." en en). */
 function decimalSeparator(locale: Locale): string {
@@ -42,7 +46,7 @@ export type MoneyFormatOptions = {
   approx?: boolean;
 };
 
-/** Importe con su unidad: "US$ 15,99", "125.000 COP", "≈ US$ 840,00". */
+/** Importe con su unidad: "US$ 15,99", "€ 12,50", "125.000 COP". */
 export function formatMoney(
   m: Money,
   locale: Locale,
@@ -51,23 +55,24 @@ export function formatMoney(
   const negative = m.amountMinor < 0n;
   const amount = formatAmount(negative ? { ...m, amountMinor: -m.amountMinor } : m, locale);
   const sign = negative ? "-" : "";
-  const text =
-    unit === "symbol" && m.currency === "USD"
-      ? `${sign}US$${NBSP}${amount}`
-      : `${sign}${amount}${NBSP}${m.currency}`;
+  const symbol = unit === "symbol" ? PREFIX_SYMBOL[m.currency] : undefined;
+  const text = symbol
+    ? `${sign}${symbol}${NBSP}${amount}`
+    : `${sign}${amount}${NBSP}${m.currency}`;
   return approx ? `≈${NBSP}${text}` : text;
 }
 
 /**
  * Partes del importe para darles estilos distintos (02-transactions.png):
- * con COP el número va en negrita y la unidad "COP" detrás, más pequeña;
- * con USD el "US$" va delante y en la misma negrita que el número.
+ * con COP el numero va en negrita y la unidad "COP" detras, mas chica;
+ * con USD/EUR el simbolo va delante y en la misma negrita que el numero.
  */
 export function formatMoneyParts(m: Money, locale: Locale): { main: string; unit: string | null } {
   const negative = m.amountMinor < 0n;
   const amount = formatAmount(negative ? { ...m, amountMinor: -m.amountMinor } : m, locale);
   const sign = negative ? "-" : "";
-  return m.currency === "USD"
-    ? { main: `${sign}US$${NBSP}${amount}`, unit: null }
+  const symbol = PREFIX_SYMBOL[m.currency];
+  return symbol
+    ? { main: `${sign}${symbol}${NBSP}${amount}`, unit: null }
     : { main: `${sign}${amount}`, unit: m.currency };
 }

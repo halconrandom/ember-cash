@@ -98,6 +98,42 @@ export function totalIn(
   return total;
 }
 
+/**
+ * Busca, en una lista de tasas (como las que guarda <RateProvider>), la más
+ * reciente para el par `from`/`to` en cualquier sentido. `null` si no hay
+ * ninguna (nunca se inventa): quien llama decide qué mostrar.
+ */
+export function latestRateFor(
+  rates: readonly Rate[],
+  from: CurrencyCode,
+  to: CurrencyCode,
+): Rate | null {
+  if (from === to) return null;
+  const candidates = rates.filter(
+    (r) => (r.base === from && r.quote === to) || (r.base === to && r.quote === from),
+  );
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.asOf > a.asOf ? b : a));
+}
+
+/**
+ * Como `latestRateFor`, pero solo entre las tasas vigentes el `date` dado o
+ * antes (fase E2 §4: "la tasa de exchange_rates de la fecha del
+ * movimiento"). `null` si no hay ninguna tasa tan vieja como esa fecha.
+ */
+export function rateAt(
+  rates: readonly Rate[],
+  from: CurrencyCode,
+  to: CurrencyCode,
+  date: string,
+): Rate | null {
+  return latestRateFor(
+    rates.filter((r) => r.asOf <= date),
+    from,
+    to,
+  );
+}
+
 /** ¿La tasa tiene más de 24 h desde que se obtuvo? (estado "Stale", spec §4.9). */
 export const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 export function isStale(rate: Pick<Rate, "fetchedAt">, now: number = Date.now()): boolean {

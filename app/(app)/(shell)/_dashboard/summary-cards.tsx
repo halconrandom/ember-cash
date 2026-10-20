@@ -24,7 +24,7 @@ import type {
 import { goalPercent } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
 import { useFirstView } from "@/lib/motion/first-view";
-import { convert } from "@/lib/money/convert";
+import { convert, latestRateFor } from "@/lib/money/convert";
 import type { Money } from "@/lib/money/money";
 import { daysBetween } from "@/lib/recurring/schedule";
 
@@ -116,10 +116,13 @@ export function UpcomingCard({
 export function GoalsCard({ summary }: { summary: GoalsSummary }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
-  const show = (m: Money) =>
-    m.currency === displayCurrency || !usable ? m : convert(m, displayCurrency, usable);
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
+  const show = (m: Money) => {
+    if (m.currency === displayCurrency) return m;
+    const rate = latestRateFor(usable, m.currency, displayCurrency);
+    return rate ? convert(m, displayCurrency, rate) : m;
+  };
 
   return (
     <DashboardCard href="/savings" className="space-y-4">
@@ -178,8 +181,8 @@ export function GoalsCard({ summary }: { summary: GoalsSummary }) {
 export function DebtsCard({ summary }: { summary: DebtsSummary }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
   const balance = sumIn(summary.balances, displayCurrency, usable);
   const original = sumIn(summary.originals, displayCurrency, usable);
   const paid = sumIn(summary.paid, displayCurrency, usable);
@@ -206,7 +209,7 @@ export function DebtsCard({ summary }: { summary: DebtsSummary }) {
       ) : (
         <>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={balance.total}
             className="flex-row! flex-wrap items-baseline gap-x-2"
             primaryClassName="text-amount-xl"
@@ -233,8 +236,8 @@ export function DebtsCard({ summary }: { summary: DebtsSummary }) {
 
 export function SubscriptionsCard({ summary }: { summary: SubscriptionsSummary }) {
   const t = useTranslations("dashboard");
-  const { rate, status, displayCurrency } = useRate();
-  const usable = status === "error" ? null : rate;
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
   const monthly = sumIn(summary.monthly, displayCurrency, usable);
   const more = summary.count - summary.icons.length;
 
@@ -255,7 +258,7 @@ export function SubscriptionsCard({ summary }: { summary: SubscriptionsSummary }
       ) : (
         <>
           <MoneyAmount
-            kind="total"
+            variant="total"
             value={monthly.total}
             suffix={t("perMonth")}
             suffixClassName="text-callout text-ink-2 font-normal"

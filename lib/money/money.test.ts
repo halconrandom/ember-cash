@@ -1,7 +1,7 @@
 // Tests de lib/money: operaciones, formato, parseo y conversión.
 import { describe, expect, it } from "vitest";
 
-import { convert, divRound, isStale, parseRate, totalIn, type Rate } from "./convert";
+import { convert, divRound, isStale, latestRateFor, parseRate, rateAt, totalIn, type Rate } from "./convert";
 import { formatAmount, formatMoney } from "./format";
 import { add, compare, equals, money, negate, subtract, sum, toDbAmount } from "./money";
 import { parseMoney } from "./parse";
@@ -57,6 +57,12 @@ describe("formato", () => {
     expect(formatMoney(money(1599n, "USD"), "es")).toBe(`US$${NBSP}15,99`);
     expect(formatMoney(money(1599n, "USD"), "en")).toBe(`US$${NBSP}15.99`);
     expect(formatMoney(money(3125n, "USD"), "en", { unit: "code" })).toBe(`31.25${NBSP}USD`);
+  });
+
+  it("EUR con 2 decimales y símbolo €, igual que USD", () => {
+    expect(formatMoney(money(1250n, "EUR"), "es")).toBe(`€${NBSP}12,50`);
+    expect(formatMoney(money(1250n, "EUR"), "en")).toBe(`€${NBSP}12.50`);
+    expect(formatMoney(money(3125n, "EUR"), "en", { unit: "code" })).toBe(`31.25${NBSP}EUR`);
   });
 
   it("12 dígitos, negativos y aproximados", () => {
@@ -184,5 +190,28 @@ describe("conversión", () => {
     const now = new Date("2026-10-17T13:00:01Z").getTime();
     expect(isStale({ fetchedAt: "2026-10-16T13:00:00Z" }, now)).toBe(true);
     expect(isStale({ fetchedAt: "2026-10-16T13:00:02Z" }, now)).toBe(false);
+  });
+
+  describe("latestRateFor y rateAt (fase E2: 3 monedas)", () => {
+    const EUR_USD: Rate = { ...RATE, base: "EUR", quote: "USD", rate: "1.08", asOf: "2026-10-17" };
+    const ALL = [RATE, TRM, EUR_USD];
+
+    it("la misma moneda no necesita tasa", () => {
+      expect(latestRateFor(ALL, "COP", "COP")).toBeNull();
+    });
+
+    it("elige la más reciente del par, en cualquier sentido", () => {
+      expect(latestRateFor(ALL, "COP", "USD")).toEqual(TRM);
+      expect(latestRateFor(ALL, "USD", "EUR")).toEqual(EUR_USD);
+    });
+
+    it("sin ninguna tasa del par, null (nunca se inventa)", () => {
+      expect(latestRateFor(ALL, "EUR", "COP")).toBeNull();
+    });
+
+    it("rateAt solo mira tasas vigentes en la fecha del movimiento o antes", () => {
+      expect(rateAt(ALL, "USD", "COP", "2026-10-16")).toEqual(RATE);
+      expect(rateAt(ALL, "USD", "COP", "2026-10-15")).toBeNull();
+    });
   });
 });
