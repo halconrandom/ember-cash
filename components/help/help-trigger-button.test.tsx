@@ -12,7 +12,7 @@ afterEach(cleanup);
 describe("HelpTriggerButton", () => {
   it("tiene la etiqueta accesible del botón de ayuda", () => {
     renderWithIntl(<HelpTriggerButton onOpen={() => {}} showDot={false} />);
-    expect(screen.getByRole("button", { name: "Help" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Help (?)" })).toBeTruthy();
   });
 
   it("muestra el punto solo cuando showDot es true", () => {
@@ -25,7 +25,7 @@ describe("HelpTriggerButton", () => {
   it("llama a onOpen al tocarlo", () => {
     const onOpen = vi.fn();
     renderWithIntl(<HelpTriggerButton onOpen={onOpen} showDot={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Help" }));
+    fireEvent.click(screen.getByRole("button", { name: "Help (?)" }));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.21.2] - 2026-10-20
+
+### Corregido (botón de ayuda "?")
+
+- El botón de ayuda ya no es una pastilla con fondo/borde (tenía otra altura que el chip de tasa y el selector de moneda, y el "?" no quedaba centrado). Ahora es un botón fantasma (sin fondo ni borde en reposo) con el ícono `help` (interrogation / `CircleHelp` de lucide-react, 20 px, `text-ink-2`), área táctil de 44x44 con `inline-flex items-center justify-center` para centrarlo igual que los demás controles de la barra.
+- Hover: fondo redondo `bg-seg-track` (el mismo tono del selector COP/USD/EUR) y el ícono pasa a `text-ink`. Foco: el anillo estándar del proyecto (regla global de `:focus-visible`, sin clases extra). Sigue con `press-scale` (ya respeta `prefers-reduced-motion`).
+- `aria-label`/`title` ahora dicen "Ayuda (?)" / "Help (?)" (`help.common.buttonTooltip`, nuevo en es/en).
+- El punto de primera visita mide 8 px y queda en la esquina superior derecha del ícono, en posición absoluta dentro del botón.
+
 ## [0.21.1] - 2026-10-20
 
 ### Arreglado (visual, sin cambiar lógica)

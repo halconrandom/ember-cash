@@ -1257,6 +1257,7 @@
   "help": {
     "common": {
       "button": "Help",
+      "buttonTooltip": "Help (?)",
       "close": "Close",
       "whatYouSee": "What you see here",
       "whatYouCanDo": "What you can do",

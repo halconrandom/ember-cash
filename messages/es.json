@@ -1257,6 +1257,7 @@
   "help": {
     "common": {
       "button": "Ayuda",
+      "buttonTooltip": "Ayuda (?)",
       "close": "Cerrar",
       "whatYouSee": "Qué ves aquí",
       "whatYouCanDo": "Qué puedes hacer",
