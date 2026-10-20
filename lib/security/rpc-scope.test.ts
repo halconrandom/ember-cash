@@ -10,10 +10,15 @@ describe("alcance de RPC y de la exportación", () => {
   it("save_transaction, post_occurrence y dashboard_totals son security invoker", () => {
     const save = readFileSync("supabase/migrations/0010_household_leave.sql", "utf8");
     const post = readFileSync("supabase/migrations/0011_manual_occurrences.sql", "utf8");
-    const dash = readFileSync("supabase/migrations/0012_dashboard.sql", "utf8");
+    // 0022 reemplaza el cuerpo de 0021. La función viva es esta.
+    const dash = readFileSync("supabase/migrations/0022_dashboard_totals_guard.sql", "utf8");
     expect(save).toMatch(/function public\.save_transaction[\s\S]*?security invoker/);
     expect(post).toMatch(/function public\.post_occurrence[\s\S]*?security invoker/);
     expect(dash).toMatch(/function public\.dashboard_totals[\s\S]*?security invoker/);
+    expect(dash).toMatch(/set search_path = ''/);
+    expect(dash).toContain("auth.uid()");
+    expect(dash).toContain("%L");
+    expect(dash).not.toMatch(/\|\|/);
   });
 
   it("un ajeno no ve las tablas que exporta el CSV", () => {

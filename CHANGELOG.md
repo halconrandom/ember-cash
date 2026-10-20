@@ -2,6 +2,13 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.18.1] - 2026-10-20
+
+### Corregido (revisión de `dashboard_totals`, fase E3)
+
+- Migración `0022_dashboard_totals_guard.sql`: antes de armar el SQL dinámico, la moneda se busca en `currencies` y se rechaza con `unknown_display_currency` (22023) si no está; a `format()` entra el `code` del catálogo, no el texto del llamador. Las fechas se castean a `date` antes de interpolar y el literal del SQL vuelve a castearse (`::date`). El hogar se copia a una variable `uuid`. Siguen iguales el resultado para COP/USD/EUR, `auth.uid()` dentro de la función, `security invoker` y `search_path` vacío. Los literales van por `format()` con `%L`.
+- Test `supabase/tests/dashboard_totals_guard.sql`: moneda `USD'); drop table x;--`, una llamada que marcaría un canario si el texto se concatenara, fechas inválidas (y una fecha con el mismo drop) y un hogar que no es uuid. Todas fallan sin tocar la tabla temporal `x`. `lib/security/rpc-scope.test.ts` mira esta migración.
+
 ## [0.18.0] - 2026-10-19
 
 ### Añadido (fase E3: dashboard en la moneda de visualización)
