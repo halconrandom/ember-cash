@@ -25,7 +25,7 @@ export function HelpTriggerButton({ onOpen, showDot, className }: Props) {
       onClick={onOpen}
       aria-label={t("button")}
       className={cn(
-        "text-ink-2 hover:bg-surface2 hover:text-ink relative grid size-11 shrink-0 place-items-center rounded-full text-headline font-semibold transition-colors duration-100",
+        "border-border bg-surface text-ink-2 hover:bg-surface2 hover:text-ink press-scale relative grid size-11 shrink-0 place-items-center rounded-full border text-headline font-semibold transition-colors duration-100",
         className,
       )}
     >

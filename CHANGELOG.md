@@ -2,6 +2,13 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.21.1] - 2026-10-20
+
+### Arreglado (visual, sin cambiar lógica)
+
+- Suscripciones: en cada tarjeta y en "Próximos cobros", el nombre y el monto ya van en la misma fila (nombre con `truncate`, monto con `shrink-0 whitespace-nowrap`); las píldoras (Mensual/Vencida/Pausada) y el "Próximo …" bajan a su propia fila con `flex-wrap`, así que ya no se apilan ni se parten en dos líneas. El pie de cada tarjeta ("Cancelar" / "Marcar como pagado") queda con la misma altura en todas, incluida la pausada: cuando no hay cobro pendiente, el botón se reserva invisible (`invisible`, sin foco) en vez de desaparecer. "Marcar como pagado" ya no se parte en ningún lado (`whitespace-nowrap`).
+- Botón de ayuda "?": mismo tratamiento que los demás controles de la barra (`border-border bg-surface`, como el chip de tasa), con hover, foco y `press-scale` iguales a los otros botones (ya respeta `prefers-reduced-motion`, que es una regla global). El punto de primera visita sigue dentro del propio botón, en posición absoluta.
+
 ## [0.21.0] - 2026-10-20
 
 ### Añadido (fase F3: ayuda en el resto de páginas y repetir la introducción)

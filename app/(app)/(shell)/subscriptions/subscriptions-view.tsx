@@ -254,56 +254,66 @@ export function SubscriptionsView({
                       <button
                         type="button"
                         onClick={() => openEdit(item.id)}
-                        className="flex w-full items-start gap-4 text-left"
+                        className="flex w-full flex-col gap-3 text-left"
                       >
-                        <span className="bg-violet-tint text-violet grid size-12 shrink-0 place-items-center rounded-full">
-                          <Icon name={item.iconKey} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="text-headline text-ink block">{item.name}</span>
-                          {item.subtitle && (
-                            <span className="text-footnote text-ink-3 mt-0.5 block">
-                              {item.subtitle}
-                            </span>
-                          )}
-                          <span className="mt-3 flex flex-wrap items-center gap-2">
-                            <Badge tone="violet" size="sm">
-                              {frequencyLabel(item, t)}
-                            </Badge>
-                            {pendingNow && <StateBadge state={pendingNow.state} />}
-                            {item.status === "paused" ? (
-                              <Badge tone="warning" size="sm">
-                                {t("paused")}
-                              </Badge>
-                            ) : (
-                              item.nextDate && (
-                                <span className="text-footnote text-ink-2">
-                                  {t("nextOn", { date: f.date(item.nextDate) })}
+                        <span className="flex w-full items-center gap-4">
+                          <span className="bg-violet-tint text-violet grid size-12 shrink-0 place-items-center rounded-full">
+                            <Icon name={item.iconKey} />
+                          </span>
+                          <span className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                            <span className="min-w-0">
+                              <span className="text-headline text-ink block truncate">
+                                {item.name}
+                              </span>
+                              {item.subtitle && (
+                                <span className="text-footnote text-ink-3 mt-0.5 block truncate">
+                                  {item.subtitle}
                                 </span>
-                              )
-                            )}
+                              )}
+                            </span>
+                            <MoneyAmount
+                              value={item.amount}
+                              className="shrink-0 text-right whitespace-nowrap"
+                            />
                           </span>
                         </span>
-                        <MoneyAmount value={item.amount} className="shrink-0 text-right" />
+                        <span className="flex flex-wrap items-center gap-2">
+                          <Badge tone="violet" size="sm">
+                            {frequencyLabel(item, t)}
+                          </Badge>
+                          {pendingNow && <StateBadge state={pendingNow.state} />}
+                          {item.status === "paused" ? (
+                            <Badge tone="warning" size="sm">
+                              {t("paused")}
+                            </Badge>
+                          ) : (
+                            item.nextDate && (
+                              <span className="text-footnote text-ink-2 whitespace-nowrap">
+                                {t("nextOn", { date: f.date(item.nextDate) })}
+                              </span>
+                            )
+                          )}
+                        </span>
                       </button>
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <button
                           type="button"
                           onClick={() => cancel(item)}
-                          className="text-footnote text-ink-3 hover:text-negative-text"
+                          className="text-footnote text-ink-3 hover:text-negative-text whitespace-nowrap"
                         >
                           {t("cancel")}
                         </button>
-                        {pendingNow && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            icon="check"
-                            onClick={() => setPaying(pendingNow)}
-                          >
-                            {t("markPaid")}
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon="check"
+                          onClick={() => pendingNow && setPaying(pendingNow)}
+                          className={cn(!pendingNow && "invisible")}
+                          tabIndex={pendingNow ? undefined : -1}
+                          aria-hidden={!pendingNow}
+                        >
+                          {t("markPaid")}
+                        </Button>
                       </div>
                     </AnimatedListItem>
                   );
@@ -371,7 +381,7 @@ export function SubscriptionsView({
                         <button
                           type="button"
                           onClick={() => setPaying(item)}
-                          className="text-callout text-ember-text mt-1 block font-semibold hover:underline"
+                          className="text-callout text-ember-text mt-1 block font-semibold whitespace-nowrap hover:underline"
                         >
                           {t("markPaid")}
                         </button>
