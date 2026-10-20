@@ -17,6 +17,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { GlossaryTerm } from "@/components/help/glossary-term";
 import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
 import { Avatar } from "@/components/ui/avatar";
@@ -139,7 +140,7 @@ export function HouseholdView(props: Props) {
   const monthLabel = f.date(`${month}-01`, "monthYear");
 
   return (
-    <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
+    <div id="help-see-household" className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
       {members.map((m) => (
         <MemberCard
           key={m.userId}
@@ -392,7 +393,10 @@ function ExpensesCard({
         <h2 className="text-title2 text-ink">
           {t("expensesTitle")}{" "}
           <span className="text-callout text-ink-2 font-normal">
-            {t("expensesSubtitle", { month: monthLabel })}
+            {t.rich("expensesSubtitle", {
+              month: monthLabel,
+              fifty: (chunks) => <GlossaryTerm term="fiftyFifty">{chunks}</GlossaryTerm>,
+            })}
           </span>
         </h2>
         {members.length > 1 && (

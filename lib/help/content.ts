@@ -1,7 +1,7 @@
 /**
  * Contenido del panel de ayuda por página (help/<página>.<idioma>.json),
  * cargado solo cuando se abre (import dinámico: no entra al paquete
- * principal). Fase F2: Panel, Deudas y Suscripciones; el resto llega en F3.
+ * principal). Fase F3: las 8 páginas de docs/onboarding/spec.md.
  */
 import type { HelpPage } from "@/lib/events/validate";
 import type { Locale } from "@/lib/i18n/config";
@@ -18,8 +18,17 @@ export type HelpContent = {
   faq: HelpFaqItem[];
 };
 
-/** Páginas con contenido de ayuda en esta fase. */
-export const HELP_PAGES_READY = ["dashboard", "debts", "subscriptions"] as const satisfies readonly HelpPage[];
+/** Páginas con contenido de ayuda: las 8 de docs/onboarding/spec.md (fase F3). */
+export const HELP_PAGES_READY = [
+  "dashboard",
+  "transactions",
+  "savings",
+  "debts",
+  "subscriptions",
+  "calendar",
+  "household",
+  "settings",
+] as const satisfies readonly HelpPage[];
 export type HelpPageReady = (typeof HELP_PAGES_READY)[number];
 
 export function hasHelp(page: string): page is HelpPageReady {
@@ -33,10 +42,20 @@ export function hasHelp(page: string): page is HelpPageReady {
 const LOADERS: Record<`${HelpPageReady}.${Locale}`, () => Promise<{ default: HelpContent }>> = {
   "dashboard.es": () => import("@/help/dashboard.es.json"),
   "dashboard.en": () => import("@/help/dashboard.en.json"),
+  "transactions.es": () => import("@/help/transactions.es.json"),
+  "transactions.en": () => import("@/help/transactions.en.json"),
+  "savings.es": () => import("@/help/savings.es.json"),
+  "savings.en": () => import("@/help/savings.en.json"),
   "debts.es": () => import("@/help/debts.es.json"),
   "debts.en": () => import("@/help/debts.en.json"),
   "subscriptions.es": () => import("@/help/subscriptions.es.json"),
   "subscriptions.en": () => import("@/help/subscriptions.en.json"),
+  "calendar.es": () => import("@/help/calendar.es.json"),
+  "calendar.en": () => import("@/help/calendar.en.json"),
+  "household.es": () => import("@/help/household.es.json"),
+  "household.en": () => import("@/help/household.en.json"),
+  "settings.es": () => import("@/help/settings.es.json"),
+  "settings.en": () => import("@/help/settings.en.json"),
 };
 
 export async function loadHelpContent(page: HelpPageReady, locale: Locale): Promise<HelpContent> {

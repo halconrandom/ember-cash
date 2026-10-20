@@ -9,7 +9,8 @@
  * Estructura (docs/onboarding/spec.md): propósito; "Qué ves aquí" con
  * "Mostrar" (resalta la sección de la página, sin tapar nada); "Qué puedes
  * hacer"; preguntas frecuentes (acordeón nativo <details>); pie con
- * "Repetir la introducción" (deshabilitado hasta la fase F3).
+ * "Repetir la introducción" (fase F3: abre /onboarding?replay=1, con los
+ * valores actuales precargados; no borra ni duplica nada).
  */
 import { Dialog } from "@base-ui/react/dialog";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -19,7 +20,6 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { loadHelpContent, type HelpContent, type HelpPageReady } from "@/lib/help/content";
-import { cn } from "@/lib/utils";
 
 const PANEL_TRANSITION = { duration: 0.22, ease: [0.23, 1, 0.32, 1] } as const;
 
@@ -163,17 +163,12 @@ export function HelpPanel({ page, open, onClose }: Props) {
               </div>
 
               <div className="border-divider border-t px-5 py-4">
-                <button
-                  type="button"
-                  disabled
-                  aria-disabled="true"
-                  className={cn(
-                    "text-callout text-ink-3 inline-flex min-h-11 items-center font-semibold",
-                    "cursor-not-allowed",
-                  )}
+                <a
+                  href="/onboarding?replay=1&step=0"
+                  className="text-callout text-ember-text inline-flex min-h-11 items-center font-semibold"
                 >
                   {t("replay")}
-                </button>
+                </a>
               </div>
             </Dialog.Popup>
           </Dialog.Portal>

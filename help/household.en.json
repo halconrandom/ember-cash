@@ -1,0 +1,15 @@
+{
+  "purpose": "Share expenses and goals with the people you live with.",
+  "see": "Your household's members. · Shared expenses and how they're split. · Who owes whom.",
+  "do": "Invite someone by email. · Choose how to split: 50/50 or another proportion. · Mark an account as settled.",
+  "faq": [
+    {
+      "q": "Can they see all my data?",
+      "a": "Only what you share with the household. Everything else stays yours."
+    },
+    {
+      "q": "Can I leave a household?",
+      "a": "Yes, right from here. Settle up before you leave."
+    }
+  ]
+}

@@ -82,7 +82,7 @@ async function TransactionsContent({ searchParams }: { searchParams: SearchParam
     filters.type !== "all";
 
   return (
-    <div className="space-y-6">
+    <div id="help-see-transactions" className="space-y-6">
       <TopbarSubtitle text={subtitle} />
       <FilterBar filters={filters} accounts={accounts} today={today} />
       <TransactionTable

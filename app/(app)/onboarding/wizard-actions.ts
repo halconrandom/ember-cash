@@ -107,11 +107,23 @@ function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "");
 }
 
+function isReplay(formData: FormData): boolean {
+  return text(formData, "replay") === "1";
+}
+
+/**
+ * A /onboarding, al paso que toque. En replay el paso va en la URL
+ * (profiles.onboarding_step ya quedó en "terminado" de verdad y no se toca).
+ */
+function wizardRedirect(replay: boolean, step: number): never {
+  redirect(replay ? `/onboarding?replay=1&step=${step}` : "/onboarding");
+}
+
 /** Bienvenida → moneda. Emite started y el paso 0 una sola vez. */
 export async function startOnboarding(prev: StepResult, formData: FormData): Promise<StepResult> {
-  // useActionState siempre pasa el estado y el formulario; este paso no los lee.
+  // useActionState siempre pasa el estado; este paso solo lee replay.
   void prev;
-  void formData;
+  const replay = isReplay(formData);
   const user = await requireUser();
   const currency = await ensureLocaleCurrency(user.id);
   if (currency !== "ok") return failed(currency);
@@ -119,17 +131,20 @@ export async function startOnboarding(prev: StepResult, formData: FormData): Pro
   if (started !== "ok") return failed(started);
   const welcome = await mark("onboarding_step_completed", { step: 0 });
   if (welcome !== "ok") return failed(welcome);
-  const profile = await getCurrentProfile();
-  if ((profile.onboarding_step ?? 0) < 1) {
-    const saved = await patchProfile(user.id, { onboarding_step: 1 });
-    if (saved !== "ok") return failed(saved);
+  if (!replay) {
+    const profile = await getCurrentProfile();
+    if ((profile.onboarding_step ?? 0) < 1) {
+      const saved = await patchProfile(user.id, { onboarding_step: 1 });
+      if (saved !== "ok") return failed(saved);
+    }
   }
-  redirect("/onboarding");
+  wizardRedirect(replay, 1);
 }
 
 /** Guarda la moneda principal y avanza a la cuenta. */
 export async function saveCurrency(_prev: StepResult, formData: FormData): Promise<StepResult> {
   const user = await requireUser();
+  const replay = isReplay(formData);
   const currency = text(formData, "currency");
   if (currency !== "COP" && currency !== "USD" && currency !== "EUR") {
     return { formError: "onboarding.currency.error", fields: {} };
@@ -138,12 +153,14 @@ export async function saveCurrency(_prev: StepResult, formData: FormData): Promi
   if (saved !== "ok") return failed(saved);
   const marked = await mark("onboarding_step_completed", { step: 1 });
   if (marked !== "ok") return failed(marked);
-  const profile = await getCurrentProfile();
-  if ((profile.onboarding_step ?? 0) < 2) {
-    const step = await patchProfile(user.id, { onboarding_step: 2 });
-    if (step !== "ok") return failed(step);
+  if (!replay) {
+    const profile = await getCurrentProfile();
+    if ((profile.onboarding_step ?? 0) < 2) {
+      const step = await patchProfile(user.id, { onboarding_step: 2 });
+      if (step !== "ok") return failed(step);
+    }
   }
-  redirect("/onboarding");
+  wizardRedirect(replay, 2);
 }
 
 async function findAccount(
@@ -170,6 +187,7 @@ async function findAccount(
 /** Crea la primera cuenta (o reutiliza la misma) y, si hay saldo, una transacción. */
 export async function saveFirstAccount(_prev: StepResult, formData: FormData): Promise<StepResult> {
   const user = await requireUser();
+  const replay = isReplay(formData);
   const locale = await localeOf();
   const parsed = validateAccountForm(
     {
@@ -251,13 +269,15 @@ export async function saveFirstAccount(_prev: StepResult, formData: FormData): P
   if (item !== "ok") return failed(item, "onboarding.account.errors.save");
   const step = await mark("onboarding_step_completed", { step: 2 });
   if (step !== "ok") return failed(step, "onboarding.account.errors.save");
-  const profile = await getCurrentProfile();
-  if ((profile.onboarding_step ?? 0) < 3) {
-    const advanced = await patchProfile(user.id, { onboarding_step: 3 });
-    if (advanced !== "ok") return failed(advanced, "onboarding.account.errors.save");
+  if (!replay) {
+    const profile = await getCurrentProfile();
+    if ((profile.onboarding_step ?? 0) < 3) {
+      const advanced = await patchProfile(user.id, { onboarding_step: 3 });
+      if (advanced !== "ok") return failed(advanced, "onboarding.account.errors.save");
+    }
   }
   revalidatePath("/", "layout");
-  redirect("/onboarding");
+  wizardRedirect(replay, 3);
 }
 
 /** Busca un elemento igual para no duplicarlo si el paso se reintenta. */
@@ -390,9 +410,11 @@ export async function saveFocus(_prev: StepResult, formData: FormData): Promise<
   if (step !== "ok") return failed(step);
   const completed = await mark("onboarding_completed", {});
   if (completed !== "ok") return failed(completed);
+  // En replay, onboarded_at ya existe: se conserva (nunca se pisa con una
+  // fecha nueva). profile ya se leyó arriba, antes de guardar nada.
   const saved = await patchProfile(user.id, {
     onboarding_step: 4,
-    onboarded_at: new Date().toISOString(),
+    onboarded_at: profile.onboarded_at ?? new Date().toISOString(),
   });
   if (saved !== "ok") return failed(saved);
   revalidatePath("/", "layout");
@@ -401,10 +423,13 @@ export async function saveFocus(_prev: StepResult, formData: FormData): Promise<
 
 /**
  * Omitir: moneda del idioma si no eligió una, onboarded_at y la pista del
- * panel cerrada. No abre un modal y no emite onboarding_completed.
+ * panel cerrada. No abre un modal y no emite onboarding_completed. En
+ * replay no hay nada que "omitir" de verdad (ya está hecho): solo cierra,
+ * sin tocar el perfil ni emitir onboarding_skipped (no es un abandono real).
  */
 export async function skipOnboarding(_prev: StepResult, formData: FormData): Promise<StepResult> {
   const user = await requireUser();
+  if (isReplay(formData)) redirect("/");
   const step = Number(text(formData, "step"));
   if (!Number.isInteger(step) || step < 0 || step > 4) return failed("failed");
   const currency = await ensureLocaleCurrency(user.id);
@@ -422,12 +447,20 @@ export async function skipOnboarding(_prev: StepResult, formData: FormData): Pro
   redirect("/?skipped=1");
 }
 
-/** Vuelve un paso. No borra lo ya creado ni vuelve a emitir eventos. */
+/**
+ * Vuelve un paso. No borra lo ya creado ni vuelve a emitir eventos. En
+ * replay el paso viaja en el propio formulario (profiles.onboarding_step no
+ * sirve: ya quedó en "terminado").
+ */
 export async function goBack(prev: StepResult, formData: FormData): Promise<StepResult> {
-  // useActionState siempre pasa el estado y el formulario; volver no los lee.
+  // useActionState siempre pasa el estado; este paso no lo lee.
   void prev;
-  void formData;
   const user = await requireUser();
+  if (isReplay(formData)) {
+    const step = Number(text(formData, "step"));
+    const previous = Number.isInteger(step) && step > 0 ? step - 1 : 0;
+    redirect(`/onboarding?replay=1&step=${previous}`);
+  }
   const profile = await getCurrentProfile();
   const step = profile.onboarding_step ?? 0;
   if (step >= 1 && step <= 3) {

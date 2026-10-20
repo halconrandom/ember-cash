@@ -27,6 +27,7 @@ import {
   type WizardAccountType,
   type WizardStep,
 } from "@/lib/onboarding/logic";
+import type { ReplayAccountDefault, ReplayFocusDefault } from "@/lib/onboarding/replay";
 import { cn } from "@/lib/utils";
 
 import {
@@ -57,12 +58,21 @@ function useMessage() {
   return (key: string | null | undefined) => (key ? t(key) : null);
 }
 
-function SkipForm({ step, label }: { step: WizardStep; label: string }) {
+function SkipForm({
+  step,
+  label,
+  replay,
+}: {
+  step: WizardStep;
+  label: string;
+  replay?: boolean;
+}) {
   const [state, action, pending] = useActionState(skipOnboarding, INITIAL);
   const message = useMessage();
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="step" value={step} />
+      {replay && <input type="hidden" name="replay" value="1" />}
       <button
         type="submit"
         disabled={pending}
@@ -75,11 +85,13 @@ function SkipForm({ step, label }: { step: WizardStep; label: string }) {
   );
 }
 
-function BackForm() {
+function BackForm({ step, replay }: { step: WizardStep; replay?: boolean }) {
   const t = useTranslations("onboarding.common");
   const [, action, pending] = useActionState(goBack, INITIAL);
   return (
     <form action={action}>
+      <input type="hidden" name="step" value={step} />
+      {replay && <input type="hidden" name="replay" value="1" />}
       <Button type="submit" variant="secondary" disabled={pending}>
         {t("back")}
       </Button>
@@ -104,7 +116,7 @@ function RateLine({ currency, rates }: { currency: CurrencyCode; rates: readonly
   );
 }
 
-function Welcome() {
+function Welcome({ replay }: { replay?: boolean }) {
   const t = useTranslations("onboarding");
   const [state, action, pending] = useActionState(startOnboarding, INITIAL);
   const message = useMessage();
@@ -117,22 +129,33 @@ function Welcome() {
         <p className="text-body text-ink-2 mt-2">{t("welcome.body")}</p>
       </div>
       <form action={action} className="space-y-3">
+        {replay && <input type="hidden" name="replay" value="1" />}
         <Button type="submit" disabled={pending}>
           {t("welcome.primary")}
         </Button>
         <FormError message={message(state.formError)} />
       </form>
-      <form method="post" action="/auth/signout">
-        <Button type="submit" variant="secondary">
-          {t("welcome.login")}
-        </Button>
-      </form>
-      <SkipForm step={0} label={t("common.skipAll")} />
+      {!replay && (
+        <form method="post" action="/auth/signout">
+          <Button type="submit" variant="secondary">
+            {t("welcome.login")}
+          </Button>
+        </form>
+      )}
+      <SkipForm step={0} label={t("common.skipAll")} replay={replay} />
     </div>
   );
 }
 
-function CurrencyStep({ currency, rates }: { currency: CurrencyCode; rates: readonly Rate[] }) {
+function CurrencyStep({
+  currency,
+  rates,
+  replay,
+}: {
+  currency: CurrencyCode;
+  rates: readonly Rate[];
+  replay?: boolean;
+}) {
   const t = useTranslations("onboarding");
   const [selected, setSelected] = useState(currency);
   const [state, action, pending] = useActionState(saveCurrency, INITIAL);
@@ -152,6 +175,7 @@ function CurrencyStep({ currency, rates }: { currency: CurrencyCode; rates: read
           <p className="text-body text-ink-2 mt-2">{t("currency.help")}</p>
         </div>
         <input type="hidden" name="currency" value={selected} />
+        {replay && <input type="hidden" name="replay" value="1" />}
         <SegmentedControl
           label={t("currency.title")}
           options={options}
@@ -162,20 +186,28 @@ function CurrencyStep({ currency, rates }: { currency: CurrencyCode; rates: read
         <FormError message={message(state.formError)} />
       </form>
       <div className="flex flex-wrap items-center gap-3">
-        <BackForm />
+        <BackForm step={1} replay={replay} />
         <Button type="submit" form={formId} disabled={pending}>
           {t("common.next")}
         </Button>
       </div>
-      <SkipForm step={1} label={t("common.skip")} />
+      <SkipForm step={1} label={t("common.skip")} replay={replay} />
     </div>
   );
 }
 
-function AccountStep({ currency }: { currency: CurrencyCode }) {
+function AccountStep({
+  currency,
+  replay,
+  defaults,
+}: {
+  currency: CurrencyCode;
+  replay?: boolean;
+  defaults?: ReplayAccountDefault;
+}) {
   const t = useTranslations("onboarding");
-  const [type, setType] = useState<WizardAccountType>("savings");
-  const [money, setMoney] = useState(currency);
+  const [type, setType] = useState<WizardAccountType>(defaults?.type ?? "savings");
+  const [money, setMoney] = useState(defaults?.currency ?? currency);
   const [state, action, pending] = useActionState(saveFirstAccount, INITIAL);
   const message = useMessage();
   const typeLegend = useId();
@@ -189,6 +221,7 @@ function AccountStep({ currency }: { currency: CurrencyCode }) {
           </h1>
           <p className="text-body text-ink-2 mt-2">{t("account.help")}</p>
         </div>
+        {replay && <input type="hidden" name="replay" value="1" />}
         <fieldset aria-labelledby={typeLegend} className="space-y-2">
           <legend id={typeLegend} className="text-callout text-ink-2 font-semibold">
             {t("account.typeLabel")}
@@ -212,6 +245,7 @@ function AccountStep({ currency }: { currency: CurrencyCode }) {
         <Field
           label={t("account.nameLabel")}
           name="name"
+          defaultValue={defaults?.name}
           placeholder={t("account.namePlaceholder")}
           error={message(state.fields.name)}
           style={INPUT_16}
@@ -259,22 +293,22 @@ function AccountStep({ currency }: { currency: CurrencyCode }) {
         <FormError message={message(state.formError)} />
       </form>
       <div className="flex flex-wrap items-center gap-3">
-        <BackForm />
+        <BackForm step={2} replay={replay} />
         <Button type="submit" form={formId} disabled={pending}>
           {t("common.next")}
         </Button>
       </div>
-      <SkipForm step={2} label={t("common.skip")} />
+      <SkipForm step={2} label={t("common.skip")} replay={replay} />
     </div>
   );
 }
 
-function FocusStep() {
+function FocusStep({ replay, defaults }: { replay?: boolean; defaults?: ReplayFocusDefault }) {
   const t = useTranslations("onboarding");
   const labels = subscriptionChipLabels(t("focus.sub.chips"));
-  const [choice, setChoice] = useState("");
+  const [choice, setChoice] = useState(defaults?.choice ?? "");
   const [chip, setChip] = useState("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState(defaults?.name ?? "");
   const [state, action, pending] = useActionState(saveFocus, INITIAL);
   const message = useMessage();
   const legend = useId();
@@ -295,6 +329,7 @@ function FocusStep() {
           </h1>
           <p className="text-body text-ink-2 mt-2">{t("focus.help")}</p>
         </div>
+        {replay && <input type="hidden" name="replay" value="1" />}
         <fieldset aria-labelledby={legend} className="space-y-2">
           <legend id={legend} className="sr-only">
             {t("focus.title")}
@@ -343,6 +378,7 @@ function FocusStep() {
               label={t("focus.goal.targetLabel")}
               name="target"
               inputMode="decimal"
+              defaultValue={defaults?.choice === "savings" ? defaults.target : undefined}
               error={message(state.fields.target)}
               style={INPUT_16}
             />
@@ -350,6 +386,7 @@ function FocusStep() {
               label={t("focus.goal.currentLabel")}
               name="current"
               inputMode="decimal"
+              defaultValue={defaults?.choice === "savings" ? defaults.current : undefined}
               error={message(state.fields.current)}
               style={INPUT_16}
             />
@@ -368,6 +405,7 @@ function FocusStep() {
             <Field
               label={t("focus.debt.nameLabel")}
               name="name"
+              defaultValue={defaults?.choice === "debt" ? defaults.name : undefined}
               placeholder={t("focus.debt.namePlaceholder")}
               error={message(state.fields.name)}
               style={INPUT_16}
@@ -376,6 +414,7 @@ function FocusStep() {
               label={t("focus.debt.balanceLabel")}
               name="balance"
               inputMode="decimal"
+              defaultValue={defaults?.choice === "debt" ? defaults.balance : undefined}
               error={message(state.fields.balance)}
               style={INPUT_16}
             />
@@ -440,6 +479,7 @@ function FocusStep() {
               label={t("focus.sub.amountLabel")}
               name="amount"
               inputMode="decimal"
+              defaultValue={defaults?.choice === "subscription" ? defaults.amount : undefined}
               error={message(state.fields.amount)}
               style={INPUT_16}
             />
@@ -456,12 +496,12 @@ function FocusStep() {
         <FormError message={message(state.formError)} />
       </form>
       <div className="flex flex-wrap items-center gap-3">
-        <BackForm />
+        <BackForm step={3} replay={replay} />
         <Button type="submit" form={formId} disabled={pending}>
           {t("focus.create")}
         </Button>
       </div>
-      <SkipForm step={3} label={t("common.skip")} />
+      <SkipForm step={3} label={t("common.skip")} replay={replay} />
     </div>
   );
 }
@@ -475,10 +515,17 @@ export function Wizard({
   step,
   currency,
   rates,
+  replay,
+  accountDefault,
+  focusDefault,
 }: {
   step: WizardStep;
   currency: CurrencyCode;
   rates: readonly Rate[];
+  /** "Repetir la introducción" (Ajustes > Ayuda, fase F3): no toca onboarded_at. */
+  replay?: boolean;
+  accountDefault?: ReplayAccountDefault;
+  focusDefault?: ReplayFocusDefault;
 }) {
   const t = useTranslations("onboarding.common");
   // "always" en tests y prefers-reduced-motion en la app: solo el fundido.
@@ -509,10 +556,12 @@ export function Wizard({
           </>
         )}
       </div>
-      {step === 0 && <Welcome />}
-      {step === 1 && <CurrencyStep currency={currency} rates={rates} />}
-      {step === 2 && <AccountStep currency={currency} />}
-      {step === 3 && <FocusStep />}
+      {step === 0 && <Welcome replay={replay} />}
+      {step === 1 && <CurrencyStep currency={currency} rates={rates} replay={replay} />}
+      {step === 2 && (
+        <AccountStep currency={currency} replay={replay} defaults={accountDefault} />
+      )}
+      {step === 3 && <FocusStep replay={replay} defaults={focusDefault} />}
     </motion.div>
   );
 }

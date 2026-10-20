@@ -168,7 +168,7 @@ export function CalendarView({
   });
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div id="help-see-calendar" className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <Card className="p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">

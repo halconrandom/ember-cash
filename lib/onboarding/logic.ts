@@ -112,6 +112,11 @@ function dbAccountType(key: WizardAccountType): AccountType {
   return WIZARD_ACCOUNT_TYPES.find((item) => item.key === key)!.db;
 }
 
+/** El sentido inverso: de una cuenta ya creada, qué clave del wizard le toca. */
+export function wizardAccountTypeOf(dbType: AccountType): WizardAccountType {
+  return WIZARD_ACCOUNT_TYPES.find((item) => item.db === dbType)!.key;
+}
+
 function isCurrency(value: string): value is CurrencyCode {
   return (CURRENCY_CODES as readonly string[]).includes(value);
 }

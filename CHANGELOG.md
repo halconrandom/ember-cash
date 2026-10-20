@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.21.0] - 2026-10-20
+
+### Añadido (fase F3: ayuda en el resto de páginas y repetir la introducción)
+
+- Botón y panel de ayuda (mismo componente de F2) ahora en Transacciones, Ahorros, Calendario, Hogar y Ajustes, además de Panel, Deudas y Suscripciones: `HELP_PAGES_READY` ya tiene las 8 páginas de `docs/onboarding/spec.md`. Copy nuevo en `help/<página>.{es,en}.json` (transactions, savings, calendar, household, settings), igual que F2.
+- Ajustes > Ayuda > "Repetir la introducción" y el mismo botón en el pie del panel de ayuda (antes deshabilitado) abren `/onboarding?replay=1&step=0`.
+- `wizard-actions.ts`: con `replay=1` (campo oculto en cada formulario del wizard) las acciones ya no tocan `profiles.onboarding_step` (ese campo quedó en "terminado" de verdad; el paso del replay viaja en la URL, `?step=N`) y `saveFocus` nunca pisa `onboarded_at` si ya existe. "Omitir" en replay solo cierra, sin emitir `onboarding_skipped` (no es un abandono real). Nada nuevo se duplica: `saveFirstAccount`/`saveFocus` ya reutilizaban por nombre + moneda desde F1; eso ya bastaba para no crear una segunda cuenta, meta, deuda o suscripción.
+- `lib/onboarding/replay.ts`: la cuenta, la meta, la deuda o la suscripción que ya existen (en ese orden), para precargar el wizard — moneda, tipo, nombre y montos ya escritos cuando se repite la introducción.
+- Hogar: popover de jerga para "reparto equitativo 50/50" (`glossary.fiftyFifty`), en el subtítulo de "Gastos compartidos", con el mismo `<GlossaryTerm>` de Deudas (Avalanche/Snowball/APR).
+- Revisadas las métricas de F1 (`docs/onboarding/metrics.sql`): `public.events` todavía no existe en el Supabase real (sus migraciones no se han llevado a producción con `db:push`), así que no hay ninguna fila que analizar aún. No se encontró ningún paso de abandono con datos reales — no hay datos, punto. Nota agregada en el propio archivo; no se cambió ninguna regla de UX a partir de esto.
+- La tecla "?" se verificó explícitamente: no abre la ayuda con el foco en un input, un textarea o un contenteditable. La comprobación se extrajo a `lib/help/shortcut.ts` (antes en línea dentro de `topbar.tsx`) para poder probarla sola.
+
 ## [0.20.0] - 2026-10-20
 
 ### Añadido (fase F2: botón de ayuda contextual)

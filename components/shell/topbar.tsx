@@ -21,6 +21,7 @@ import { Icon } from "@/components/ui/icon";
 import { recordEvent } from "@/lib/events/record";
 import { hasHelp } from "@/lib/help/content";
 import { hasSeenHelp, markHelpSeen } from "@/lib/help/seen";
+import { isTypingTarget } from "@/lib/help/shortcut";
 import { withFilters } from "@/lib/transactions/filters";
 
 import { MonthSelector } from "./month-selector";
@@ -55,8 +56,7 @@ export function Topbar() {
     if (!helpPage) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "?") return;
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      if (isTypingTarget(event.target)) return;
       event.preventDefault();
       setHelpOpen(true);
     }

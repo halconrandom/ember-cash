@@ -1,0 +1,15 @@
+{
+  "purpose": "Tus pagos y cobros del mes en un solo lugar.",
+  "see": "Los días con pagos marcados. · Deudas, suscripciones y tarjetas por fecha. · El total de cada día.",
+  "do": "Tocar un día para ver el detalle. · Cambiar de mes. · Agregar un pago desde una fecha.",
+  "faq": [
+    {
+      "q": "¿De dónde salen estas fechas?",
+      "a": "De los días de pago que pusiste en deudas, tarjetas y suscripciones."
+    },
+    {
+      "q": "Un pago no aparece.",
+      "a": "Revisa que tenga día de pago. Sin fecha no lo podemos ubicar."
+    }
+  ]
+}

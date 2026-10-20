@@ -320,6 +320,10 @@
     },
     "skipped": {
       "toast": "No problem. We used default values and you can change them in Settings."
+    },
+    "replay": {
+      "label": "Replay the introduction",
+      "help": "You'll see your current data. Nothing is deleted or duplicated."
     }
   },
   "firstSteps": {
@@ -413,7 +417,7 @@
       "failed": "Couldn't record it. Try again."
     },
     "expensesTitle": "Shared expenses",
-    "expensesSubtitle": "{month}, equal split",
+    "expensesSubtitle": "{month}, <fifty>50/50 equal split</fifty>",
     "expensesEmpty": "No shared expenses in {month}.",
     "filterLabel": "Filter by who paid",
     "filterAll": "All",
@@ -488,7 +492,9 @@
     "backup": "Backup",
     "backupBody": "Downloads a ZIP with one CSV per table. Amounts are integers in minor units (pesos for COP, cents for USD) and each row keeps its currency.",
     "exportCsv": "Export CSV",
-    "backupRestore": "There is no automatic import. To restore, keep the identifiers and load the rows again in this order: profiles, households, members, departures, accounts, goals, debts, recurring items, transactions, splits, contributions, payments, occurrences, budgets and settlements. If the file includes TRUNCATED.txt, the download is incomplete. A full project backup lives in Supabase, under Database then Backups."
+    "backupRestore": "There is no automatic import. To restore, keep the identifiers and load the rows again in this order: profiles, households, members, departures, accounts, goals, debts, recurring items, transactions, splits, contributions, payments, occurrences, budgets and settlements. If the file includes TRUNCATED.txt, the download is incomplete. A full project backup lives in Supabase, under Database then Backups.",
+    "help": "Help",
+    "helpReplayHint": "See the welcome, currency, first account and what you want to track first again."
   },
   "account": {
     "exportNotice": "Before deleting your account, download your data as CSV. You won't be able to recover it afterwards.",

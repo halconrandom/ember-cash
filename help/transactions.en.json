@@ -1,0 +1,15 @@
+{
+  "purpose": "Everything that comes in and goes out, in order.",
+  "see": "The list of movements by date. · Category, account and currency of each one. · Filters at the top.",
+  "do": "Add a movement. · Edit or delete one by tapping it. · Filter by date, account or category. · Search by name.",
+  "faq": [
+    {
+      "q": "Can I record in another currency?",
+      "a": "Yes. Choose the currency when you create it and we convert it for your totals."
+    },
+    {
+      "q": "I made a mistake in an amount.",
+      "a": "Tap the movement, fix it and save. The balances recalculate on their own."
+    }
+  ]
+}

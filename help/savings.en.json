@@ -1,0 +1,15 @@
+{
+  "purpose": "Your goals and how much is left for each one.",
+  "see": "Each goal with its progress bar. · What's saved and what's left. · The target date, if you set one.",
+  "do": "Create a goal. · Add a contribution. · Change the goal or the date. · Archive a goal you've reached.",
+  "faq": [
+    {
+      "q": "Does a contribution come out of my account?",
+      "a": "Only if you record it from an account. Otherwise, it's just recorded as progress on the goal."
+    },
+    {
+      "q": "Can I share a goal?",
+      "a": "Yes, if you have a household. Choose the household when you create it."
+    }
+  ]
+}

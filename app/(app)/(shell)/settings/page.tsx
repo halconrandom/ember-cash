@@ -25,7 +25,7 @@ import { ThemeSetting } from "./theme-setting";
 export default async function SettingsPage() {
   const t = await getTranslations("settings");
   return (
-    <div className="max-w-xl space-y-6">
+    <div id="help-see-settings" className="max-w-xl space-y-6">
       <Card className="space-y-5">
         <CardTitle>{t("appearance")}</CardTitle>
         <div className="space-y-2">
@@ -73,6 +73,10 @@ export default async function SettingsPage() {
         </a>
       </Card>
 
+      <Suspense fallback={<Card className="h-40" />}>
+        <HelpSection />
+      </Suspense>
+
       <Suspense fallback={<SkeletonList rows={2} />}>
         <DeleteAccountSectionAsync />
       </Suspense>
@@ -113,6 +117,29 @@ export default async function SettingsPage() {
 async function AccountEmail() {
   const user = await requireUser();
   return <p className="text-body text-ink-2">{user.email}</p>;
+}
+
+/**
+ * "Repetir la introducción" (fase F3): vuelve a /onboarding con los valores
+ * actuales precargados. No borra ni duplica cuentas o elementos, y no
+ * cambia onboarded_at (ver wizard-actions.ts, isReplay).
+ */
+async function HelpSection() {
+  const t = await getTranslations("settings");
+  const replay = await getTranslations("onboarding.replay");
+  return (
+    <Card className="space-y-3">
+      <CardTitle>{t("help")}</CardTitle>
+      <p className="text-body text-ink-2">{t("helpReplayHint")}</p>
+      <a
+        href="/onboarding?replay=1&step=0"
+        className="border-border bg-surface text-body text-ink hover:bg-surface2 inline-flex min-h-11 items-center rounded-full border px-6 font-semibold transition-colors duration-100"
+      >
+        {replay("label")}
+      </a>
+      <p className="text-footnote text-ink-3">{replay("help")}</p>
+    </Card>
+  );
 }
 
 /** "Privacidad y datos": el botón de exportar reutiliza la ruta existente,

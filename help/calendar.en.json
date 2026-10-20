@@ -1,0 +1,15 @@
+{
+  "purpose": "Your payments and income for the month, in one place.",
+  "see": "Days marked with payments. · Debts, subscriptions and cards by date. · Each day's total.",
+  "do": "Tap a day to see the detail. · Change the month. · Add a payment from a date.",
+  "faq": [
+    {
+      "q": "Where do these dates come from?",
+      "a": "From the payment days you set on debts, cards and subscriptions."
+    },
+    {
+      "q": "A payment isn't showing up.",
+      "a": "Check that it has a payment day. Without a date, we can't place it."
+    }
+  ]
+}

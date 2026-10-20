@@ -1,5 +1,15 @@
 -- Ember Cash: métricas de onboarding (Nova), fase F1.
 --
+-- Revisión (fase F3, 2026-10-20): public.events todavía no existe en el
+-- proyecto real de Supabase (las migraciones que la crean, de la fase F1 en
+-- adelante, no se han llevado a producción con db:push). No hay ninguna
+-- fila que revisar aún, así que no se puede señalar un paso de abandono
+-- claro con datos reales. Esto no es un problema de las consultas: en
+-- cuanto la base tenga la tabla (tras el próximo db:push) y usuarios reales
+-- pasen por el wizard, estas mismas consultas ya sirven para repetir la
+-- revisión. No se tocó ninguna regla de UX a partir de esto: no hay datos
+-- que la respalden todavía.
+--
 -- Consultas sobre public.events. Correrlas como dueño de la tabla o con la
 -- service role. No hay una vista para authenticated: RLS solo deja ver las
 -- filas propias, y estos porcentajes necesitan ver a todo el mundo.

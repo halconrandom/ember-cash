@@ -320,6 +320,10 @@
     },
     "skipped": {
       "toast": "Sin problema. Usamos valores por defecto y puedes cambiarlos en Ajustes."
+    },
+    "replay": {
+      "label": "Repetir la introducción",
+      "help": "Verás tus datos actuales. No se borra ni se duplica nada."
     }
   },
   "firstSteps": {
@@ -413,7 +417,7 @@
       "failed": "No se pudo registrar. Intenta de nuevo."
     },
     "expensesTitle": "Gastos compartidos",
-    "expensesSubtitle": "{month}, reparto equitativo",
+    "expensesSubtitle": "{month}, <fifty>reparto equitativo 50/50</fifty>",
     "expensesEmpty": "No hay gastos compartidos en {month}.",
     "filterLabel": "Filtrar por quién pagó",
     "filterAll": "Todos",
@@ -488,7 +492,9 @@
     "backup": "Respaldo",
     "backupBody": "Descarga un ZIP con un CSV por tabla. Los montos son enteros en unidades menores (pesos en COP, centavos en USD) y cada fila lleva su moneda.",
     "exportCsv": "Exportar CSV",
-    "backupRestore": "No hay importación automática. Para restaurar, conserva los identificadores y vuelve a cargar las filas en este orden: perfiles, hogares, miembros, salidas, cuentas, metas, deudas, recurrentes, movimientos, repartos, aportes, pagos, vencimientos, presupuestos y liquidaciones. Si el archivo trae TRUNCATED.txt, la descarga quedó incompleta. El respaldo de todo el proyecto está en Supabase, en Database y luego Backups."
+    "backupRestore": "No hay importación automática. Para restaurar, conserva los identificadores y vuelve a cargar las filas en este orden: perfiles, hogares, miembros, salidas, cuentas, metas, deudas, recurrentes, movimientos, repartos, aportes, pagos, vencimientos, presupuestos y liquidaciones. Si el archivo trae TRUNCATED.txt, la descarga quedó incompleta. El respaldo de todo el proyecto está en Supabase, en Database y luego Backups.",
+    "help": "Ayuda",
+    "helpReplayHint": "Vuelve a ver la bienvenida, la moneda, la primera cuenta y qué quieres controlar primero."
   },
   "account": {
     "exportNotice": "Antes de eliminar tu cuenta, descarga tus datos en CSV. Después no podrás recuperarlos.",

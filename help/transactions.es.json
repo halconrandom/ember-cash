@@ -1,0 +1,15 @@
+{
+  "purpose": "Todo lo que entra y sale, en orden.",
+  "see": "La lista de movimientos por fecha. · Categoría, cuenta y moneda de cada uno. · Filtros arriba.",
+  "do": "Agregar un movimiento. · Editar o borrar uno tocándolo. · Filtrar por fecha, cuenta o categoría. · Buscar por nombre.",
+  "faq": [
+    {
+      "q": "¿Puedo registrar en otra moneda?",
+      "a": "Sí. Elige la moneda al crearlo y lo convertimos para tus totales."
+    },
+    {
+      "q": "Me equivoqué en un monto.",
+      "a": "Toca el movimiento, corrígelo y guarda. Los saldos se recalculan solos."
+    }
+  ]
+}

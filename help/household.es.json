@@ -1,0 +1,15 @@
+{
+  "purpose": "Comparte gastos y metas con las personas con las que vives.",
+  "see": "Los miembros de tu hogar. · Gastos compartidos y cómo se reparten. · Quién le debe a quién.",
+  "do": "Invitar a alguien por correo. · Elegir cómo repartir: 50/50 u otra proporción. · Marcar una cuenta como saldada.",
+  "faq": [
+    {
+      "q": "¿Ven todos mis datos?",
+      "a": "Solo lo que compartes con el hogar. Lo demás sigue siendo tuyo."
+    },
+    {
+      "q": "¿Puedo salir de un hogar?",
+      "a": "Sí, desde aquí. Antes de salir, salda lo pendiente."
+    }
+  ]
+}

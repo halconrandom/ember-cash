@@ -7,16 +7,26 @@ import { HELP_PAGES } from "@/lib/events/validate";
 import { hasHelp, HELP_PAGES_READY, loadHelpContent } from "./content";
 
 describe("hasHelp", () => {
-  it("solo las páginas de esta fase (Panel, Deudas, Suscripciones)", () => {
-    expect(HELP_PAGES_READY).toEqual(["dashboard", "debts", "subscriptions"]);
+  it("las 8 páginas de docs/onboarding/spec.md (fase F3)", () => {
+    expect(HELP_PAGES_READY).toEqual([
+      "dashboard",
+      "transactions",
+      "savings",
+      "debts",
+      "subscriptions",
+      "calendar",
+      "household",
+      "settings",
+    ]);
+    expect(HELP_PAGES_READY).toEqual(HELP_PAGES);
   });
 
   it("toda página lista es una página de ayuda válida (HELP_PAGES)", () => {
     for (const page of HELP_PAGES_READY) expect(HELP_PAGES as readonly string[]).toContain(page);
   });
 
-  it("rechaza páginas sin contenido todavía (fase F3)", () => {
-    expect(hasHelp("calendar")).toBe(false);
+  it("rechaza lo que no es una página", () => {
+    expect(hasHelp("more")).toBe(false);
     expect(hasHelp("")).toBe(false);
   });
 });

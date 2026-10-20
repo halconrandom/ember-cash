@@ -1,0 +1,15 @@
+{
+  "purpose": "Your account and how the app behaves.",
+  "see": "Main currency. · Language. · Categories. · Your data and privacy.",
+  "do": "Change the main currency. · Export your data as CSV. · Replay the introduction. · Delete your account.",
+  "faq": [
+    {
+      "q": "If I change the currency, do I lose anything?",
+      "a": "No. Your movements stay the same; only how the totals are shown changes."
+    },
+    {
+      "q": "How do I delete everything?",
+      "a": "Export your data first, then tap Delete account. This can't be undone."
+    }
+  ]
+}

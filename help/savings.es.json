@@ -1,0 +1,15 @@
+{
+  "purpose": "Tus metas y cuánto te falta para cada una.",
+  "see": "Cada meta con su barra de avance. · Lo ahorrado y lo que falta. · La fecha objetivo, si pusiste una.",
+  "do": "Crear una meta. · Sumar un aporte. · Cambiar la meta o la fecha. · Archivar una meta cumplida.",
+  "faq": [
+    {
+      "q": "¿Un aporte sale de mi cuenta?",
+      "a": "Solo si lo registras desde una cuenta. Si no, queda como avance de la meta."
+    },
+    {
+      "q": "¿Puedo compartir una meta?",
+      "a": "Sí, si tienes hogar. Elige el hogar al crearla."
+    }
+  ]
+}

@@ -54,7 +54,7 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
 
   if (goals.length === 0) {
     return (
-      <>
+      <div id="help-see-savings">
         <TopbarSubtitle text={t("subtitleNoRate", { count: 0 })} />
         <EmptyState
           icon="piggy-bank"
@@ -66,7 +66,7 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
             </Button>
           }
         />
-      </>
+      </div>
     );
   }
 
@@ -88,7 +88,7 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
   const overall = goalPercent(saved.total.amountMinor, target.total.amountMinor);
 
   return (
-    <div className="space-y-6">
+    <div id="help-see-savings" className="space-y-6">
       <TopbarSubtitle
         text={
           saved.partial

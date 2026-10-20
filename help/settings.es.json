@@ -1,0 +1,15 @@
+{
+  "purpose": "Tu cuenta y cómo se comporta la app.",
+  "see": "Moneda principal. · Idioma. · Categorías. · Tus datos y privacidad.",
+  "do": "Cambiar la moneda principal. · Exportar tus datos en CSV. · Repetir la introducción. · Eliminar tu cuenta.",
+  "faq": [
+    {
+      "q": "Si cambio la moneda, ¿pierdo algo?",
+      "a": "No. Tus movimientos quedan iguales; solo cambia cómo se muestran los totales."
+    },
+    {
+      "q": "¿Cómo borro todo?",
+      "a": "Exporta tus datos primero y luego toca Eliminar cuenta. No se puede deshacer."
+    }
+  ]
+}
