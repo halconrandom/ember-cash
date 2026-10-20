@@ -1136,7 +1136,7 @@
     "dueToday": "Hoy · {date}",
     "dueTomorrow": "Mañana · {date}",
     "dueInDays": "{count, plural, one {En # día} other {En # días}} · {date}",
-    "overdueBy": "{count, plural, one {Vencido hace # día} other {Vencido hace # días}} · {date}",
+    "overdueBy": "{count, plural, one {Hace # día} other {Hace # días}} · {date}",
     "viewAll": "{count, plural, one {Ver todo (#)} other {Ver todos (#)}}",
     "filteredBy": "Mostrando {date}",
     "clearFilter": "Quitar filtro",

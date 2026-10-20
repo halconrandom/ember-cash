@@ -1136,7 +1136,7 @@
     "dueToday": "Today · {date}",
     "dueTomorrow": "Tomorrow · {date}",
     "dueInDays": "{count, plural, one {In # day} other {In # days}} · {date}",
-    "overdueBy": "{count, plural, one {Overdue by # day} other {Overdue by # days}} · {date}",
+    "overdueBy": "{count, plural, one {# day ago} other {# days ago}} · {date}",
     "viewAll": "{count, plural, one {View all (#)} other {View all (#)}}",
     "filteredBy": "Showing {date}",
     "clearFilter": "Remove filter",

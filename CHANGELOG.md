@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.22.1] - 2026-10-20
+
+### Corregido (fila de "Próximos cobros", sin cambios de lógica)
+
+- La fila ahora mide como máximo 2 líneas: línea 1 con el punto de color pegado al nombre (inline, 8 px, gap 8) y el monto + botón de pago a la derecha; línea 2 con la meta, alineada con el texto del nombre, ocupando el ancho completo bajo el nombre y el monto.
+- La meta nunca se parte (`whitespace-nowrap`, `truncate` como último recurso). Texto más corto en vencidos: "Hace 3 días · 17 oct" (ya sin la palabra "Vencido", que el encabezado del grupo y el ícono ya dicen).
+- Monto: `shrink-0 whitespace-nowrap`, el número baja a 15 semibold y la moneda queda en text2 de peso normal, igual que el total de la cabecera (mismo patrón de `MoneyAmount`: número y unidad por separado).
+- Botón de pago: 36 px visuales dentro de 44 px de área táctil, con margen negativo para no robarle ancho a la fila, y gap de 8 con el monto.
+
 ## [0.22.0] - 2026-10-20
 
 ### Rediseñado: tarjeta "Próximos cobros" en Suscripciones
