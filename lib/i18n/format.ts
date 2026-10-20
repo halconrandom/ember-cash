@@ -61,3 +61,23 @@ export function formatDate(
     new Date(value),
   );
 }
+
+/**
+ * Día y mes abreviado, sin preposición ("17 oct" / "Oct 17"): para filas
+ * compactas donde "17 de oct" (DATE_STYLES.short en es-CO) no cabe. Arma el
+ * texto solo con las partes de día y mes (formatToParts), así se descarta
+ * "de" sin tocar DATE_STYLES.short, que sigue igual en el resto de la app.
+ */
+export function formatCompactDate(
+  date: Date | string,
+  locale: Locale,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): string {
+  const value =
+    typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T12:00:00Z` : date;
+  return new Intl.DateTimeFormat(INTL_TAGS[locale], { month: "short", day: "numeric", timeZone })
+    .formatToParts(new Date(value))
+    .filter((part) => part.type === "day" || part.type === "month")
+    .map((part) => part.value)
+    .join(" ");
+}

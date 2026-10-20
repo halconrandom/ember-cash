@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { MoneyAmount } from "@/components/money/money-amount";
-import { useRate } from "@/components/money/rate-provider";
+import { useRate, type RateStatus } from "@/components/money/rate-provider";
 import { TopbarSubtitle } from "@/components/shell/topbar-context";
 import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-list";
 import { Badge } from "@/components/ui/chip";
@@ -60,31 +60,25 @@ function sumIn(items: Money[], to: CurrencyCode, rates: readonly Rate[]): Money 
 }
 
 /**
- * Monto de una fila de "Próximos cobros": el convertido a la moneda de
- * visualización arriba (número y moneda separados, como en el total de la
- * cabecera: `MoneyAmount` variant="total") y, solo si la moneda original
- * difiere, esa cifra original debajo (sin la palabra "original" ni la
- * píldora de moneda: el símbolo ya la identifica). Sin tasa, el original
- * queda como único monto.
+ * Partes del monto de una fila de "Próximos cobros": `main`/`unit` son el
+ * convertido a la moneda de visualización, separados como en el total de
+ * la cabecera (`MoneyAmount` variant="total": número y código aparte).
+ * `original` es la cifra en la moneda real, solo si difiere y hay tasa (va
+ * en su propia celda del grid, bajo el convertido). Sin tasa, el original
+ * queda como único monto (sin `original`).
  */
-function AgendaAmount({ value }: { value: Money }) {
-  const { rates, status, displayCurrency } = useRate();
-  const f = useFormat();
+function agendaAmountParts(
+  value: Money,
+  rates: readonly Rate[],
+  status: RateStatus,
+  displayCurrency: CurrencyCode,
+  f: ReturnType<typeof useFormat>,
+): { main: string; unit: string | null; original: string | null } {
   const differs = value.currency !== displayCurrency;
   const rate = differs && status !== "error" ? latestRateFor(rates, value.currency, displayCurrency) : null;
   const primary = rate ? convert(value, displayCurrency, rate) : value;
   const { main, unit } = f.moneyParts(primary);
-  return (
-    <span className="shrink-0 text-right tabular-nums whitespace-nowrap">
-      <span className="text-body text-ink font-semibold">
-        {main}
-        {unit && <span className="text-callout text-ink-2 font-normal">{` ${unit}`}</span>}
-      </span>
-      {differs && rate && (
-        <span className="text-callout text-ink-2 block whitespace-nowrap">{f.money(value)}</span>
-      )}
-    </span>
-  );
+  return { main, unit, original: differs && rate ? f.money(value) : null };
 }
 
 /**
@@ -98,7 +92,7 @@ function dueMeta(
   f: ReturnType<typeof useFormat>,
   t: (key: string, values?: Record<string, string | number>) => string,
 ): string {
-  const date = f.date(item.dueOn, "short");
+  const date = f.compactDate(item.dueOn);
   if (item.state === "overdue") {
     return t("overdueBy", { count: daysBetween(item.dueOn, today), date });
   }
@@ -470,7 +464,7 @@ export function SubscriptionsView({
                     type="button"
                     onClick={() => toggleDay(date)}
                     aria-pressed={selected}
-                    aria-label={f.date(date, "short")}
+                    aria-label={f.compactDate(date)}
                     className={cn(
                       "rounded-control flex flex-col items-center gap-1 py-1 transition-colors duration-100",
                       selected ? "bg-surface2" : "hover:bg-surface2",
@@ -499,7 +493,7 @@ export function SubscriptionsView({
             </div>
             {selectedDay && (
               <p className="text-footnote text-ink-2 mt-2">
-                {t("filteredBy", { date: f.date(selectedDay, "short") })}
+                {t("filteredBy", { date: f.compactDate(selectedDay) })}
                 {" · "}
                 <button
                   type="button"
@@ -527,54 +521,53 @@ export function SubscriptionsView({
                       </p>
                       <ul>
                         <AnimatedList animateOnMount={first}>
-                          {group.items.map((item, index) => (
-                            <AnimatedListItem
-                              as="li"
-                              key={item.occurrenceId}
-                              className="flex min-h-16 items-center px-4"
-                            >
-                              <div
+                          {group.items.map((item, index) => {
+                            const { main, unit, original } = agendaAmountParts(
+                              item.amount,
+                              rates,
+                              status,
+                              displayCurrency,
+                              f,
+                            );
+                            return (
+                              <AnimatedListItem
+                                as="li"
+                                key={item.occurrenceId}
                                 className={cn(
-                                  "flex min-w-0 flex-1 flex-col gap-0.5 py-3",
+                                  "grid items-baseline gap-x-3 gap-y-0.5 py-3",
+                                  "grid-cols-[minmax(0,1fr)_auto_auto]",
                                   index > 0 && "border-border border-t",
                                 )}
                               >
-                                <div className="flex min-w-0 items-center gap-3">
-                                  <span className="flex min-w-0 flex-1 items-center gap-2">
-                                    <span
-                                      aria-hidden
-                                      className="bg-violet size-2 shrink-0 rounded-full"
-                                    />
-                                    <span className="text-body text-ink min-w-0 truncate font-semibold">
-                                      {item.name}
-                                    </span>
+                                {/* Fila 1, columna 1: punto + nombre. */}
+                                <span className="col-start-1 row-start-1 flex min-w-0 items-center gap-2">
+                                  <span
+                                    aria-hidden
+                                    className="bg-violet size-2 shrink-0 rounded-full"
+                                  />
+                                  <span className="text-body text-ink min-w-0 truncate font-semibold">
+                                    {item.name}
                                   </span>
-                                  <div className="flex shrink-0 items-center gap-2">
-                                    <AgendaAmount value={item.amount} />
-                                    {needsAction(item.state) && (
-                                      <button
-                                        type="button"
-                                        ref={(el) => {
-                                          if (el) payButtonRefs.current.set(item.occurrenceId, el);
-                                          else payButtonRefs.current.delete(item.occurrenceId);
-                                        }}
-                                        onClick={() => markPaidQuick(item, visibleUpcoming)}
-                                        disabled={payingId === item.occurrenceId}
-                                        aria-label={t("markPaidAria", { name: item.name })}
-                                        className="press-scale -mr-1 grid size-11 shrink-0 place-items-center rounded-full disabled:opacity-60"
-                                      >
-                                        <span className="border-border bg-surface text-ink-2 hover:bg-surface2 hover:text-ink grid size-9 place-items-center rounded-full border transition-colors duration-100">
-                                          <Icon name="check" size={16} />
-                                        </span>
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="pl-4">
+                                </span>
+
+                                {/* Fila 1, columna 2: monto convertido. */}
+                                <span className="text-body text-ink col-start-2 row-start-1 justify-self-end font-semibold whitespace-nowrap tabular-nums">
+                                  {main}
+                                  {unit && (
+                                    <span className="text-callout text-ink-2 font-normal">
+                                      {` ${unit}`}
+                                    </span>
+                                  )}
+                                </span>
+
+                                {/* Fila 2, columna 1: meta, con la sangría del punto + su gap. */}
+                                <div className="col-start-1 row-start-2 min-w-0 pl-4">
                                   {item.state === "overdue" ? (
-                                    <span className="text-callout text-negative-text flex w-full min-w-0 items-center gap-1">
+                                    <span className="text-callout text-negative-text flex min-w-0 items-center gap-1">
                                       <Icon name="exclamation" size={14} className="shrink-0" />
-                                      <span className="min-w-0 truncate">{dueMeta(today, item, f, t)}</span>
+                                      <span className="min-w-0 truncate">
+                                        {dueMeta(today, item, f, t)}
+                                      </span>
                                     </span>
                                   ) : item.state === "due" ? (
                                     <span className="text-callout text-ink block truncate font-medium">
@@ -586,9 +579,35 @@ export function SubscriptionsView({
                                     </span>
                                   )}
                                 </div>
-                              </div>
-                            </AnimatedListItem>
-                          ))}
+
+                                {/* Fila 2, columna 2: monto original, solo si difiere. */}
+                                {original && (
+                                  <span className="text-callout text-ink-2 col-start-2 row-start-2 justify-self-end whitespace-nowrap tabular-nums">
+                                    {original}
+                                  </span>
+                                )}
+
+                                {/* Columna 3: botón de pago, centrado en las 2 filas. */}
+                                {needsAction(item.state) && (
+                                  <button
+                                    type="button"
+                                    ref={(el) => {
+                                      if (el) payButtonRefs.current.set(item.occurrenceId, el);
+                                      else payButtonRefs.current.delete(item.occurrenceId);
+                                    }}
+                                    onClick={() => markPaidQuick(item, visibleUpcoming)}
+                                    disabled={payingId === item.occurrenceId}
+                                    aria-label={t("markPaidAria", { name: item.name })}
+                                    className="press-scale col-start-3 row-span-2 row-start-1 -mr-1 grid size-11 shrink-0 place-items-center self-center rounded-full disabled:opacity-60"
+                                  >
+                                    <span className="border-border bg-surface text-ink-2 hover:bg-surface2 hover:text-ink grid size-9 place-items-center rounded-full border transition-colors duration-100">
+                                      <Icon name="check" size={16} />
+                                    </span>
+                                  </button>
+                                )}
+                              </AnimatedListItem>
+                            );
+                          })}
                         </AnimatedList>
                       </ul>
                     </div>

@@ -1,7 +1,7 @@
 // Tests de formatos de número y fecha según el idioma (el dinero se prueba en lib/money).
 import { describe, expect, it } from "vitest";
 
-import { formatDate, formatNumber } from "./format";
+import { formatCompactDate, formatDate, formatNumber } from "./format";
 
 describe("formatNumber", () => {
   it("usa los separadores del idioma", () => {
@@ -20,5 +20,12 @@ describe("formatDate", () => {
     expect(formatDate("2026-10-01", "es", "monthYear")).toBe("octubre de 2026");
     expect(formatDate("2026-10-17", "en", "long")).toBe("October 17, 2026");
     expect(formatDate("2026-10-17", "es", "long")).toBe("17 de octubre de 2026");
+  });
+});
+
+describe("formatCompactDate", () => {
+  it("día y mes abreviado, sin preposición", () => {
+    expect(formatCompactDate("2026-10-17", "es")).toBe("17 oct");
+    expect(formatCompactDate("2026-10-17", "en")).toBe("Oct 17");
   });
 });

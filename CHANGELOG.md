@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.22.2] - 2026-10-20
+
+### Corregido (fila de "Próximos cobros", vuelta a 2 líneas de verdad)
+
+- Quitado el `px-4` extra de la fila: el punto se alinea a la izquierda exactamente con "VENCIDOS" y con la tira de días; el botón de pago se alinea a la derecha con el total de la cabecera.
+- La fila pasa de flexbox a un grid explícito de 2 filas × 3 columnas (`minmax(0,1fr) auto auto`, `gap-x-3 gap-y-0.5`, `items-baseline`): fila 1 = punto+nombre | monto convertido; fila 2 = meta (con la sangría del punto) | monto original; columna 3 = botón de pago con `row-span-2 self-center`. El nombre comparte línea base con el monto convertido, y la meta con el original.
+- Quitado el resultado anterior (la meta a ancho completo bajo nombre y monto): ahora vive solo en su celda, con `whitespace-nowrap` y `truncate`.
+- Nuevo `lib/i18n/format.ts`: `formatCompactDate` (expuesto como `useFormat().compactDate`) arma "17 oct" / "Oct 17" con `formatToParts`, descartando el "de" de `es-CO` sin tocar `DATE_STYLES.short` (que sigue igual en el resto de la app). Se usa en la meta de cada fila, el rótulo del día y el filtro de la tira de 7 días.
+- Monto: número en 15 semibold y código de moneda en text2 de peso normal, igual que el total de la cabecera (mismas partes que `MoneyAmount` separa internamente).
+
 ## [0.22.1] - 2026-10-20
 
 ### Corregido (fila de "Próximos cobros", sin cambios de lógica)
