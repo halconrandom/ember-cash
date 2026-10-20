@@ -1,83 +1,86 @@
 // Tests de los agregados del dashboard (lib/dashboard/aggregate.ts).
+//
+// Fase E3: dashboard_totals ya convierte en la base (con la tasa de la fecha
+// de cada movimiento); estas filas llegan con `converted` y `uncovered` ya
+// resueltos, como las devolvería la RPC. Las pruebas de la conversión en sí
+// (tasa del día, última disponible, par sin ninguna tasa) viven en
+// supabase/tests/dashboard_totals.sql, contra Postgres.
 import { describe, expect, it } from "vitest";
 
-import type { Rate } from "@/lib/money/convert";
-import { money } from "@/lib/money/money";
+import { money, type Money } from "@/lib/money/money";
 
 import {
   lastMonths,
   monthTotals,
   niceMax,
+  originBreakdown,
   percentChange,
   spendingByCategory,
   trend,
   type AggregateRow,
 } from "./aggregate";
 
-const RATE: Rate = {
-  base: "USD",
-  quote: "COP",
-  rate: "4000",
-  asOf: "2026-10-16",
-  fetchedAt: "2026-10-16T13:00:00Z",
-  source: "test",
-};
-
-const row = (
+/** Fila ya convertida a COP, como la devuelve dashboard_totals. */
+function row(
   month: string,
   kind: AggregateRow["kind"],
   categoryKey: AggregateRow["categoryKey"],
-  minor: bigint,
-  currency: "COP" | "USD" | "EUR" = "COP",
+  originMinor: bigint,
+  originCurrency: Money["currency"],
+  convertedMinor: bigint,
   count = 1,
-): AggregateRow => ({
-  month,
-  kind,
-  categoryKey,
-  amount: money(minor, currency),
-  count,
-});
+  uncoveredMinor = 0n,
+): AggregateRow {
+  return {
+    month,
+    kind,
+    categoryKey,
+    amount: money(originMinor, originCurrency),
+    converted: money(convertedMinor, "COP"),
+    uncovered: uncoveredMinor > 0n ? money(uncoveredMinor, originCurrency) : null,
+    count,
+  };
+}
 
-// Octubre: ingresos 8.800.000 COP + US$ 100,00; gastos 2.100.000 COP vivienda,
-// US$ 15,99 + 400.000 COP suscripciones, 1.150.000 COP comida.
+// Octubre, convertido a COP: ingresos 8.800.000 + US$ 100,00 (400.000);
+// gastos 2.100.000 vivienda, US$ 15,99 (63.960) + 400.000 suscripciones +
+// 1.150.000 comida.
 const ROWS: AggregateRow[] = [
-  row("2026-10", "income", "salary", 8_800_000n, "COP", 1),
-  row("2026-10", "income", "other_income", 10_000n, "USD", 1),
-  row("2026-10", "expense", "housing", 2_100_000n, "COP", 2),
-  row("2026-10", "expense", "subscriptions", 1_599n, "USD", 1),
-  row("2026-10", "expense", "subscriptions", 400_000n, "COP", 3),
-  row("2026-10", "expense", "food", 1_150_000n, "COP", 4),
-  row("2026-09", "income", "salary", 8_000_000n, "COP"),
-  row("2026-09", "expense", "food", 6_000_000n, "COP"),
+  row("2026-10", "income", "salary", 8_800_000n, "COP", 8_800_000n, 1),
+  row("2026-10", "income", "other_income", 10_000n, "USD", 400_000n, 1),
+  row("2026-10", "expense", "housing", 2_100_000n, "COP", 2_100_000n, 2),
+  row("2026-10", "expense", "subscriptions", 1_599n, "USD", 63_960n, 1),
+  row("2026-10", "expense", "subscriptions", 400_000n, "COP", 400_000n, 3),
+  row("2026-10", "expense", "food", 1_150_000n, "COP", 1_150_000n, 4),
+  row("2026-09", "income", "salary", 8_000_000n, "COP", 8_000_000n),
+  row("2026-09", "expense", "food", 6_000_000n, "COP", 6_000_000n),
 ];
 
-describe("monthTotals con COP y USD mezclados", () => {
-  it("en COP: el USD se convierte una vez por moneda", () => {
-    const t = monthTotals(ROWS, "2026-10", "COP", [RATE]);
-    expect(t.income).toEqual(money(9_200_000n, "COP")); // 8.800.000 + 100 × 4.000
+describe("monthTotals suma lo ya convertido", () => {
+  it("suma converted, no el origen", () => {
+    const t = monthTotals(ROWS, "2026-10", "COP");
+    expect(t.income).toEqual(money(9_200_000n, "COP")); // 8.800.000 + 400.000
     expect(t.expenses).toEqual(money(3_713_960n, "COP")); // 2.100.000 + 63.960 + 400.000 + 1.150.000
     expect(t.balance).toEqual(money(5_486_040n, "COP"));
     expect(t.count).toBe(12);
     expect(t.partial).toBe(false);
   });
 
-  it("en USD", () => {
-    const t = monthTotals(ROWS, "2026-10", "USD", [RATE]);
-    expect(t.income).toEqual(money(230_000n, "USD")); // 2.200,00 + 100,00
-    // 3.650.000 COP = US$ 912,50; + 15,99 = 928,49.
-    expect(t.expenses).toEqual(money(92_849n, "USD"));
-  });
-
-  it("sin tasa: solo lo de la moneda elegida, marcado partial", () => {
-    const t = monthTotals(ROWS, "2026-10", "COP", []);
-    expect(t.income).toEqual(money(8_800_000n, "COP"));
+  it("una fila sin tasa (uncovered) marca partial, aunque converted siga sumando lo que sí se pudo", () => {
+    const withGap = [
+      ...ROWS,
+      row("2026-10", "expense", "food", 5_000n, "EUR", 0n, 1, 5_000n),
+    ];
+    const t = monthTotals(withGap, "2026-10", "COP");
+    // El EUR sin tasa no suma al total (nunca se inventa), pero sí queda marcado.
+    expect(t.expenses).toEqual(money(3_713_960n, "COP"));
     expect(t.partial).toBe(true);
   });
 });
 
 describe("mes sin datos", () => {
   it("todo en cero, sin categorías", () => {
-    const t = monthTotals(ROWS, "2026-03", "COP", [RATE]);
+    const t = monthTotals(ROWS, "2026-03", "COP");
     expect(t).toEqual({
       income: money(0n, "COP"),
       expenses: money(0n, "COP"),
@@ -85,7 +88,7 @@ describe("mes sin datos", () => {
       count: 0,
       partial: false,
     });
-    expect(spendingByCategory(ROWS, "2026-03", "COP", [RATE])).toEqual({
+    expect(spendingByCategory(ROWS, "2026-03", "COP")).toEqual({
       slices: [],
       total: money(0n, "COP"),
       partial: false,
@@ -95,13 +98,13 @@ describe("mes sin datos", () => {
 
 describe("percentChange", () => {
   it("contra un mes anterior vacío no divide por cero: null", () => {
-    const empty = monthTotals(ROWS, "2026-08", "COP", [RATE]);
+    const empty = monthTotals(ROWS, "2026-08", "COP");
     expect(percentChange(money(9_200_000n, "COP"), empty.income)).toBeNull();
     expect(percentChange(money(0n, "COP"), empty.balance)).toBeNull();
   });
   it("ingresos +15 % y gastos −38,1 % contra septiembre", () => {
-    const oct = monthTotals(ROWS, "2026-10", "COP", [RATE]);
-    const sep = monthTotals(ROWS, "2026-09", "COP", [RATE]);
+    const oct = monthTotals(ROWS, "2026-10", "COP");
+    const sep = monthTotals(ROWS, "2026-09", "COP");
     expect(percentChange(oct.income, sep.income)).toBe(15);
     expect(percentChange(oct.expenses, sep.expenses)).toBe(-38.1);
   });
@@ -118,7 +121,7 @@ describe("percentChange", () => {
 
 describe("spendingByCategory", () => {
   it("de mayor a menor, con porcentajes del total", () => {
-    const { slices, total } = spendingByCategory(ROWS, "2026-10", "COP", [RATE]);
+    const { slices, total } = spendingByCategory(ROWS, "2026-10", "COP");
     expect(total).toEqual(money(3_713_960n, "COP"));
     expect(slices.map((s) => [s.categoryKey, s.amount.amountMinor, s.percent])).toEqual([
       ["housing", 2_100_000n, 57],
@@ -140,7 +143,7 @@ describe("trend y lastMonths", () => {
     ]);
   });
   it("los meses sin datos quedan en 0", () => {
-    const { points } = trend(ROWS, lastMonths("2026-10", 3), "COP", [RATE]);
+    const { points } = trend(ROWS, lastMonths("2026-10", 3), "COP");
     expect(points.map((p) => [p.month, p.income.amountMinor, p.expenses.amountMinor])).toEqual([
       ["2026-08", 0n, 0n],
       ["2026-09", 8_000_000n, 6_000_000n],
@@ -155,29 +158,14 @@ describe("trend y lastMonths", () => {
   });
 });
 
-describe("displayCurrency = EUR con datos en las 3 monedas (fase E2.1)", () => {
-  // EUR/USD: 1 EUR = 1.1 USD; EUR/COP: 1 EUR = 4,400 COP (ambas guardadas
-  // directo, como el cron de E1: nunca se encadenan dos tasas al mostrar).
-  const EUR_USD: Rate = { ...RATE, base: "EUR", quote: "USD", rate: "1.1" };
-  const EUR_COP: Rate = { ...RATE, base: "EUR", quote: "COP", rate: "4400" };
-  const RATES = [RATE, EUR_USD, EUR_COP];
-
-  const mixedRows: AggregateRow[] = [
-    row("2026-10", "expense", "food", 440_000n, "COP"), // 100 EUR
-    row("2026-10", "expense", "food", 1_100n, "USD"), // 1 USD = (1/1.1) EUR ≈ 0.91 EUR
-    row("2026-10", "expense", "food", 5_000n, "EUR"),
-  ];
-
-  it("convierte COP y USD a EUR con sus tasas directas, sin encadenar", () => {
-    const totals = monthTotals(mixedRows, "2026-10", "EUR", RATES);
-    // 440,000 COP / 4,400 = 100.00 EUR; 1,100 USD/100 / 1.1 = 10.00 EUR; + 50.00 EUR.
-    expect(totals.expenses).toEqual(money(16_000n, "EUR"));
-    expect(totals.partial).toBe(false);
-  });
-
-  it("sin la tasa EUR/USD, el monto en USD queda fuera y partial = true", () => {
-    const totals = monthTotals(mixedRows, "2026-10", "EUR", [RATE, EUR_COP]);
-    expect(totals.expenses).toEqual(money(15_000n, "EUR"));
-    expect(totals.partial).toBe(true);
+describe("originBreakdown", () => {
+  it("agrupa por moneda de origen (ingresos y gastos juntos), para el sheet de MoneyAmount total", () => {
+    const octRows = ROWS.filter((r) => r.month === "2026-10");
+    const breakdown = originBreakdown(octRows);
+    // COP: 8.800.000 + 2.100.000 + 400.000 + 1.150.000; USD: 10.000 + 1.599.
+    expect(breakdown).toEqual(
+      expect.arrayContaining([money(12_450_000n, "COP"), money(11_599n, "USD")]),
+    );
+    expect(breakdown).toHaveLength(2);
   });
 });

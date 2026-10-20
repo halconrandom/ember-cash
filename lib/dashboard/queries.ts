@@ -2,9 +2,10 @@
  * Lecturas del dashboard (servidor). Cada tarjeta pide solo un resumen:
  *
  * - Ingresos, gastos, categorías y tendencia: la RPC dashboard_totals suma en
- *   la base por mes, tipo, categoría y moneda (unas decenas de filas, nunca
- *   las transacciones). Una sola llamada por petición (cache de React) sirve
- *   a las cinco tarjetas.
+ *   la base por mes, tipo, categoría y moneda, y además convierte cada fila a
+ *   profiles.display_currency con la tasa vigente en la fecha de esa fila
+ *   (fase E3). Unas decenas de filas, nunca las transacciones; una sola
+ *   llamada por petición (cache de React) sirve a las cinco tarjetas.
  * - Próximos pagos: los vencimientos pendientes de 7 días (y los vencidos),
  *   con límite de filas.
  * - Metas, deudas y suscripciones: se resumen aquí y al cliente solo llegan
@@ -17,6 +18,7 @@ import "server-only";
 import { cache } from "react";
 
 import type { IconName } from "@/components/ui/icon-registry";
+import { getCurrentProfile } from "@/lib/auth/session";
 import type { CategoryKey, CurrencyCode, RecurringFrequency, RecurringKind } from "@/lib/db/types";
 import { nextDueDate } from "@/lib/debts/dates";
 import { listDebts } from "@/lib/debts/queries";
@@ -41,14 +43,16 @@ function byCurrency(items: readonly Money[]): Money[] {
   return [...map.values()];
 }
 
-/** Sumas de ingresos y gastos entre dos meses (AAAA-MM, inclusive). */
+/** Sumas de ingresos y gastos entre dos meses (AAAA-MM, inclusive), ya convertidas a display_currency. */
 export const getAggregates = cache(
   async (scope: Scope, fromMonth: string, toMonth: string): Promise<AggregateRow[]> => {
-    const supabase = await createClient();
+    const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()]);
+    const displayCurrency = profile.display_currency as CurrencyCode;
     const { data, error } = await supabase.rpc("dashboard_totals", {
       p_household_id: scopeHouseholdId(scope) as string,
       p_from: monthBounds(fromMonth).from,
       p_to: monthBounds(toMonth).to,
+      p_display_currency: displayCurrency,
     });
     if (error) throw new Error(`No se pudieron leer los totales: ${error.message}`);
     return data.map((r) => ({
@@ -56,6 +60,8 @@ export const getAggregates = cache(
       kind: r.kind as AggregateRow["kind"],
       categoryKey: r.category_key as CategoryKey,
       amount: money(r.total_minor, r.currency as CurrencyCode),
+      converted: money(r.converted_minor, displayCurrency),
+      uncovered: r.uncovered_minor > 0 ? money(r.uncovered_minor, r.currency as CurrencyCode) : null,
       count: r.tx_count,
     }));
   },

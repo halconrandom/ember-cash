@@ -2,6 +2,20 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.18.0] - 2026-10-19
+
+### Añadido (fase E3: dashboard en la moneda de visualización)
+
+- Migración `0021_dashboard_display_currency.sql`: `dashboard_totals` (0012) ahora recibe `p_display_currency` y devuelve cada fila ya convertida (`converted_minor`), con la tasa de `exchange_rates` vigente en la fecha de **esa** fila (la última disponible si no hay una de ese día exacto). Si el par no tiene ninguna tasa, esa parte no se inventa: queda aparte en `uncovered_minor` (en la moneda de origen), y `total_minor` (sin convertir, por moneda de origen) se conserva para el desglose del sheet de `<MoneyAmount variant="total">`.
+- La función pasa de `language sql` a `language plpgsql` con `execute format(...)` sobre literales: con parámetros, una función SQL simple no se puede "inlinear" (tiene CTEs) y Postgres le daba un plan genérico fijo que, con el dataset sintético de 200.000 filas de 0012, elegía buscar la tasa fila por fila y tardaba minutos. El SQL armado con los valores ya puestos (sin riesgo de inyección: son literales tipados vía `%L`) fuerza un plan nuevo a la medida de cada llamada.
+- La tasa de cada fila se busca una sola vez por combinación (moneda de origen, fecha) distinta del rango —no una vez por fila— y se cruza con las transacciones por igualdad (hash join), no por fila. Con el mismo dataset de 200.000 filas: ~310-330 ms (antes 37 ms sin convertir monedas). No hizo falta un índice nuevo: `exchange_rates_pair_as_of_idx` (0003) ya cubre esa búsqueda.
+- `lib/dashboard/aggregate.ts`: `monthTotals`, `spendingByCategory` y `trend` ya no reciben `rates` ni convierten en el cliente (lo hace la base); solo suman `row.converted` y marcan `partial` si alguna fila quedó `uncovered`. Nueva `originBreakdown()` agrupa `row.amount` por moneda de origen, para el `breakdown` del sheet. El `sumIn` genérico (metas, deudas, suscripciones) sigue igual: no viene de `dashboard_totals`.
+- `lib/dashboard/queries.ts`: `getAggregates` lee `profiles.display_currency` (ya cacheado por `getCurrentProfile`) y lo pasa a la RPC.
+- Las tarjetas de balance, ingresos y gastos (`stat-cards.tsx`) pasan `breakdown` a `<MoneyAmount variant="total">`: ahora sí se puede tocar "Convertido con tasas del día" y ver el desglose por moneda de origen (capacidad agregada en E2, sin usarla todavía).
+- El chip de filtro por moneda original en Transacciones (`filter-bar.tsx`) pasa de COP/USD a las 3 monedas (`CURRENCY_CODES`), con el mismo `<SelectChip>`.
+- `lib/db/database.types.ts` se actualiza a mano con la nueva firma de `dashboard_totals` (no se corrió `db:types`: esta fase no toca el Supabase real).
+- Tests: `supabase/tests/dashboard_totals.sql` (las 3 monedas, un día sin tasa que usa la última disponible, un par sin ninguna tasa, y lo mismo visto desde otra moneda elegida) contra Postgres local; `lib/dashboard/aggregate.test.ts` reescrito para filas ya convertidas.
+
 ## [0.17.0] - 2026-10-19
 
 ### Añadido (fase E2.1: cierra EUR en los selectores binarios)

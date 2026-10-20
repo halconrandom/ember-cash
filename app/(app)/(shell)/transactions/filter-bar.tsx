@@ -14,7 +14,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SelectChip, type SelectOption } from "@/components/ui/select-chip";
 import type { AccountSummary } from "@/lib/accounts/queries";
-import { EXPENSE_CATEGORY_KEYS, INCOME_CATEGORY_KEYS } from "@/lib/db/types";
+import { CURRENCY_CODES, EXPENSE_CATEGORY_KEYS, INCOME_CATEGORY_KEYS } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
 import { withFilters, type TransactionFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
@@ -89,8 +89,7 @@ export function FilterBar({ filters, accounts, today }: Props) {
   ];
   const currencyOptions: SelectOption[] = [
     { value: "all", label: t("currency.filterOption", { value: t("currency.all") }) },
-    { value: "COP", label: t("currency.filterOption", { value: "COP" }) },
-    { value: "USD", label: t("currency.filterOption", { value: "USD" }) },
+    ...CURRENCY_CODES.map((c) => ({ value: c, label: t("currency.filterOption", { value: c }) })),
   ];
   const monthLabel = f.date(`${filters.month}-01`, "monthYear");
   const rangeOptions: SelectOption[] = [

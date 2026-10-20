@@ -989,14 +989,21 @@ export type Database = {
       consume_rate_limit: { Args: { p_action: string }; Returns: Json };
       create_household: { Args: { p_name: string }; Returns: string };
       dashboard_totals: {
-        Args: { p_from: string; p_household_id: string; p_to: string };
+        Args: {
+          p_display_currency: string;
+          p_from: string;
+          p_household_id: string;
+          p_to: string;
+        };
         Returns: {
           category_key: string;
+          converted_minor: number;
           currency: string;
           kind: string;
           month: string;
           total_minor: number;
           tx_count: number;
+          uncovered_minor: number;
         }[];
       };
       delete_account_data: { Args: never; Returns: Json };

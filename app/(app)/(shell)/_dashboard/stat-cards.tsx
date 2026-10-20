@@ -16,7 +16,12 @@ import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
 import { Icon } from "@/components/ui/icon";
 import type { IconName } from "@/components/ui/icon-registry";
-import { monthTotals, percentChange, type AggregateRow } from "@/lib/dashboard/aggregate";
+import {
+  monthTotals,
+  originBreakdown,
+  percentChange,
+  type AggregateRow,
+} from "@/lib/dashboard/aggregate";
 import { useFormat } from "@/lib/i18n/use-format";
 import { useFirstView } from "@/lib/motion/first-view";
 import type { Money } from "@/lib/money/money";
@@ -35,17 +40,19 @@ type Props = {
 export function StatCard({ rows, month, previousMonth, card }: Props) {
   const t = useTranslations("dashboard");
   const f = useFormat();
-  const { rates, status, displayCurrency } = useRate();
+  const { displayCurrency } = useRate();
   // Number Ticker solo en la primera carga del dashboard (spec §7).
   const first = useFirstView();
-  const usable = status === "error" ? [] : rates;
-  const current = monthTotals(rows, month, displayCurrency, usable);
-  const previous = monthTotals(rows, previousMonth, displayCurrency, usable);
+  const current = monthTotals(rows, month, displayCurrency);
+  const previous = monthTotals(rows, previousMonth, displayCurrency);
   const prevLabel = f.date(`${previousMonth}-01`, "monthShort");
   const href = `/transactions?month=${month}${card === "income" ? "&type=income" : card === "expenses" ? "&type=expense" : ""}`;
 
   const value: Money =
     card === "balance" ? current.balance : card === "income" ? current.income : current.expenses;
+  const breakdownRows = rows.filter(
+    (r) => r.month === month && (card === "balance" || r.kind === (card === "income" ? "income" : "expense")),
+  );
   const before: Money =
     card === "balance" ? previous.balance : card === "income" ? previous.income : previous.expenses;
   const change = percentChange(value, before);
@@ -76,6 +83,7 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
             variant="total"
             ticker={first}
             value={value}
+            breakdown={originBreakdown(breakdownRows)}
             primaryClassName="text-amount-xl text-white"
             unitClassName="text-white"
             secondaryClassName="text-body text-white"
@@ -103,6 +111,7 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
         variant="total"
         ticker={first}
         value={value}
+        breakdown={originBreakdown(breakdownRows)}
         primaryClassName="text-amount-xl"
         secondaryClassName="text-body text-ink-2"
       />
