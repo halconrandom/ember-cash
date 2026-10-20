@@ -11,9 +11,10 @@
  * confirmar dice "Vencida", y "Marcar como pagado" abre el modal con la fecha
  * real de pago y la cuenta.
  */
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
@@ -35,12 +36,16 @@ import { add, money, type Money } from "@/lib/money/money";
 import type { AgendaItem, SubscriptionItem } from "@/lib/recurring/queries";
 import { daysBetween } from "@/lib/recurring/schedule";
 import { useEntrance, useFirstView } from "@/lib/motion/first-view";
-import { needsAction } from "@/lib/recurring/state";
+import { needsAction, type OccurrenceState } from "@/lib/recurring/state";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
 
+import { markOccurrencePaid } from "../calendar/actions";
 import { MarkPaidModal, StateBadge } from "../calendar/mark-paid-modal";
 import { setRecurringStatus } from "./actions";
+
+/** Máximo de filas visibles en "Próximos cobros" antes de "Ver todos". */
+const MAX_AGENDA_ROWS = 5;
 
 type Filter = "all" | "monthly" | "yearly";
 
@@ -53,6 +58,58 @@ function sumIn(items: Money[], to: CurrencyCode, rates: readonly Rate[]): Money 
   }
   return total;
 }
+
+/**
+ * Monto de una fila de "Próximos cobros": el convertido a la moneda de
+ * visualización arriba y, solo si la moneda original difiere, esa cifra
+ * original debajo (sin la palabra "original" ni la píldora de moneda: el
+ * símbolo ya la identifica). Sin tasa, el original queda como único monto.
+ */
+function AgendaAmount({ value }: { value: Money }) {
+  const { rates, status, displayCurrency } = useRate();
+  const f = useFormat();
+  const differs = value.currency !== displayCurrency;
+  const rate = differs && status !== "error" ? latestRateFor(rates, value.currency, displayCurrency) : null;
+  const primary = rate ? convert(value, displayCurrency, rate) : value;
+  return (
+    <span className="shrink-0 text-right tabular-nums">
+      <span className="text-body text-ink block font-semibold whitespace-nowrap">
+        {f.money(primary)}
+      </span>
+      {differs && rate && (
+        <span className="text-callout text-ink-2 block whitespace-nowrap">{f.money(value)}</span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Meta de una fila: fecha relativa y absoluta en un solo texto ("Hoy · 20
+ * oct", "Vencido hace 3 días · 17 oct"). El color y el ícono de vencido se
+ * aplican en el render, según `item.state`.
+ */
+function dueMeta(
+  today: string,
+  item: Pick<AgendaItem, "dueOn" | "state">,
+  f: ReturnType<typeof useFormat>,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  const date = f.date(item.dueOn, "short");
+  if (item.state === "overdue") {
+    return t("overdueBy", { count: daysBetween(item.dueOn, today), date });
+  }
+  const days = daysBetween(today, item.dueOn);
+  if (days === 0) return t("dueToday", { date });
+  if (days === 1) return t("dueTomorrow", { date });
+  return t("dueInDays", { count: days, date });
+}
+
+/** Orden de los subgrupos de "Próximos cobros"; los vacíos no se muestran. */
+const AGENDA_GROUPS: readonly { state: OccurrenceState; labelKey: string }[] = [
+  { state: "overdue", labelKey: "groupOverdue" },
+  { state: "due", labelKey: "groupToday" },
+  { state: "upcoming", labelKey: "groupUpcoming" },
+];
 
 function SummaryCard({
   icon,
@@ -87,6 +144,7 @@ export function SubscriptionsView({
   accounts: AccountSummary[];
 }) {
   const t = useTranslations("subscriptions");
+  const occurrences = useTranslations("occurrences");
   const rateLimit = useTranslations("rateLimit");
   const f = useFormat();
   const toast = useToast();
@@ -96,6 +154,14 @@ export function SubscriptionsView({
   const params = useSearchParams();
   const [filter, setFilter] = useState<Filter>("all");
   const [paying, setPaying] = useState<AgendaItem | null>(null);
+  // Día elegido en la tira de 7 días: filtra "Próximos cobros" a esa fecha.
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // Fila que se marca como pagada ahora mismo (deshabilita su botón) y, tras
+  // guardar, a qué fila le toca el foco (spec: "el foco pasa a la siguiente
+  // fila").
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+  const payButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   // Animated List (spec §7): entrada solo en la primera carga; cambiar el
   // filtro muestra la lista nueva sin animar.
   const first = useFirstView();
@@ -103,6 +169,39 @@ export function SubscriptionsView({
   const [, startTransition] = useTransition();
   const usable = status === "error" ? [] : rates;
   const active = items.filter((item) => item.status === "active");
+
+  useEffect(() => {
+    if (!pendingFocusId) return;
+    const el = payButtonRefs.current.get(pendingFocusId);
+    if (el) {
+      el.focus();
+      setPendingFocusId(null);
+    }
+  }, [pendingFocusId, upcoming]);
+
+  function markPaidQuick(item: AgendaItem, list: readonly AgendaItem[]) {
+    const index = list.findIndex((event) => event.occurrenceId === item.occurrenceId);
+    const nextId = list[index + 1]?.occurrenceId ?? null;
+    setPayingId(item.occurrenceId);
+    startTransition(async () => {
+      const result = await markOccurrencePaid({
+        occurrenceId: item.occurrenceId,
+        accountId: item.accountId ?? accounts[0]?.id ?? null,
+        paidOn: today,
+      });
+      setPayingId(null);
+      if (!result.ok) {
+        toast.show({
+          message:
+            result.error === "rateLimited" ? rateLimit("write") : occurrences(`errors.${result.error}`),
+        });
+        return;
+      }
+      toast.show({ message: t("markedPaid", { name: item.name }) });
+      setPendingFocusId(nextId);
+      router.refresh();
+    });
+  }
 
   const openNew = () =>
     router.push(`${pathname}${withFilters(params, { sub: "new" })}`, { scroll: false });
@@ -153,6 +252,22 @@ export function SubscriptionsView({
     displayCurrency,
     usable,
   );
+
+  // El día elegido en la tira filtra la lista; el total de la cabecera
+  // siempre es el del periodo completo (14 días), sin filtrar.
+  const relevantUpcoming = selectedDay
+    ? upcoming.filter((item) => item.dueOn === selectedDay)
+    : upcoming;
+  const visibleUpcoming = relevantUpcoming.slice(0, MAX_AGENDA_ROWS);
+  const hasMoreUpcoming = relevantUpcoming.length > MAX_AGENDA_ROWS;
+  const groupedUpcoming = AGENDA_GROUPS.map((group) => ({
+    ...group,
+    items: visibleUpcoming.filter((item) => item.state === group.state),
+  }));
+
+  function toggleDay(date: string) {
+    setSelectedDay((current) => (current === date ? null : date));
+  }
 
   return (
     <div id="help-see-subscriptions" className="space-y-6">
@@ -334,69 +449,151 @@ export function SubscriptionsView({
         </section>
 
         <Card className="space-y-4">
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <h2 className="text-headline text-ink">{t("upcoming")}</h2>
-            <p className="text-footnote text-ink-3">{t("upcomingWindow")}</p>
+            <MoneyAmount variant="total" value={dueSoon} className="shrink-0 text-right" />
           </div>
-          <div className="grid grid-cols-7 gap-1" aria-label={t("weekLabel")}>
-            {week.map((date) => {
-              const has = upcoming.some((item) => item.dueOn === date);
-              const isToday = date === today;
-              return (
-                <div key={date} className="flex flex-col items-center gap-1">
-                  <span className="text-footnote text-ink-3">
-                    {capitalize(f.date(date, "weekday"))}
-                  </span>
-                  <span
+
+          <div>
+            <div className="grid grid-cols-7 gap-1" aria-label={t("weekLabel")}>
+              {week.map((date) => {
+                const has = upcoming.some((item) => item.dueOn === date);
+                const isToday = date === today;
+                const selected = selectedDay === date;
+                return (
+                  <button
+                    key={date}
+                    type="button"
+                    onClick={() => toggleDay(date)}
+                    aria-pressed={selected}
+                    aria-label={f.date(date, "short")}
                     className={cn(
-                      "text-footnote grid size-11 place-items-center rounded-full tabular-nums",
-                      isToday ? "bg-ember-fill font-semibold text-white" : "bg-surface2 text-ink",
+                      "rounded-control flex flex-col items-center gap-1 py-1 transition-colors duration-100",
+                      selected ? "bg-surface2" : "hover:bg-surface2",
                     )}
                   >
-                    {f.date(date, "day")}
-                  </span>
-                  <span
-                    aria-hidden
-                    className={cn("size-1.5 rounded-full", has ? "bg-violet" : "bg-transparent")}
-                  />
-                </div>
-              );
-            })}
+                    <span className="text-caption text-ink-2" aria-hidden>
+                      {capitalize(f.date(date, "weekday")).charAt(0)}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-body font-semibold tabular-nums",
+                        isToday
+                          ? "text-ember-text underline decoration-2 underline-offset-4"
+                          : "text-ink",
+                      )}
+                    >
+                      {f.date(date, "day")}
+                    </span>
+                    <span
+                      aria-hidden
+                      className={cn("size-1 rounded-full", has ? "bg-violet" : "bg-transparent")}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            {selectedDay && (
+              <p className="text-footnote text-ink-2 mt-2">
+                {t("filteredBy", { date: f.date(selectedDay, "short") })}
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => setSelectedDay(null)}
+                  className="text-ember-text font-semibold hover:underline"
+                >
+                  {t("clearFilter")}
+                </button>
+              </p>
+            )}
           </div>
-          {upcoming.length === 0 ? (
+
+          {relevantUpcoming.length === 0 ? (
             <p className="text-body text-ink-2">{t("upcomingEmpty")}</p>
           ) : (
-            <ul className="space-y-3">
-              <AnimatedList animateOnMount={first}>
-                {upcoming.map((item) => (
-                  <AnimatedListItem key={item.occurrenceId} className="flex items-start gap-3">
-                    <span aria-hidden className="bg-violet mt-2 size-2 shrink-0 rounded-full" />
-                    <span className="min-w-0 flex-1">
-                      <span className="text-body text-ink block font-semibold">{item.name}</span>
-                      <span className="text-footnote text-ink-3 flex flex-wrap items-center gap-2">
-                        {f.date(item.dueOn, "weekdayShort")}
-                        <StateBadge state={item.state} />
-                      </span>
-                      {needsAction(item.state) && (
-                        <button
-                          type="button"
-                          onClick={() => setPaying(item)}
-                          className="text-callout text-ember-text mt-1 block font-semibold whitespace-nowrap hover:underline"
-                        >
-                          {t("markPaid")}
-                        </button>
-                      )}
-                    </span>
-                    <MoneyAmount value={item.amount} className="shrink-0 text-right" />
-                  </AnimatedListItem>
-                ))}
-              </AnimatedList>
-            </ul>
+            <div className="space-y-4">
+              {groupedUpcoming.map(
+                (group) =>
+                  group.items.length > 0 && (
+                    <div key={group.state}>
+                      <p role="heading" aria-level={3} className="text-caption text-ink-2 mb-1 uppercase">
+                        {group.state === "overdue"
+                          ? t("groupOverdue", { count: group.items.length })
+                          : t(group.labelKey)}
+                      </p>
+                      <ul>
+                        <AnimatedList animateOnMount={first}>
+                          {group.items.map((item, index) => (
+                            <AnimatedListItem
+                              as="li"
+                              key={item.occurrenceId}
+                              className="flex min-h-16 items-center gap-3 px-4"
+                            >
+                              <span
+                                aria-hidden
+                                className="bg-violet size-2 shrink-0 rounded-full"
+                              />
+                              <div
+                                className={cn(
+                                  "flex min-w-0 flex-1 items-center gap-3 py-3",
+                                  index > 0 && "border-border border-t",
+                                )}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-body text-ink block truncate font-semibold">
+                                    {item.name}
+                                  </span>
+                                  {item.state === "overdue" ? (
+                                    <span className="text-callout text-negative-text mt-0.5 inline-flex items-center gap-1">
+                                      <Icon name="exclamation" size={14} />
+                                      {dueMeta(today, item, f, t)}
+                                    </span>
+                                  ) : item.state === "due" ? (
+                                    <span className="text-callout text-ink mt-0.5 block font-medium">
+                                      {dueMeta(today, item, f, t)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-callout text-ink-2 mt-0.5 block">
+                                      {dueMeta(today, item, f, t)}
+                                    </span>
+                                  )}
+                                </div>
+                                <AgendaAmount value={item.amount} />
+                                {needsAction(item.state) && (
+                                  <button
+                                    type="button"
+                                    ref={(el) => {
+                                      if (el) payButtonRefs.current.set(item.occurrenceId, el);
+                                      else payButtonRefs.current.delete(item.occurrenceId);
+                                    }}
+                                    onClick={() => markPaidQuick(item, visibleUpcoming)}
+                                    disabled={payingId === item.occurrenceId}
+                                    aria-label={t("markPaidAria", { name: item.name })}
+                                    className="press-scale grid size-11 shrink-0 place-items-center rounded-full disabled:opacity-60"
+                                  >
+                                    <span className="border-border bg-surface text-ink-2 hover:bg-surface2 hover:text-ink grid size-8 place-items-center rounded-full border transition-colors duration-100">
+                                      <Icon name="check" size={16} />
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
+                            </AnimatedListItem>
+                          ))}
+                        </AnimatedList>
+                      </ul>
+                    </div>
+                  ),
+              )}
+              {hasMoreUpcoming && (
+                <Link
+                  href="/calendar"
+                  className="text-callout text-ember-text block pt-1 text-center font-semibold hover:underline"
+                >
+                  {t("viewAll", { count: relevantUpcoming.length })}
+                </Link>
+              )}
+            </div>
           )}
-          <div className="border-border flex items-center justify-between gap-3 border-t pt-4">
-            <span className="text-body text-ink-2">{t("dueNext")}</span>
-            <MoneyAmount variant="total" value={dueSoon} />
-          </div>
         </Card>
         <MarkPaidModal
           event={paying}

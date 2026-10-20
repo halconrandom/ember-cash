@@ -2,6 +2,19 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.22.0] - 2026-10-20
+
+### Rediseñado: tarjeta "Próximos cobros" en Suscripciones
+
+- Cabecera: título y, a la derecha, el total real del periodo (14 días) con `MoneyAmount variant="total"`, sin línea secundaria.
+- La lista se agrupa en Vencidos / Hoy / Próximos (en vez de la píldora "Vencida" suelta); los grupos vacíos no se muestran. Encabezados con `role="heading" aria-level={3}`, filas en `ul`/`li`. Máximo 5 filas visibles; de ahí en más, un enlace "Ver todos (n)" a `/calendar`.
+- Cada fila: ícono/punto a la izquierda; nombre (truncate) y una sola meta que combina fecha relativa y absoluta ("Hoy · 20 oct", "Vencido hace 3 días · 17 oct"); a la derecha el monto en la moneda de visualización y, solo si la original difiere, esa cifra debajo (ya sin la palabra "original" ni la píldora de moneda). Nunca se trunca un monto ni una fecha.
+- Vencido: meta en rojo semántico con un ícono de exclamación (nuevo en el registro: `exclamation` / `CircleAlert`); sin chip, sin fondo rojo, sin barra lateral. "Hoy" en texto principal con peso medio.
+- Tira de 7 días sin scroll: inicial del día, número y un punto de 4 px solo si hay cobros. Hoy ya no lleva un círculo relleno: el número pasa al color de acento con subrayado. Tocar un día filtra la lista a esa fecha ("Mostrando 24 oct · Quitar filtro"); tocarlo de nuevo quita el filtro. El total de la cabecera sigue siendo el del periodo completo.
+- El enlace "Marcar como pagado" de las filas se reemplaza por un botón de icono circular (solo en Vencidos y Hoy; 32 px visual, 44 px de área táctil, sin naranja) que llama a la misma acción (`markOccurrencePaid`) sin abrir ningún diálogo; con toast de confirmación y el foco a la fila siguiente. Sin deshacer: la acción no tenía uno ya construido y no se inventó uno nuevo (deshacerla dejaría la ocurrencia marcada como pagada sin su transacción). La tarjeta de cada suscripción (a la izquierda) sigue igual, con su propio botón que abre el diálogo de siempre.
+
+No se pudo probar en un navegador real en este entorno (sin herramienta de captura/automatización disponible); se verificó con `pnpm build` y revisión de código.
+
 ## [0.21.2] - 2026-10-20
 
 ### Corregido (botón de ayuda "?")
