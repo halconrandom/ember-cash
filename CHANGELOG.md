@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.22.3] - 2026-10-20
+
+### Corregido
+
+- `DateField` (selector de "Primera fecha" / "Termina" en Suscripciones y modales similares): en algunos navegadores, un clic en el `<input type="date">` invisible que cubre el campo no abría el selector nativo si no caía justo sobre su ícono interno. Ahora el clic llama a `showPicker()` explícitamente (con comprobación de soporte, sin cambiar nada más del campo).
+
 ## [0.22.2] - 2026-10-20
 
 ### Corregido (fila de "Próximos cobros", vuelta a 2 líneas de verdad)
