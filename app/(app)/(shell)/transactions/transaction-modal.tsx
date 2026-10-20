@@ -31,9 +31,10 @@ import { SelectField } from "@/components/ui/select-field";
 import { TextareaField } from "@/components/ui/textarea-field";
 import type { AccountSummary } from "@/lib/accounts/queries";
 import { ACCOUNT_TYPE_ICON, CATEGORY_META, categoriesFor } from "@/lib/categories";
-import { CURRENCY_CODES, type CategoryKey, type CurrencyCode } from "@/lib/db/types";
+import type { CategoryKey, CurrencyCode } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
+import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 import { money } from "@/lib/money/money";
 import { parseMoney } from "@/lib/money/parse";
 import { resolveConversionLine } from "@/lib/transactions/conversion-line";
@@ -50,24 +51,8 @@ import { cn } from "@/lib/utils";
 
 import { saveTransaction } from "./actions";
 
-/** Última moneda usada por tipo de transacción (conveniencia del navegador; nunca falla si no hay storage). */
-function readLastCurrency(kind: TransactionKind): CurrencyCode | null {
-  try {
-    const v = localStorage.getItem(`ec:lastCurrency:${kind}`);
-    return (CURRENCY_CODES as readonly string[]).includes(v ?? "") ? (v as CurrencyCode) : null;
-  } catch {
-    return null;
-  }
-}
-function writeLastCurrency(kind: TransactionKind, currency: CurrencyCode): void {
-  try {
-    localStorage.setItem(`ec:lastCurrency:${kind}`, currency);
-  } catch {
-    // Almacenamiento no disponible (privado, bloqueado): se ignora.
-  }
-}
-
-const CURRENCY_OPTIONS = CURRENCY_CODES.map((value) => ({ value, label: value }));
+/** Clave de almacenamiento por tipo de transacción (gasto/ingreso/transferencia). */
+const formKey = (kind: TransactionKind) => `transactions:${kind}`;
 
 type Member = { userId: string; displayName: string | null };
 
@@ -126,7 +111,7 @@ export function TransactionModal({
 
   const [kind, setKind] = useState<TransactionKind>(editing?.kind ?? "expense");
   const [currency, setCurrency] = useState<CurrencyCode>(
-    editing?.amount.currency ?? readLastCurrency(editing?.kind ?? "expense") ?? displayCurrency,
+    editing?.amount.currency ?? readLastCurrency(formKey(editing?.kind ?? "expense")) ?? displayCurrency,
   );
   const [amount, setAmount] = useState(editing ? f.amount(editing.amount) : "");
   const [categoryKey, setCategoryKey] = useState<string | null>(editing?.categoryKey ?? null);
@@ -155,7 +140,7 @@ export function TransactionModal({
   function changeKind(next: TransactionKind) {
     setKind(next);
     // Al crear (no al editar), la moneda vuelve a la última usada en ese tipo.
-    if (!editing) setCurrency(readLastCurrency(next) ?? displayCurrency);
+    if (!editing) setCurrency(readLastCurrency(formKey(next)) ?? displayCurrency);
     if (next === "transfer") setRepeat("never");
     if (
       next !== "transfer" &&
@@ -308,12 +293,7 @@ export function TransactionModal({
             description={tm("noAccountsDescription")}
             className="py-8"
           />
-          <AccountCreateForm
-            // Las cuentas siguen binarias (COP/USD): EUR aún no tiene su propio
-            // selector de cuenta (fase de diseño pendiente, DESIGN_SPEC §4).
-            defaultCurrency={displayCurrency === "EUR" ? "USD" : displayCurrency}
-            onCreated={(id) => setAccountId(id)}
-          />
+          <AccountCreateForm defaultCurrency={displayCurrency} onCreated={(id) => setAccountId(id)} />
         </div>
       ) : (
         <form
@@ -361,7 +341,7 @@ export function TransactionModal({
                   onChange={(next) => {
                     // Solo cambia la moneda: el monto escrito no se convierte.
                     setCurrency(next);
-                    writeLastCurrency(kind, next);
+                    writeLastCurrency(formKey(kind), next);
                   }}
                 />
                 <span aria-live="polite" className="sr-only">

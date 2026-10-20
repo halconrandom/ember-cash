@@ -28,7 +28,7 @@ const row = (
   kind: AggregateRow["kind"],
   categoryKey: AggregateRow["categoryKey"],
   minor: bigint,
-  currency: "COP" | "USD" = "COP",
+  currency: "COP" | "USD" | "EUR" = "COP",
   count = 1,
 ): AggregateRow => ({
   month,
@@ -152,5 +152,32 @@ describe("trend y lastMonths", () => {
     expect(niceMax(230_000n)).toBe(250_000n);
     expect(niceMax(1_700n)).toBe(2_000n);
     expect(niceMax(0n)).toBe(0n);
+  });
+});
+
+describe("displayCurrency = EUR con datos en las 3 monedas (fase E2.1)", () => {
+  // EUR/USD: 1 EUR = 1.1 USD; EUR/COP: 1 EUR = 4,400 COP (ambas guardadas
+  // directo, como el cron de E1: nunca se encadenan dos tasas al mostrar).
+  const EUR_USD: Rate = { ...RATE, base: "EUR", quote: "USD", rate: "1.1" };
+  const EUR_COP: Rate = { ...RATE, base: "EUR", quote: "COP", rate: "4400" };
+  const RATES = [RATE, EUR_USD, EUR_COP];
+
+  const mixedRows: AggregateRow[] = [
+    row("2026-10", "expense", "food", 440_000n, "COP"), // 100 EUR
+    row("2026-10", "expense", "food", 1_100n, "USD"), // 1 USD = (1/1.1) EUR ≈ 0.91 EUR
+    row("2026-10", "expense", "food", 5_000n, "EUR"),
+  ];
+
+  it("convierte COP y USD a EUR con sus tasas directas, sin encadenar", () => {
+    const totals = monthTotals(mixedRows, "2026-10", "EUR", RATES);
+    // 440,000 COP / 4,400 = 100.00 EUR; 1,100 USD/100 / 1.1 = 10.00 EUR; + 50.00 EUR.
+    expect(totals.expenses).toEqual(money(16_000n, "EUR"));
+    expect(totals.partial).toBe(false);
+  });
+
+  it("sin la tasa EUR/USD, el monto en USD queda fuera y partial = true", () => {
+    const totals = monthTotals(mixedRows, "2026-10", "EUR", [RATE, EUR_COP]);
+    expect(totals.expenses).toEqual(money(15_000n, "EUR"));
+    expect(totals.partial).toBe(true);
   });
 });

@@ -31,6 +31,7 @@ import {
 } from "@/lib/debts/schema";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
+import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
 
@@ -52,9 +53,8 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   const [name, setName] = useState(editing?.name ?? "");
   const [subtitle, setSubtitle] = useState(editing?.subtitle ?? "");
   const [iconKey, setIconKey] = useState<DebtIcon>(editing?.iconKey ?? "credit-card");
-  // Las deudas siguen binarias (COP/USD): EUR aún no tiene su propio selector aquí.
   const [currency, setCurrency] = useState<CurrencyCode>(
-    editing?.original.currency ?? (displayCurrency === "EUR" ? "USD" : displayCurrency),
+    editing?.original.currency ?? readLastCurrency("debts") ?? displayCurrency,
   );
   const [principal, setPrincipal] = useState(editing ? f.amount(editing.original) : "");
   const [apr, setApr] = useState(
@@ -219,12 +219,12 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
             >
               <SegmentedControl<CurrencyCode>
                 label={t("modal.currency")}
-                options={[
-                  { value: "COP", label: "COP" },
-                  { value: "USD", label: "USD" },
-                ]}
+                options={CURRENCY_OPTIONS}
                 value={currency}
-                onChange={setCurrency}
+                onChange={(next) => {
+                  setCurrency(next);
+                  writeLastCurrency("debts", next);
+                }}
               />
             </div>
           </div>

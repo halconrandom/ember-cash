@@ -139,7 +139,7 @@ The design-system sheet (10) shows exactly this scale. Because text2 and text3 a
 13. Debts timeline axis shows the **year on every label** (`Oct 2026`, `Oct 2027`, `Oct 2028`, with unlabeled grid lines every 6 months), so "Oct 26" can never read as day 26. End-of-bar labels also carry month and year (`Jun 2027`).
 14. Month selector appears where data is monthly (Dashboard, Transactions, Calendar, Household). It is hidden in Savings, Debts and Subscriptions.
 
-Still binary (COP/USD only) in this phase, pending a design pass of their own: new accounts, debts, recurring items and savings goals (their currency pickers), and the Transactions screen's original-currency filter chip. Budgets and partial settlements already accept the 3 currencies.
+All currency pickers — accounts, goals, debts, recurring items, budgets and partial settlements — now offer the same 3-way COP/USD/EUR segmented control (phase E2.1). Still binary, pending a design pass of its own: the Transactions screen's original-currency filter chip.
 
 ## 5. Components
 

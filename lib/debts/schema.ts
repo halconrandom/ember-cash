@@ -5,6 +5,7 @@
 import { z } from "zod";
 
 import type { IconName } from "@/components/ui/icon-registry";
+import { CURRENCY_CODES } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/config";
 import type { Money } from "@/lib/money/money";
 import { parseMoney } from "@/lib/money/parse";
@@ -53,7 +54,7 @@ export const debtInputSchema = z.object({
   name: z.string(),
   subtitle: z.string(),
   iconKey: z.string(),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
   principal: z.string(),
   apr: z.string(),
   aprKind: z.enum(["EA", "nominal"]),
@@ -136,7 +137,7 @@ export function validateDebt(
 // ---------------------------------------------------------------- pagos
 export const paymentInputSchema = z.object({
   debtId: z.uuid(),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
   amount: z.string(),
   interest: z.string(),
   paidOn: z.string(),

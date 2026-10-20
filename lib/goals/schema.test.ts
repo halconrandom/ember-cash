@@ -56,6 +56,15 @@ describe("validateGoal", () => {
     });
   });
 
+  it("acepta una meta en EUR (fase E2.1)", () => {
+    expect(
+      validateGoal({ ...goal, currency: "EUR", target: "1.200,50", monthly: "80" }, "es", today),
+    ).toMatchObject({
+      ok: true,
+      value: { target: money(120_050n, "EUR"), monthly: money(8000n, "EUR") },
+    });
+  });
+
   it("USD con 2 decimales y fecha pasada solo al editar", () => {
     expect(
       validateGoal({ ...goal, currency: "USD", target: "1,200.50", monthly: "80" }, "en", today),

@@ -1009,6 +1009,7 @@
     "dueNext": "Due in the next 14 days",
     "breakdownCop": "{count, plural, one {# in COP} other {# in COP}}",
     "breakdownUsd": "{count, plural, one {# in USD} other {# in USD}}",
+    "breakdownEur": "{count, plural, one {# in EUR} other {# in EUR}}",
     "breakdownYearly": "{count, plural, one {# yearly} other {# yearly}}",
     "breakdownWeekly": "{count, plural, one {# weekly} other {# weekly}}",
     "emptyTitle": "No subscriptions yet",

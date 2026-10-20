@@ -132,11 +132,13 @@ export function SubscriptionsView({
   const visible = items.filter((item) => (filter === "all" ? true : item.frequency === filter));
   const cop = active.filter((item) => item.amount.currency === "COP").length;
   const usd = active.filter((item) => item.amount.currency === "USD").length;
+  const eur = active.filter((item) => item.amount.currency === "EUR").length;
   const yearly = active.filter((item) => item.frequency === "yearly").length;
   const weekly = active.filter((item) => item.frequency === "weekly").length;
   const breakdown = [
     cop ? t("breakdownCop", { count: cop }) : null,
     usd ? t("breakdownUsd", { count: usd }) : null,
+    eur ? t("breakdownEur", { count: eur }) : null,
     yearly ? t("breakdownYearly", { count: yearly }) : null,
     weekly ? t("breakdownWeekly", { count: weekly }) : null,
   ]

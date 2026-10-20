@@ -1009,6 +1009,7 @@
     "dueNext": "Por vencer en 14 días",
     "breakdownCop": "{count, plural, one {# en COP} other {# en COP}}",
     "breakdownUsd": "{count, plural, one {# en USD} other {# en USD}}",
+    "breakdownEur": "{count, plural, one {# en EUR} other {# en EUR}}",
     "breakdownYearly": "{count, plural, one {# anual} other {# anuales}}",
     "breakdownWeekly": "{count, plural, one {# semanal} other {# semanales}}",
     "emptyTitle": "Aún no hay suscripciones",

@@ -69,6 +69,21 @@ describe("validateDebt", () => {
       },
     });
   });
+
+  it("acepta una deuda en EUR (fase E2.1)", () => {
+    expect(
+      validateDebt(
+        { ...debt, currency: "EUR", principal: "4.900,00", minPayment: "320,00" },
+        "es",
+      ),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        principal: money(490_000n, "EUR"),
+        minPayment: money(32_000n, "EUR"),
+      },
+    });
+  });
 });
 
 describe("validatePayment", () => {

@@ -5,6 +5,7 @@
 import { z } from "zod";
 
 import type { IconName } from "@/components/ui/icon-registry";
+import { CURRENCY_CODES } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/config";
 import type { Money } from "@/lib/money/money";
 import { parseMoney } from "@/lib/money/parse";
@@ -47,7 +48,7 @@ export const goalInputSchema = z.object({
   name: z.string(),
   iconKey: z.string(),
   target: z.string(),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
   targetDate: z.string(),
   monthly: z.string(),
 });
@@ -118,7 +119,7 @@ export function validateGoal(
 export const contributionInputSchema = z.object({
   goalId: z.uuid(),
   amount: z.string(),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
   contributedOn: z.string(),
   transactionId: z.string().nullable(),
 });

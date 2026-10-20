@@ -7,7 +7,12 @@ import { z } from "zod";
 import type { IconName } from "@/components/ui/icon-registry";
 import { ICONS } from "@/components/ui/icon-registry";
 import { isCategoryOfKind } from "@/lib/categories";
-import type { CategoryKey, RecurringFrequency, RecurringKind } from "@/lib/db/types";
+import {
+  CURRENCY_CODES,
+  type CategoryKey,
+  type RecurringFrequency,
+  type RecurringKind,
+} from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/config";
 import type { Money } from "@/lib/money/money";
 import { parseMoney } from "@/lib/money/parse";
@@ -64,7 +69,7 @@ export const recurringInputSchema = z.object({
   subtitle: z.string(),
   iconKey: z.string(),
   amount: z.string(),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
   categoryKey: z.string(),
   frequency: z.enum(FORM_FREQUENCIES),
   interval: z.string(),

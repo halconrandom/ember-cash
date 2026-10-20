@@ -23,6 +23,7 @@ import { CATEGORY_META, categoriesFor } from "@/lib/categories";
 import type { CategoryKey } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
+import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 import type { SubscriptionItem } from "@/lib/recurring/queries";
 import {
   FORM_FREQUENCIES,
@@ -73,9 +74,8 @@ export function SubscriptionModal({
   const [name, setName] = useState(editing?.name ?? "");
   const [subtitle, setSubtitle] = useState(editing?.subtitle ?? "");
   const [iconKey, setIconKey] = useState(editing?.iconKey ?? "refresh");
-  // Los recurrentes siguen binarios (COP/USD): EUR aún no tiene su propio selector aquí.
   const [currency, setCurrency] = useState(
-    editing?.amount.currency ?? (displayCurrency === "EUR" ? "USD" : displayCurrency),
+    editing?.amount.currency ?? readLastCurrency("subscriptions") ?? displayCurrency,
   );
   const [amount, setAmount] = useState(editing ? f.amount(editing.amount) : "");
   const [categoryKey, setCategoryKey] = useState(editing?.categoryKey ?? "");
@@ -269,12 +269,12 @@ export function SubscriptionModal({
           />
           <SegmentedControl
             label={tm("currency")}
-            options={[
-              { value: "COP", label: "COP" },
-              { value: "USD", label: "USD" },
-            ]}
+            options={CURRENCY_OPTIONS}
             value={currency}
-            onChange={setCurrency}
+            onChange={(next) => {
+              setCurrency(next);
+              writeLastCurrency("subscriptions", next);
+            }}
           />
         </div>
 

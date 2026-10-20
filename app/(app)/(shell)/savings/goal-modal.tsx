@@ -29,6 +29,7 @@ import {
 } from "@/lib/goals/schema";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
+import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
 
@@ -51,9 +52,8 @@ export function GoalModal({ open, editing, today }: Props) {
 
   const [name, setName] = useState(editing?.name ?? "");
   const [iconKey, setIconKey] = useState<GoalIcon>(editing?.iconKey ?? "piggy-bank");
-  // Las metas siguen binarias (COP/USD): EUR aún no tiene su propio selector aquí.
   const [currency, setCurrency] = useState<CurrencyCode>(
-    editing?.target.currency ?? (displayCurrency === "EUR" ? "USD" : displayCurrency),
+    editing?.target.currency ?? readLastCurrency("goals") ?? displayCurrency,
   );
   const [target, setTarget] = useState(editing ? f.amount(editing.target) : "");
   const [targetDate, setTargetDate] = useState(editing?.targetDate ?? "");
@@ -221,12 +221,12 @@ export function GoalModal({ open, editing, today }: Props) {
             >
               <SegmentedControl
                 label={t("modal.currency")}
-                options={[
-                  { value: "COP", label: "COP" },
-                  { value: "USD", label: "USD" },
-                ]}
+                options={CURRENCY_OPTIONS}
                 value={currency}
-                onChange={setCurrency}
+                onChange={(next) => {
+                  setCurrency(next);
+                  writeLastCurrency("goals", next);
+                }}
               />
             </div>
           </div>

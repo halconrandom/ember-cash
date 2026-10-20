@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
 import { ACCOUNT_TYPES } from "@/lib/categories";
+import { CURRENCY_CODES } from "@/lib/db/types";
 import { isRateLimitedDbError, limitOr } from "@/lib/security/rate-limit";
 import { scopeHouseholdId } from "@/lib/scope/constants";
 import { getScope } from "@/lib/scope/server";
@@ -28,7 +29,7 @@ function nameError(name: unknown): "nameRequired" | "nameTooLong" | null {
 const createSchema = z.object({
   name: z.string(),
   type: z.enum(ACCOUNT_TYPES),
-  currency: z.enum(["COP", "USD"]),
+  currency: z.enum(CURRENCY_CODES),
 });
 
 export async function createAccount(input: unknown): Promise<AccountActionResult> {

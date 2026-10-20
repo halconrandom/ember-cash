@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.17.0] - 2026-10-19
+
+### Añadido (fase E2.1: cierra EUR en los selectores binarios)
+
+- Metas, deudas, suscripciones/recurrentes y la cuenta creada desde el modal de transacción usan el mismo segmented de 3 monedas (COP/USD/EUR) que ya tenía `transaction-modal`. Se quita el resguardo "si displayCurrency es EUR cae a USD" de `goal-modal.tsx`, `debt-modal.tsx`, `subscription-modal.tsx` y `transaction-modal.tsx`: el valor por defecto vuelve a ser `displayCurrency`, o la última moneda usada en ese formulario (`lib/money/last-currency.ts`, nuevo módulo compartido con `CURRENCY_OPTIONS`, `readLastCurrency` y `writeLastCurrency`, reemplaza el código que antes vivía solo en `transaction-modal.tsx`).
+- `lib/goals/schema.ts`, `lib/debts/schema.ts`, `lib/recurring/schema.ts` y `lib/accounts/actions.ts` validan las 3 monedas (`z.enum(CURRENCY_CODES)`, antes `z.enum(["COP", "USD"])`); `account-create-form.tsx` pasa de un `<SelectField>` binario al mismo segmented de 3 monedas.
+- Revisado: `lib/debts/payoff.ts` (avalancha/bola de nieve), `lib/goals/status.ts` y `lib/recurring/schedule.ts`/`state.ts` nunca miran la moneda (solo bigint y fechas): ya funcionaban con EUR sin tocarlos.
+- `subscriptions-view.tsx` agrega el conteo "N en EUR" al desglose (antes solo COP/USD).
+- Revisada la lista completa de `["COP", "USD"]` fijos o comparaciones binarias de moneda: no queda ninguna fuera de la página de ejemplo `/dev/design-system` y el chip "Moneda: Todas/COP/USD" de filtros de Transactions (ambos documentados aparte, pendientes de su propio diseño).
+- Verificado: el `<Modal>` del desglose de totales ya se comporta como bottom sheet en móvil (menos de 600 px) por construcción — es el mismo componente que usan todos los modales de la app, con grabber, esquinas redondeadas arriba y gesto de arrastre. No hizo falta ajustarlo.
+- Tests: `lib/goals/schema.test.ts`, `lib/debts/schema.test.ts` (meta y deuda en EUR) y `lib/recurring/schema.test.ts`, nuevo (recurrente en EUR, y que COP/USD sigan funcionando); `lib/dashboard/aggregate.test.ts` agrega un caso con displayCurrency = EUR y gastos en las 3 monedas (con y sin la tasa EUR/USD, para confirmar `partial`).
+
 ## [0.16.0] - 2026-10-19
 
 ### Añadido (fase E2: UI de 3 monedas)

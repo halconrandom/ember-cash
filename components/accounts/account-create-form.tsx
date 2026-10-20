@@ -2,17 +2,20 @@
 
 /**
  * Formulario para crear una cuenta (nombre, tipo, moneda). Lo usan Ajustes y
- * el modal de transacción cuando todavía no hay cuentas.
+ * el modal de transacción cuando todavía no hay cuentas. La moneda usa el
+ * mismo segmented de 3 monedas (COP/USD/EUR) que el resto de la app.
  */
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SelectField } from "@/components/ui/select-field";
 import { createAccount } from "@/lib/accounts/actions";
 import { ACCOUNT_TYPES } from "@/lib/categories";
 import type { AccountType, CurrencyCode } from "@/lib/db/types";
+import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 
 export function AccountCreateForm({
   defaultCurrency,
@@ -24,7 +27,9 @@ export function AccountCreateForm({
   const t = useTranslations();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("checking");
-  const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
+  const [currency, setCurrency] = useState<CurrencyCode>(
+    readLastCurrency("accounts") ?? defaultCurrency,
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -64,15 +69,14 @@ export function AccountCreateForm({
           onChange={(v) => setType(v as AccountType)}
           options={ACCOUNT_TYPES.map((v) => ({ value: v, label: t(`accountTypes.${v}`) }))}
         />
-        <SelectField
+        <SegmentedControl
           label={t("accounts.currency")}
-          icon="exchange"
           value={currency}
-          onChange={(v) => setCurrency(v as CurrencyCode)}
-          options={[
-            { value: "COP", label: "COP" },
-            { value: "USD", label: "USD" },
-          ]}
+          onChange={(next) => {
+            setCurrency(next);
+            writeLastCurrency("accounts", next);
+          }}
+          options={CURRENCY_OPTIONS}
         />
       </div>
       <Button type="submit" variant="secondary" icon="plus" disabled={pending}>
