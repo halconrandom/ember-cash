@@ -44,6 +44,23 @@ describe("getServerEnv", () => {
     );
   });
 
+  it("el bot de Telegram es opcional y solo cuenta si están las dos variables", () => {
+    expect(getServerEnv(valid)).toEqual(valid);
+    expect(
+      getServerEnv({ ...valid, TELEGRAM_BOT_TOKEN: "  ", TELEGRAM_WEBHOOK_SECRET: "" }),
+    ).toEqual(valid);
+    const secret = "a".repeat(32);
+    expect(
+      getServerEnv({ ...valid, TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_WEBHOOK_SECRET: secret }),
+    ).toMatchObject({ TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_WEBHOOK_SECRET: secret });
+  });
+
+  it("un secreto de Telegram corto no arranca", () => {
+    expect(() =>
+      getServerEnv({ ...valid, TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_WEBHOOK_SECRET: "corto" }),
+    ).toThrow(/valor inválido: TELEGRAM_WEBHOOK_SECRET/);
+  });
+
   it("exige un correo de contacto y rechaza uno que no lo es", () => {
     expect(() => getServerEnv({ ...valid, NEXT_PUBLIC_CONTACT_EMAIL: "" })).toThrow(
       /Faltan estas variables: NEXT_PUBLIC_CONTACT_EMAIL/,

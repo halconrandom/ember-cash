@@ -668,19 +668,22 @@ export type Database = {
           action: string;
           attempted_at: string;
           id: number;
-          user_id: string;
+          telegram_user_id: number | null;
+          user_id: string | null;
         };
         Insert: {
           action: string;
           attempted_at?: string;
           id?: never;
-          user_id: string;
+          telegram_user_id?: number | null;
+          user_id?: string | null;
         };
         Update: {
           action?: string;
           attempted_at?: string;
           id?: never;
-          user_id?: string;
+          telegram_user_id?: number | null;
+          user_id?: string | null;
         };
         Relationships: [];
       };
@@ -873,6 +876,134 @@ export type Database = {
           },
         ];
       };
+      telegram_drafts: {
+        Row: {
+          account_id: string;
+          amount_minor: number;
+          category_key: string;
+          chat_id: number;
+          created_at: string;
+          currency: string;
+          description: string;
+          expires_at: string;
+          id: string;
+          kind: string;
+          occurred_on: string;
+          saved_at: string | null;
+          telegram_user_id: number;
+          transaction_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          account_id: string;
+          amount_minor: number;
+          category_key: string;
+          chat_id: number;
+          created_at?: string;
+          currency: string;
+          description: string;
+          expires_at: string;
+          id?: string;
+          kind: string;
+          occurred_on: string;
+          saved_at?: string | null;
+          telegram_user_id: number;
+          transaction_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          account_id?: string;
+          amount_minor?: number;
+          category_key?: string;
+          chat_id?: number;
+          created_at?: string;
+          currency?: string;
+          description?: string;
+          expires_at?: string;
+          id?: string;
+          kind?: string;
+          occurred_on?: string;
+          saved_at?: string | null;
+          telegram_user_id?: number;
+          transaction_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "telegram_drafts_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "telegram_drafts_category_key_kind_fkey";
+            columns: ["category_key", "kind"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["key", "kind"];
+          },
+          {
+            foreignKeyName: "telegram_drafts_currency_fkey";
+            columns: ["currency"];
+            isOneToOne: false;
+            referencedRelation: "currencies";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "telegram_drafts_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      telegram_link_codes: {
+        Row: {
+          code: string;
+          created_at: string;
+          expires_at: string;
+          used_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          code: string;
+          created_at?: string;
+          expires_at: string;
+          used_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          expires_at?: string;
+          used_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      telegram_links: {
+        Row: {
+          chat_id: number;
+          linked_at: string;
+          telegram_user_id: number;
+          user_id: string;
+        };
+        Insert: {
+          chat_id: number;
+          linked_at?: string;
+          telegram_user_id: number;
+          user_id: string;
+        };
+        Update: {
+          chat_id?: number;
+          linked_at?: string;
+          telegram_user_id?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       transaction_splits: {
         Row: {
           share_minor: number;
@@ -1029,8 +1160,12 @@ export type Database = {
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json };
       account_balance: { Args: { p_account_id: string }; Returns: number };
-      consume_rate_limit: { Args: { p_action: string }; Returns: Json };
+      consume_rate_limit: {
+        Args: { p_action: string; p_telegram_user_id?: number };
+        Returns: Json;
+      };
       create_household: { Args: { p_name: string }; Returns: string };
+      create_telegram_link_code: { Args: never; Returns: string };
       dashboard_totals: {
         Args: {
           p_display_currency: string;
@@ -1111,6 +1246,33 @@ export type Database = {
         };
         Returns: string;
       };
+      telegram_cancel_draft: {
+        Args: { p_draft_id: string; p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_commit_draft: {
+        Args: { p_draft_id: string; p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_context: { Args: { p_telegram_user_id: number }; Returns: Json };
+      telegram_link_with_code: {
+        Args: { p_chat_id: number; p_code: string; p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_put_draft: {
+        Args: {
+          p_account_id: string | null;
+          p_amount_minor: number;
+          p_category_key: string;
+          p_chat_id: number;
+          p_currency: string;
+          p_description: string;
+          p_kind: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
+      telegram_undo: { Args: { p_telegram_user_id: number }; Returns: Json };
       transaction_has_former_member: { Args: { tid: string }; Returns: boolean };
     };
     Enums: {

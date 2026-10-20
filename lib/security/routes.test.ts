@@ -42,11 +42,13 @@ describe("rutas", () => {
     }
   });
 
-  it("los cron exigen el secreto y el resto de las rutas exige sesión", () => {
+  it("los cron y el webhook de Telegram exigen el secreto; el resto exige sesión", () => {
     for (const route of routes) {
       if (PUBLIC_ROUTES.has(route)) continue;
       const source = readFileSync(join(ROOT, route), "utf8");
-      if (route.includes("/api/cron/")) {
+      // El webhook usa la service role: no hay sesión de usuario. El secreto
+      // del encabezado es la autorización, igual que en los cron.
+      if (route.includes("/api/cron/") || route.includes("/api/telegram/")) {
         expect(source, route).toContain("if (!authorized(");
       } else {
         expect(source, route).toMatch(/requireUser\(|getCurrentUser\(/);

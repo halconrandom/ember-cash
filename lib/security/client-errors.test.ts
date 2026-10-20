@@ -20,11 +20,12 @@ function filesUnder(dir: string, acc: string[] = []): string[] {
 }
 
 describe("errores hacia el cliente", () => {
-  it("los cron responden una clave y registran con el logger", () => {
+  it("los cron y el webhook de Telegram registran con el logger y no devuelven el error", () => {
     for (const path of [
       "app/api/cron/rates/route.ts",
       "app/api/cron/occurrences/route.ts",
       "app/api/cron/purge-deleted/route.ts",
+      "app/api/telegram/webhook/route.ts",
     ]) {
       const source = readFileSync(path, "utf8");
       expect(source).toContain("logServerError");

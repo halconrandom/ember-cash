@@ -1,5 +1,6 @@
 /**
- * Ajustes: apariencia (tema e idioma, guardados en el perfil), cuenta,
+ * Ajustes: apariencia (tema e idioma, guardados en el perfil), monedas,
+ * conexiones (Telegram, solo si el servidor tiene token y secreto), cuenta,
  * respaldo y créditos. Al final, el aviso de privacidad y los términos.
  *
  * Acerca de lleva la atribución de la licencia gratuita de Flaticon
@@ -21,6 +22,7 @@ import { CurrencySetting } from "./currency-setting";
 import { DeleteAccountSection } from "./delete-account-section";
 
 import { LocaleSetting } from "./locale-setting";
+import { TelegramCard } from "./telegram-card";
 import { ThemeSetting } from "./theme-setting";
 
 export default async function SettingsPage() {
@@ -43,6 +45,10 @@ export default async function SettingsPage() {
         <CardTitle>{t("currencies")}</CardTitle>
         <CurrencySetting />
       </Card>
+
+      <Suspense fallback={<Card className="h-40" />}>
+        <TelegramCard />
+      </Suspense>
 
       <Card className="space-y-4">
         <CardTitle>{(await getTranslations("accounts"))("title")}</CardTitle>

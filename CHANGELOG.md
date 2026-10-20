@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.26.0] - 2026-10-20
+
+### Fase T1: bot de Telegram para registrar movimientos por texto
+
+- Migración `0026_telegram.sql`: `telegram_links`, `telegram_link_codes` (un solo uso, 10 minutos) y `telegram_drafts` (15 minutos), con RLS. El cliente solo ve y borra su vínculo, y solo ve sus códigos. No hay política de escritura. El bot escribe por funciones `security definer` con `search_path` fijo: reciben el `telegram_user_id` y resuelven adentro el usuario y el hogar. `consume_rate_limit(text, bigint)` cuenta 30 mensajes cada 10 minutos y solo la ejecuta `service_role`.
+- Ajustes > Conexiones: "Vincular Telegram" genera el código y muestra `t.me/<bot>?start=<código>`. Si ya está vinculado, "Desvincular". La sección no aparece si faltan `TELEGRAM_BOT_TOKEN` o `TELEGRAM_WEBHOOK_SECRET`.
+- `POST /api/telegram/webhook` (runtime node): 401 si `X-Telegram-Bot-Api-Secret-Token` no coincide (comparación en tiempo constante), 404 si el bot no está configurado, 200 en el resto. Un parser determinista propone el movimiento con botones Guardar y Cancelar. Guardar usa `save_transaction`. `/deshacer` borra el último movimiento creado por el bot en los últimos 10 minutos. El bot no muestra saldos ni datos de otros miembros.
+- `pnpm telegram:webhook` registra el webhook en `https://cash.halcon.dev/api/telegram/webhook`.
+
 ## [0.25.1] - 2026-10-20
 
 ### Limpieza: `profiles.enabled_currencies` con los tipos generados
