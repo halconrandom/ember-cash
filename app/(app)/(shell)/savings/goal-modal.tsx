@@ -12,11 +12,11 @@ import { useState, useTransition } from "react";
 
 import { useRate } from "@/components/money/rate-provider";
 import { Button } from "@/components/ui/button";
+import { CurrencyAmountField } from "@/components/ui/currency-amount-field";
 import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useToast } from "@/components/ui/toast";
 import type { CurrencyCode } from "@/lib/db/types";
 import type { GoalSummary } from "@/lib/goals/queries";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/goals/schema";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
-import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
+import { readLastCurrency } from "@/lib/money/last-currency";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
 
@@ -198,39 +198,19 @@ export function GoalModal({ open, editing, today }: Props) {
           )}
         </fieldset>
 
-        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-          <Field
-            label={t("modal.target")}
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0"
-            value={target}
-            onChange={(e) => {
-              setTarget(e.target.value);
-              clear("target");
-            }}
-            error={err("target")}
-          />
-          <div className="space-y-2">
-            <span className="text-callout text-ink-2 block font-semibold">
-              {t("modal.currency")}
-            </span>
-            <div
-              className={cn(currencyLocked && "pointer-events-none opacity-60")}
-              aria-disabled={currencyLocked || undefined}
-            >
-              <SegmentedControl
-                label={t("modal.currency")}
-                options={CURRENCY_OPTIONS}
-                value={currency}
-                onChange={(next) => {
-                  setCurrency(next);
-                  writeLastCurrency("goals", next);
-                }}
-              />
-            </div>
-          </div>
-        </div>
+        <CurrencyAmountField
+          label={t("modal.target")}
+          value={target}
+          onValueChange={(v) => {
+            setTarget(v);
+            clear("target");
+          }}
+          currency={currency}
+          onCurrencyChange={setCurrency}
+          formKey="goals"
+          error={err("target")}
+          disabled={currencyLocked}
+        />
         {currencyLocked && (
           <p className="text-footnote text-ink-3 -mt-3">{t("modal.currencyLocked")}</p>
         )}

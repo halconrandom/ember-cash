@@ -1,15 +1,19 @@
 "use client";
 
 /**
- * Chip de tasa de cambio (DESIGN_SPEC §4.9, 19-states.png). Solo presenta:
+ * Chip de tasa de cambio (DESIGN_SPEC §4.9/§4.10, fase E5): solo presenta;
  * quien lo usa decide el estado y pasa los textos ya formateados.
- * - fresh: neutro, con la fecha.
- * - stale (más de 24 h): ámbar, reloj, fecha vieja y badge "Desactualizada";
- *   un clic refresca.
+ * - fresh: neutro. Un clic abre "Tasas de hoy" (onOpen).
+ * - stale (más de 24 h): ámbar, reloj y badge "Desactualizada"; el clic
+ *   también abre "Tasas de hoy" (ahí se puede actualizar).
  * - updating: "Actualizando tasa..." conservando el ancho que tenía el chip,
  *   para que nada se mueva.
- * - error: rojo, "Tasa no disponible" y acción Reintentar. Si hay una última
- *   tasa conocida, queda en el tooltip.
+ * - error: rojo, "Tasa no disponible" y acción Reintentar (onRefresh). Si
+ *   hay una última tasa conocida, queda en el tooltip.
+ *
+ * Solo se muestra el par más usado hacia displayCurrency; si hay más,
+ * "· +{more}" en acento suave. La fecha ya no va en el chip: vive en el
+ * tooltip (escritorio) o en `mobileLabel` ("Tasas · 20 oct", bajo 600 px).
  */
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -24,16 +28,17 @@ export type RateChipState = "fresh" | "stale" | "updating" | "error";
 
 type Props = {
   state: RateChipState;
-  /** Texto de la tasa, ya formateado ("1 USD = 3.174,67 COP"). */
+  /** Texto de la tasa más usada, ya formateado ("1 USD = 3.174,67 COP"). */
   rate?: string;
-  /**
-   * Misma tasa, solo el número. Se ve entre 600 y 1023 px
-   * (docs/Phone/ember-cash-mobile-1-frames/t01: "4,000 · as of …").
-   */
-  rateShort?: string;
-  /** Fecha de la tasa, ya formateada ("17 de oct"). */
+  /** Cuántos pares más hay, además del mostrado (0 = no se muestra "+n"). */
+  more?: number;
+  /** Fecha de la tasa, ya formateada ("17 de oct"): va en el tooltip. */
   asOf?: string;
-  /** Refrescar (clic en "stale") o reintentar (botón en "error"). */
+  /** "Tasas · 20 oct": reemplaza el contenido bajo 600 px. */
+  mobileLabel?: string;
+  /** Clic en fresh/stale: abre el popover o sheet "Tasas de hoy". */
+  onOpen?: () => void;
+  /** Reintentar (solo estado error). */
   onRefresh?: () => void;
   className?: string;
 };
@@ -41,7 +46,16 @@ type Props = {
 const BASE =
   "inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-body whitespace-nowrap";
 
-export function RateChip({ state, rate, rateShort, asOf, onRefresh, className }: Props) {
+export function RateChip({
+  state,
+  rate,
+  more = 0,
+  asOf,
+  mobileLabel,
+  onOpen,
+  onRefresh,
+  className,
+}: Props) {
   const t = useTranslations("rateChip");
   const ref = useRef<HTMLElement>(null);
   const [width, setWidth] = useState<number | null>(null);
@@ -114,46 +128,45 @@ export function RateChip({ state, rate, rateShort, asOf, onRefresh, className }:
         className={state === "stale" ? "text-amber-text" : "text-ink-2"}
       />
       <span className="text-ink font-semibold tabular-nums">
-        {rateShort ? (
-          <>
-            <span className="min-[600px]:max-lg:hidden">{rate}</span>
-            <span className="hidden min-[600px]:inline lg:hidden">{rateShort}</span>
-          </>
-        ) : (
-          rate
-        )}
+        <span className={mobileLabel ? "max-[599px]:hidden" : undefined}>{rate}</span>
+        {mobileLabel && <span className="min-[600px]:hidden">{mobileLabel}</span>}
       </span>
-      <span className={cn("text-callout", state === "stale" ? "text-amber-text" : "text-ink-2")}>
-        {t("asOf", { date: asOf ?? "" })}
-      </span>
-    </>
-  );
-
-  if (state === "stale") {
-    return (
-      <button
-        ref={ref as React.RefObject<HTMLButtonElement>}
-        type="button"
-        data-state="stale"
-        onClick={onRefresh}
-        className={cn(BASE, "border-amber bg-amber-tint border-[1.5px] pr-1.5", className)}
-      >
-        {content}
+      {more > 0 && (
+        <span className={cn("text-callout text-ember-text font-semibold", mobileLabel && "max-[599px]:hidden")}>
+          {t("more", { count: more })}
+        </span>
+      )}
+      {state === "stale" && (
         <Badge tone="warning" className="bg-surface font-semibold">
           {t("stale")}
         </Badge>
-        <span className="sr-only">{t("refreshLabel")}</span>
-      </button>
-    );
-  }
+      )}
+    </>
+  );
 
-  return (
-    <span
-      ref={ref}
-      data-state="fresh"
-      className={cn(BASE, "border-border bg-surface border", className)}
+  const chip = (
+    <button
+      ref={ref as React.RefObject<HTMLButtonElement>}
+      type="button"
+      data-state={state}
+      onClick={onOpen}
+      className={cn(
+        BASE,
+        state === "stale"
+          ? "border-amber bg-amber-tint border-[1.5px] pr-1.5"
+          : "border-border bg-surface border",
+        className,
+      )}
     >
       {content}
-    </span>
+    </button>
+  );
+
+  return asOf ? (
+    <Tooltip content={t("asOf", { date: asOf })} side="bottom">
+      {chip}
+    </Tooltip>
+  ) : (
+    chip
   );
 }

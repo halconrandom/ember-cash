@@ -13,6 +13,7 @@ import { useState, useTransition } from "react";
 
 import { useRate } from "@/components/money/rate-provider";
 import { Button } from "@/components/ui/button";
+import { CurrencyAmountField } from "@/components/ui/currency-amount-field";
 import { Field } from "@/components/ui/field";
 import { HoldToDeleteButton, TwoStepDeleteButton } from "@/components/ui/hold-to-delete";
 import { Icon } from "@/components/ui/icon";
@@ -31,7 +32,7 @@ import {
 } from "@/lib/debts/schema";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
-import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
+import { readLastCurrency } from "@/lib/money/last-currency";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
 
@@ -199,36 +200,19 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
           </div>
         </fieldset>
 
-        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-          <Field
-            label={t("modal.principal")}
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0"
-            value={principal}
-            onChange={(e) => (setPrincipal(e.target.value), clear("principal"))}
-            error={err("principal")}
-          />
-          <div className="space-y-2">
-            <span className="text-callout text-ink-2 block font-semibold">
-              {t("modal.currency")}
-            </span>
-            <div
-              className={cn(currencyLocked && "pointer-events-none opacity-60")}
-              aria-disabled={currencyLocked || undefined}
-            >
-              <SegmentedControl<CurrencyCode>
-                label={t("modal.currency")}
-                options={CURRENCY_OPTIONS}
-                value={currency}
-                onChange={(next) => {
-                  setCurrency(next);
-                  writeLastCurrency("debts", next);
-                }}
-              />
-            </div>
-          </div>
-        </div>
+        <CurrencyAmountField
+          label={t("modal.principal")}
+          value={principal}
+          onValueChange={(v) => {
+            setPrincipal(v);
+            clear("principal");
+          }}
+          currency={currency}
+          onCurrencyChange={setCurrency}
+          formKey="debts"
+          error={err("principal")}
+          disabled={currencyLocked}
+        />
 
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
           <Field

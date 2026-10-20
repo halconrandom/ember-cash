@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.24.0] - 2026-10-20
+
+### Fase E5: selector de moneda unificado
+
+- `<CurrencyPicker>` (nuevo, `components/ui/currency-picker.tsx`): popover de 280 px en escritorio (`role="listbox"`) y bottom sheet en móvil (mismo patrón que `<HelpPanel>`), con teclado completo (Enter/Espacio/Alt+↓ abre, flechas mueven, Enter elige, Esc cierra y devuelve el foco, una letra salta de moneda). Orden: recientes primero (`lib/money/last-currency.ts`, nuevo `readRecentCurrencies`/`recordRecentCurrency`/`orderCurrencyOptions`), luego alfabético. Por defecto solo lista `profiles.enabled_currencies` (vía `useRate()`); el chip de moneda activo lleva el anillo de acento mientras su popover está abierto (`data-[popup-open]:outline-focus-ring`).
+- `<CurrencyAmountField>` (nuevo): reemplaza la píldora segmentada + campo de monto en deudas, metas, suscripciones y presupuestos del hogar. Un solo control de 48 px (botón de moneda de 72 px + divisor + input); cambiar de moneda nunca convierte el número escrito. Debajo, la línea de ayuda ("≈ monto · 1 X = Y Z" o "Sin tasa para X todavía") se recalcula en cada tecla pero solo se anuncia (`aria-live`) al perder el foco o cambiar de moneda. Cuentas usa `<CurrencyPicker>` directo (no lleva monto).
+- Topbar: el toggle segmentado COP/USD/EUR se reemplaza por el chip "Ver en {moneda}" (`<DisplayCurrencyChip>`, nuevo), que abre `<CurrencyPicker>` con el título "Ver montos en"; en móvil se compacta al código. Al elegir, toast "Mostrando montos en {moneda}" y los montos hacen un cross-fade de 150 ms (nuevo en `<MoneyAmount>`, respeta `prefers-reduced-motion`) en vez de "tickear".
+- Ajustes > Monedas (nuevo, `currency-setting.tsx`): "Moneda de visualización" (con la ayuda "Todos los totales se muestran en esta moneda.") y "Monedas que uso", con checkboxes que escriben `profiles.enabled_currencies` (nueva Server Action `saveEnabledCurrencies`); la de visualización no se puede desactivar.
+- Chip de tasa de la topbar: muestra solo el par más usado hacia la moneda de visualización y, si hay más, "+{n}" en acento suave; la fecha pasa al tooltip (o a "Tasas · 20 oct" bajo 600 px). Un clic abre "Tasas de hoy": una fila por moneda activa, cada una con su propia fuente (TRM/BCE/open.er-api) y hora — no un pie común — y un enlace a "Cambiar moneda de visualización".
+- `enabledCurrenciesOf()` (nuevo, `lib/db/types.ts`) lee `profiles.enabled_currencies` con una reserva segura mientras esa columna (fase E4, migración `0025`) no esté en `database.types.ts` (falta `pnpm db:types`, después de `db:push`).
+- Todos los textos nuevos en es/en.
+
 ## [0.23.0] - 2026-10-20
 
 ### Fase E4: ARS y MXN, monedas generalizadas

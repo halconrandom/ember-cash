@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Tests del chip de tasa: sus 4 estados (spec §4.9) y el ancho conservado.
+// Tests del chip de tasa: sus 4 estados (spec §4.9/§4.10) y el ancho conservado.
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,23 +15,31 @@ afterEach(() => {
 const props = { rate: "1 USD = 3,174.67 COP", asOf: "Oct 17" };
 
 describe("RateChip", () => {
-  it("fresca: tasa y fecha, sin SAMPLE ni botón", () => {
-    const { container } = render(<RateChip state="fresh" {...props} />);
+  it("fresca: la tasa (sin SAMPLE) y un clic abre 'Tasas de hoy'", () => {
+    const onOpen = vi.fn();
+    render(<RateChip state="fresh" {...props} onOpen={onOpen} />);
     expect(screen.getByText(props.rate)).toBeTruthy();
-    expect(screen.getByText("as of Oct 17")).toBeTruthy();
     expect(screen.queryByText(/sample/i)).toBeNull();
-    expect(container.querySelector("button")).toBeNull();
+    const button = screen.getByRole("button");
+    expect(button.getAttribute("data-state")).toBe("fresh");
+    fireEvent.click(button);
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("vieja: ámbar con 'Stale' y un clic refresca", () => {
-    const onRefresh = vi.fn();
-    render(<RateChip state="stale" {...props} onRefresh={onRefresh} />);
+  it("con más pares, muestra '+n'", () => {
+    render(<RateChip state="fresh" {...props} more={2} />);
+    expect(screen.getByText("+2")).toBeTruthy();
+  });
+
+  it("vieja: ámbar con 'Stale' y un clic abre 'Tasas de hoy'", () => {
+    const onOpen = vi.fn();
+    render(<RateChip state="stale" {...props} onOpen={onOpen} />);
     expect(screen.getByText("Stale")).toBeTruthy();
-    const button = screen.getByRole("button", { name: /refresh rate/i });
+    const button = screen.getByRole("button");
     expect(button.getAttribute("data-state")).toBe("stale");
     expect(button.className).toContain("border-amber");
     fireEvent.click(button);
-    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
   it("actualizando: conserva el ancho que tenía el chip", () => {

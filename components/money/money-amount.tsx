@@ -24,6 +24,7 @@
  * - vieja: lo convertido lleva el tooltip "tasa del 9 de oct".
  * - error: el original queda como principal (nunca un número viejo).
  */
+import { motion } from "motion/react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -105,6 +106,10 @@ export function MoneyAmount({
   /** Importe principal: número (y unidad COP más pequeña). */
   const primary = (m: Money, extra?: string, tick?: boolean) => {
     const { main, unit } = f.moneyParts(m);
+    // Nunca "cuenta" al cambiar de moneda de visualización (DESIGN_SPEC
+    // §4.11): un cross-fade de 150 ms (solo opacidad; MotionConfig
+    // reducedMotion="user" ya la quita con movimiento reducido), en vez del
+    // conteo de <NumberTicker> (que sigue siendo solo para la primera carga).
     const number =
       tick !== undefined ? (
         <NumberTicker
@@ -113,7 +118,15 @@ export function MoneyAmount({
           animate={tick}
         />
       ) : (
-        main
+        <motion.span
+          key={main}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+          className="inline-block"
+        >
+          {main}
+        </motion.span>
       );
     return (
       <span

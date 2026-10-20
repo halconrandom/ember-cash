@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 
 import { HelpPanel } from "@/components/help/help-panel";
 import { HelpTriggerButton } from "@/components/help/help-trigger-button";
-import { DisplayCurrencyToggle } from "@/components/money/display-currency-toggle";
+import { DisplayCurrencyChip } from "@/components/money/display-currency-chip";
 import { LiveRateChip } from "@/components/money/live-rate-chip";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -101,7 +101,7 @@ export function Topbar() {
             className="hidden lg:inline-flex"
           />
         )}
-        <DisplayCurrencyToggle />
+        <DisplayCurrencyChip />
         {page?.action && !actionHidden && actionLabel && (
           <>
             <Button

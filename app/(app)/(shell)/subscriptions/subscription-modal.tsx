@@ -14,6 +14,7 @@ import { useState, useTransition } from "react";
 
 import { useRate } from "@/components/money/rate-provider";
 import { Button } from "@/components/ui/button";
+import { CurrencyAmountField } from "@/components/ui/currency-amount-field";
 import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
@@ -23,7 +24,7 @@ import { CATEGORY_META, categoriesFor } from "@/lib/categories";
 import type { CategoryKey } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
-import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
+import { readLastCurrency } from "@/lib/money/last-currency";
 import type { SubscriptionItem } from "@/lib/recurring/queries";
 import {
   FORM_FREQUENCIES,
@@ -256,27 +257,18 @@ export function SubscriptionModal({
           {err("iconKey") && <p className="text-callout text-negative-text">{err("iconKey")}</p>}
         </fieldset>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            label={tm("amount")}
-            inputMode="decimal"
-            value={amount}
-            onChange={(event) => {
-              setAmount(event.target.value);
-              clear("amount");
-            }}
-            error={err("amount")}
-          />
-          <SegmentedControl
-            label={tm("currency")}
-            options={CURRENCY_OPTIONS}
-            value={currency}
-            onChange={(next) => {
-              setCurrency(next);
-              writeLastCurrency("subscriptions", next);
-            }}
-          />
-        </div>
+        <CurrencyAmountField
+          label={tm("amount")}
+          value={amount}
+          onValueChange={(v) => {
+            setAmount(v);
+            clear("amount");
+          }}
+          currency={currency}
+          onCurrencyChange={setCurrency}
+          formKey="subscriptions"
+          error={err("amount")}
+        />
 
         <fieldset className="space-y-2">
           <legend className="text-callout text-ink-2 font-semibold">{tm("category")}</legend>

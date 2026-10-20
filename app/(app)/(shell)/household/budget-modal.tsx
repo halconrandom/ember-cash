@@ -11,17 +11,11 @@ import { useState, useTransition } from "react";
 
 import { useRate } from "@/components/money/rate-provider";
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
+import { CurrencyAmountField } from "@/components/ui/currency-amount-field";
 import { Modal } from "@/components/ui/modal";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SelectField } from "@/components/ui/select-field";
 import { useToast } from "@/components/ui/toast";
-import {
-  CURRENCY_CODES,
-  EXPENSE_CATEGORY_KEYS,
-  type CategoryKey,
-  type CurrencyCode,
-} from "@/lib/db/types";
+import { EXPENSE_CATEGORY_KEYS, type CategoryKey, type CurrencyCode } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
 import type { Money } from "@/lib/money/money";
@@ -177,27 +171,19 @@ function BudgetForm({
             options={free.map((k) => ({ value: k, label: tc(k) }))}
           />
         )}
-        <div className="flex items-end gap-3">
-          <Field
-            label={t("budgetLimit")}
-            inputMode="decimal"
-            autoFocus
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              setError(null);
-            }}
-            error={error}
-            className="flex-1"
-          />
-          <SegmentedControl
-            label={t("budgetCurrency")}
-            value={currency}
-            onChange={setCurrency}
-            options={CURRENCY_CODES.map((c) => ({ value: c, label: c }))}
-            className="mb-1"
-          />
-        </div>
+        <CurrencyAmountField
+          label={t("budgetLimit")}
+          value={text}
+          onValueChange={(v) => {
+            setText(v);
+            setError(null);
+          }}
+          currency={currency}
+          onCurrencyChange={setCurrency}
+          formKey="budgets"
+          error={error}
+          autoFocus
+        />
       </div>
     </Modal>
   );

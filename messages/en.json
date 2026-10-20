@@ -485,6 +485,7 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "language": "Language",
+    "currencies": "Currencies",
     "account": "Account",
     "signOut": "Sign out",
     "about": "About",
@@ -547,7 +548,17 @@
     "refreshLabel": "Refresh rate",
     "lastKnown": "Last known rate: {rate}, as of {date}",
     "pairRate": "1 {base} = {value} {quote}",
-    "ratesCompact": "{count} rates"
+    "ratesCompact": "{count} rates",
+    "more": "+{count}",
+    "mobileLabel": "Rates · {date}",
+    "todayTitle": "Today's rates",
+    "changeDisplayCurrency": "Change display currency",
+    "rowTime": "{source} · {time}",
+    "source": {
+      "datos_gov_co": "TRM",
+      "frankfurter_app": "ECB",
+      "open_er_api_com": "open.er-api"
+    }
   },
   "skeleton": {
     "loading": "Loading"
@@ -713,7 +724,31 @@
     "displayLabel": "Display currency",
     "filterLabel": "Currency",
     "all": "All",
-    "filterOption": "Currency: {value}"
+    "filterOption": "Currency: {value}",
+    "pickerTitle": "Choose a currency",
+    "pickerClose": "Close",
+    "viewIn": "View amounts in",
+    "viewInChip": "View in {currency}",
+    "viewInLabel": "View amounts in {currency}",
+    "shownIn": "Showing amounts in {currency}",
+    "displayHint": "All totals are shown in this currency.",
+    "enabledLabel": "Currencies I use",
+    "enabledLockedHint": "In use",
+    "enabledSaveFailed": "Couldn't save. Try again.",
+    "names": {
+      "COP": "Colombian peso",
+      "USD": "US dollar",
+      "EUR": "Euro",
+      "ARS": "Argentine peso",
+      "MXN": "Mexican peso"
+    }
+  },
+  "currencyField": {
+    "pickerTitle": "Choose a currency",
+    "triggerLabel": "Currency: {currency}",
+    "rate": "1 {base} = {value} {quote}",
+    "noRate": "No rate for {currency} yet.",
+    "approximately": "approximately"
   },
   "categories": {
     "housing": "Housing",

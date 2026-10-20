@@ -35,8 +35,11 @@ type RateContextValue = {
   /** Hora actual (se actualiza cada minuto) para calcular si una tasa es vieja. */
   now: number;
   displayCurrency: CurrencyCode;
+  /** profiles.enabled_currencies (fase E5): qué monedas ofrecen los <CurrencyPicker>. */
+  enabledCurrencies: CurrencyCode[];
   refresh: () => void;
   setDisplayCurrency: (currency: CurrencyCode) => void;
+  setEnabledCurrencies: (currencies: CurrencyCode[]) => void;
 };
 
 const RateContext = createContext<RateContextValue | null>(null);
@@ -44,6 +47,8 @@ const RateContext = createContext<RateContextValue | null>(null);
 type Props = {
   initialRates: Rate[];
   initialDisplayCurrency: CurrencyCode;
+  /** profiles.enabled_currencies (fase E5). Por defecto, las 3 de siempre. */
+  initialEnabledCurrencies?: CurrencyCode[];
   /** Falso en demos (design system): no guarda nada en el servidor. */
   persist?: boolean;
   /** Fuerza un estado (solo para demos). */
@@ -54,6 +59,7 @@ type Props = {
 export function RateProvider({
   initialRates,
   initialDisplayCurrency,
+  initialEnabledCurrencies,
   persist = true,
   forcedStatus,
   children,
@@ -61,6 +67,9 @@ export function RateProvider({
   const [rates, setRates] = useState(initialRates);
   const [status, setStatus] = useState<RateStatus>(initialRates.length > 0 ? "idle" : "error");
   const [displayCurrency, setCurrency] = useState(initialDisplayCurrency);
+  const [enabledCurrencies, setEnabledCurrenciesState] = useState<CurrencyCode[]>(
+    initialEnabledCurrencies ?? ["COP", "USD", "EUR"],
+  );
   const [now, setNow] = useState(() => Date.now());
   const [, startTransition] = useTransition();
 
@@ -101,16 +110,35 @@ export function RateProvider({
     [persist],
   );
 
+  // Guardado en el servidor: lo hace la sección Monedas de Ajustes, que ya
+  // sabe el resultado de su propia Server Action; aquí solo se refleja en
+  // el estado para que los <CurrencyPicker> abiertos lo vean al instante.
+  const setEnabledCurrencies = useCallback((currencies: CurrencyCode[]) => {
+    setEnabledCurrenciesState(currencies);
+  }, []);
+
   const value = useMemo(
     () => ({
       rates,
       status: forcedStatus ?? status,
       now,
       displayCurrency,
+      enabledCurrencies,
       refresh,
       setDisplayCurrency,
+      setEnabledCurrencies,
     }),
-    [rates, status, forcedStatus, now, displayCurrency, refresh, setDisplayCurrency],
+    [
+      rates,
+      status,
+      forcedStatus,
+      now,
+      displayCurrency,
+      enabledCurrencies,
+      refresh,
+      setDisplayCurrency,
+      setEnabledCurrencies,
+    ],
   );
   return <RateContext.Provider value={value}>{children}</RateContext.Provider>;
 }

@@ -17,7 +17,14 @@ import {
 import type { Money } from "@/lib/money/money";
 
 import { DEFAULT_LOCALE, isLocale, type Locale } from "./config";
-import { formatCompact, formatCompactDate, formatDate, formatNumber, type DateStyle } from "./format";
+import {
+  formatCompact,
+  formatCompactDate,
+  formatDate,
+  formatNumber,
+  formatTime,
+  type DateStyle,
+} from "./format";
 
 export function useFormat() {
   const current = useLocale();
@@ -32,5 +39,7 @@ export function useFormat() {
     date: (date: Date | string, style?: DateStyle) => formatDate(date, locale, style),
     /** "17 oct" / "Oct 17": sin "de" (filas compactas de Próximos cobros). */
     compactDate: (date: Date | string) => formatCompactDate(date, locale),
+    /** "2:45 p. m." / "2:45 PM": la hora de cada fila de "Tasas de hoy". */
+    time: (date: Date | string) => formatTime(date, locale),
   };
 }

@@ -485,6 +485,7 @@
     "themeLight": "Claro",
     "themeDark": "Oscuro",
     "language": "Idioma",
+    "currencies": "Monedas",
     "account": "Cuenta",
     "signOut": "Cerrar sesión",
     "about": "Acerca de",
@@ -547,7 +548,17 @@
     "refreshLabel": "Actualizar la tasa",
     "lastKnown": "Última tasa conocida: {rate}, al {date}",
     "pairRate": "1 {base} = {value} {quote}",
-    "ratesCompact": "{count} tasas"
+    "ratesCompact": "{count} tasas",
+    "more": "+{count}",
+    "mobileLabel": "Tasas · {date}",
+    "todayTitle": "Tasas de hoy",
+    "changeDisplayCurrency": "Cambiar moneda de visualización",
+    "rowTime": "{source} · {time}",
+    "source": {
+      "datos_gov_co": "TRM",
+      "frankfurter_app": "BCE",
+      "open_er_api_com": "open.er-api"
+    }
   },
   "skeleton": {
     "loading": "Cargando"
@@ -713,7 +724,31 @@
     "displayLabel": "Moneda de visualización",
     "filterLabel": "Moneda",
     "all": "Todas",
-    "filterOption": "Moneda: {value}"
+    "filterOption": "Moneda: {value}",
+    "pickerTitle": "Elige una moneda",
+    "pickerClose": "Cerrar",
+    "viewIn": "Ver montos en",
+    "viewInChip": "Ver en {currency}",
+    "viewInLabel": "Ver montos en {currency}",
+    "shownIn": "Mostrando montos en {currency}",
+    "displayHint": "Todos los totales se muestran en esta moneda.",
+    "enabledLabel": "Monedas que uso",
+    "enabledLockedHint": "En uso",
+    "enabledSaveFailed": "No se pudo guardar. Intenta de nuevo.",
+    "names": {
+      "COP": "Peso colombiano",
+      "USD": "Dólar estadounidense",
+      "EUR": "Euro",
+      "ARS": "Peso argentino",
+      "MXN": "Peso mexicano"
+    }
+  },
+  "currencyField": {
+    "pickerTitle": "Elige una moneda",
+    "triggerLabel": "Moneda: {currency}",
+    "rate": "1 {base} = {value} {quote}",
+    "noRate": "Sin tasa para {currency} todavía.",
+    "approximately": "aproximadamente"
   },
   "categories": {
     "housing": "Vivienda",

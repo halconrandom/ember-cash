@@ -84,6 +84,26 @@ export type Profile = Narrow<
   Tables<"profiles">,
   { display_currency: CurrencyCode; theme: Theme; locale: ProfileLocale }
 >;
+
+/**
+ * profiles.enabled_currencies (0025_currencies_ars_mxn.sql, default del
+ * propio CHECK). Hasta que esa migración se aplique y se corra `pnpm
+ * db:types`, `Tables<"profiles">` todavía no trae esta columna, así que no
+ * puede ir en `Profile` de arriba: se lee por fuera, con un respaldo seguro
+ * si la fila que llega todavía no la tiene.
+ */
+export const DEFAULT_ENABLED_CURRENCIES: readonly CurrencyCode[] = ["COP", "USD", "EUR"];
+
+export function enabledCurrenciesOf(profile: Record<string, unknown>): CurrencyCode[] {
+  const raw = profile.enabled_currencies;
+  if (Array.isArray(raw)) {
+    const known = raw.filter((v): v is CurrencyCode =>
+      (CURRENCY_CODES as readonly string[]).includes(v),
+    );
+    if (known.length > 0) return known;
+  }
+  return [...DEFAULT_ENABLED_CURRENCIES];
+}
 export type Consent = Narrow<Tables<"consents">, { type: ConsentType }>;
 export type Household = Tables<"households">;
 export type HouseholdMember = Narrow<Tables<"household_members">, { role: HouseholdRole }>;

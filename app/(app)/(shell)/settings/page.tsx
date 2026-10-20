@@ -17,6 +17,7 @@ import { getCurrentProfile, requireUser } from "@/lib/auth/session";
 import { getScope } from "@/lib/scope/server";
 
 import { AccountsManager } from "./accounts-manager";
+import { CurrencySetting } from "./currency-setting";
 import { DeleteAccountSection } from "./delete-account-section";
 
 import { LocaleSetting } from "./locale-setting";
@@ -36,6 +37,11 @@ export default async function SettingsPage() {
           <p className="text-callout text-ink-2 font-semibold">{t("language")}</p>
           <LocaleSetting />
         </div>
+      </Card>
+
+      <Card className="space-y-5">
+        <CardTitle>{t("currencies")}</CardTitle>
+        <CurrencySetting />
       </Card>
 
       <Card className="space-y-4">

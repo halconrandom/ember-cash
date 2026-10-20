@@ -2,20 +2,21 @@
 
 /**
  * Formulario para crear una cuenta (nombre, tipo, moneda). Lo usan Ajustes y
- * el modal de transacción cuando todavía no hay cuentas. La moneda usa el
- * mismo segmented de 3 monedas (COP/USD/EUR) que el resto de la app.
+ * el modal de transacción cuando todavía no hay cuentas. La moneda usa
+ * <CurrencyPicker> (fase E5), igual que el resto de la app.
  */
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CurrencyPicker } from "@/components/ui/currency-picker";
 import { Field } from "@/components/ui/field";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 import { createAccount } from "@/lib/accounts/actions";
 import { ACCOUNT_TYPES } from "@/lib/categories";
 import type { AccountType, CurrencyCode } from "@/lib/db/types";
-import { CURRENCY_OPTIONS, readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
+import { readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 
 export function AccountCreateForm({
   defaultCurrency,
@@ -69,15 +70,24 @@ export function AccountCreateForm({
           onChange={(v) => setType(v as AccountType)}
           options={ACCOUNT_TYPES.map((v) => ({ value: v, label: t(`accountTypes.${v}`) }))}
         />
-        <SegmentedControl
-          label={t("accounts.currency")}
-          value={currency}
-          onChange={(next) => {
-            setCurrency(next);
-            writeLastCurrency("accounts", next);
-          }}
-          options={CURRENCY_OPTIONS}
-        />
+        <div className="space-y-2">
+          <span className="text-callout text-ink-2 block font-semibold">
+            {t("accounts.currency")}
+          </span>
+          <CurrencyPicker
+            value={currency}
+            onChange={(next) => {
+              setCurrency(next);
+              writeLastCurrency("accounts", next);
+            }}
+            title={t("accounts.currency")}
+            triggerLabel={t("accounts.currency")}
+            triggerClassName="rounded-control bg-surface2 text-body text-ink flex h-11 w-full items-center gap-2 border border-transparent px-4"
+          >
+            <span className="min-w-0 flex-1 text-left">{currency}</span>
+            <Icon name="angle-small-down" size={18} className="text-ink-2" />
+          </CurrencyPicker>
+        </div>
       </div>
       <Button type="submit" variant="secondary" icon="plus" disabled={pending}>
         {pending ? t("accounts.creating") : t("accounts.create")}

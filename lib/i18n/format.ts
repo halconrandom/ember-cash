@@ -81,3 +81,16 @@ export function formatCompactDate(
     .map((part) => part.value)
     .join(" ");
 }
+
+/** Hora corta ("2:45 p. m." / "2:45 PM"): la hora de cada fila de "Tasas de hoy". */
+export function formatTime(
+  date: Date | string,
+  locale: Locale,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): string {
+  return new Intl.DateTimeFormat(INTL_TAGS[locale], {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  }).format(new Date(date));
+}

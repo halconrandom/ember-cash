@@ -52,3 +52,35 @@ export async function saveDisplayCurrency(currency: string): Promise<{ ok: boole
     .eq("id", user.id);
   return { ok: !error };
 }
+
+/**
+ * Guarda profiles.enabled_currencies (0025_currencies_ars_mxn.sql). La
+ * fila debe traer al menos una moneda del catálogo y la de visualización
+ * actual tiene que seguir entre las habilitadas (si no, el CHECK de la base
+ * lo rechaza de todas formas; aquí se valida antes para dar un error claro
+ * en vez de uno genérico de la base).
+ *
+ * `enabled_currencies` todavía no está en `database.types.ts` (falta
+ * `pnpm db:types`, que corre después de `db:push`): el cast documenta por
+ * qué, y deja de hacer falta en cuanto se regeneren los tipos.
+ */
+export async function saveEnabledCurrencies(
+  currencies: readonly string[],
+): Promise<{ ok: boolean }> {
+  const known = currencies.filter((c) => (CURRENCY_CODES as readonly string[]).includes(c));
+  if (known.length === 0) return { ok: false };
+  const user = await requireUser();
+  const supabase = await createClient();
+  const { data: profile, error: readError } = await supabase
+    .from("profiles")
+    .select("display_currency")
+    .eq("id", user.id)
+    .single();
+  if (readError) return { ok: false };
+  if (!known.includes(profile.display_currency)) return { ok: false };
+  const { error } = await supabase
+    .from("profiles")
+    .update({ enabled_currencies: known } as never)
+    .eq("id", user.id);
+  return { ok: !error };
+}
