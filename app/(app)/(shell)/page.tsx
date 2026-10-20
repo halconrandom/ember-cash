@@ -17,6 +17,7 @@ import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { CardSkeleton } from "./_dashboard/card-frame";
+import { DoneHintSlot, FirstStepsSlot, SkippedSlot } from "./_dashboard/onboarding-slots";
 import {
   CategorySlot,
   context,
@@ -42,6 +43,15 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
         <Subtitle searchParams={searchParams} />
       </Suspense>
       <div className="space-y-6">
+        <Suspense fallback={null}>
+          <SkippedSlot searchParams={searchParams} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DoneHintSlot />
+        </Suspense>
+        <Suspense fallback={null}>
+          <FirstStepsSlot />
+        </Suspense>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
           {(["balance", "income", "expenses"] as const).map((card) => (
             <div key={card} className={card === "balance" ? "col-span-2 lg:col-span-1" : undefined}>

@@ -31,6 +31,7 @@ describe("lib/db/types", () => {
       | "recurring_occurrences"
       | "budgets"
       | "settlements"
+      | "events"
     >().toExtend<TableName>();
   });
 

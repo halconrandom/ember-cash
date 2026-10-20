@@ -212,7 +212,126 @@
       "nameRequired": "Enter a name for the household.",
       "nameTooLong": "The name can be up to 80 characters.",
       "inviteInvalid": "Paste the full invitation link."
+    },
+    "welcome": {
+      "title": "Your money, clear and calm.",
+      "body": "In a couple of minutes you'll see your first real number. You can skip any step.",
+      "primary": "Start",
+      "login": "I already have an account"
+    },
+    "common": {
+      "next": "Continue",
+      "back": "Back",
+      "skip": "Skip for now",
+      "skipAll": "Skip the introduction",
+      "progress": "Step {step} of {total}",
+      "saved": "We saved your progress."
+    },
+    "currency": {
+      "title": "Which currency do you think about your money in?",
+      "help": "This will be the currency of your totals. You can record transactions in others whenever you want.",
+      "cop": "Colombian peso (COP)",
+      "usd": "US dollar (USD)",
+      "eur": "Euro (EUR)",
+      "rate": "Today's rate: 1 {from} = {rate} {to}. Source: {source}.",
+      "rateUnavailable": "We couldn't get today's rate. We'll try again; your amounts stay the same.",
+      "error": "Choose a currency to continue."
+    },
+    "account": {
+      "title": "Add your first account",
+      "help": "Where your money sits: a savings account, cash, or a card. The balance is optional.",
+      "typeLabel": "Type",
+      "types": {
+        "savings": "Savings account",
+        "checking": "Checking account",
+        "cash": "Cash",
+        "credit": "Credit card",
+        "wallet": "Digital wallet"
+      },
+      "nameLabel": "Name",
+      "namePlaceholder": "E.g. Bancolombia savings",
+      "currencyLabel": "Currency",
+      "balanceLabel": "Current balance (optional)",
+      "balancePlaceholder": "0",
+      "limitLabel": "Total limit",
+      "limitPlaceholder": "E.g. 3,000,000",
+      "payDayLabel": "Payment day",
+      "payDayPlaceholder": "E.g. 15",
+      "payDayHelp": "The day of the month when the card payment is due.",
+      "errors": {
+        "name": "Give the account a name.",
+        "balance": "Use numbers only. You can leave it empty.",
+        "limit": "The limit must be a number greater than zero.",
+        "payDay": "Use a day between 1 and 31.",
+        "save": "We couldn't save the account. Check your connection and try again."
+      }
+    },
+    "focus": {
+      "title": "What do you want to track first?",
+      "help": "Pick one thing. You can add the rest whenever you want.",
+      "savings": "Savings",
+      "savingsHelp": "A goal and how much you've saved.",
+      "debts": "Debts",
+      "debtsHelp": "How much you owe and when you pay.",
+      "subscriptions": "Subscriptions and fixed payments",
+      "subscriptionsHelp": "What gets charged every month.",
+      "error": "Choose an option or tap Skip for now.",
+      "goal": {
+        "nameLabel": "What are you saving for?",
+        "namePlaceholder": "E.g. Trip to Mexico",
+        "targetLabel": "Goal",
+        "currentLabel": "What you've already saved (optional)",
+        "dateLabel": "Target date (optional)",
+        "errors": {
+          "target": "The goal must be greater than zero."
+        }
+      },
+      "debt": {
+        "nameLabel": "Debt name",
+        "namePlaceholder": "E.g. Personal loan",
+        "balanceLabel": "What you owe today",
+        "rateLabel": "Annual interest rate (optional)",
+        "paymentLabel": "Monthly payment (optional)",
+        "dueDayLabel": "Payment day (optional)",
+        "errors": {
+          "balance": "Enter what you owe, greater than zero.",
+          "rate": "Use a percentage between 0 and 100."
+        }
+      },
+      "sub": {
+        "chipsLabel": "Pick one or type your own",
+        "chips": "Rent, Internet, Mobile, Gym, Streaming",
+        "nameLabel": "Name",
+        "namePlaceholder": "E.g. Internet",
+        "amountLabel": "Amount",
+        "dayLabel": "Charge day",
+        "errors": {
+          "amount": "The amount must be greater than zero.",
+          "day": "Use a day between 1 and 31."
+        }
+      },
+      "create": "Save and see my dashboard"
+    },
+    "done": {
+      "title": "Done. This is your dashboard.",
+      "body": "At the top you see your total in {currency}. Below, what you just added. Each number updates when you record something.",
+      "helpHint": "If something isn't clear, tap the help button. You can also press the ? key.",
+      "cta": "Got it"
+    },
+    "skipped": {
+      "toast": "No problem. We used default values and you can change them in Settings."
     }
+  },
+  "firstSteps": {
+    "title": "First steps",
+    "subtitle": "{done} of {total} done",
+    "expense": "Record an expense",
+    "goal": "Create a savings goal",
+    "debt": "Add a debt",
+    "household": "Invite someone to your household",
+    "householdHelp": "Share expenses and goals with your partner or the people you live with.",
+    "dismiss": "Hide",
+    "complete": "You have the basics. We'll leave it here."
   },
   "invite": {
     "title": "Invitation",

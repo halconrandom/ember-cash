@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.19.0] - 2026-10-20
+
+### Añadido (fase F1: onboarding)
+
+- Migración `0023_onboarding.sql`: tabla `events` (`user_id`, `name`, `props`, `created_at`) con RLS (cada quien inserta y ve las suyas), sello de dueño y hora, y el disparador `zz_rate_limit_write`. Sin scripts de terceros. `profiles.onboarding_step`, `dashboard_hint_dismissed_at` y `first_steps_dismissed_at`, con permiso de UPDATE. En `accounts`, `credit_limit_minor` y `payment_day` solo si la cuenta es tarjeta.
+- `docs/onboarding/metrics.sql`: porcentaje que termina, paso de abandono, elemento en la primera sesión, mediana al panel con datos y retorno a 7 días. Se corre como dueño de la tabla: no hay una vista para `authenticated`.
+- El `/onboarding` que ya existía pasa a ser el wizard (bienvenida, moneda, primera cuenta, un elemento). Omitir aplica la moneda del idioma, marca `onboarded_at` y no abre un modal. El paso 4 es una pista en el panel, más la tarjeta Primeros pasos. Los textos salen de `docs/onboarding/copy.md`. No hay modo de datos de ejemplo.
+- El saldo inicial de la cuenta se guarda con `save_transaction` (la tabla no tiene saldo). En una tarjeta es un gasto; en el resto, un ingreso. Por eso ese movimiento entra en los totales del mes.
+- Tests de los pasos, de omitir, de retomar y de los eventos, contra Postgres local.
+
 ## [0.18.1] - 2026-10-20
 
 ### Corregido (revisión de `dashboard_totals`, fase E3)

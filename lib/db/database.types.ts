@@ -11,29 +11,35 @@ export type Database = {
       accounts: {
         Row: {
           archived_at: string | null;
+          credit_limit_minor: number | null;
           currency: string;
           household_id: string | null;
           id: string;
           name: string;
           owner_id: string;
+          payment_day: number | null;
           type: string;
         };
         Insert: {
           archived_at?: string | null;
+          credit_limit_minor?: number | null;
           currency: string;
           household_id?: string | null;
           id?: string;
           name: string;
           owner_id?: string;
+          payment_day?: number | null;
           type: string;
         };
         Update: {
           archived_at?: string | null;
+          credit_limit_minor?: number | null;
           currency?: string;
           household_id?: string | null;
           id?: string;
           name?: string;
           owner_id?: string;
+          payment_day?: number | null;
           type?: string;
         };
         Relationships: [
@@ -141,6 +147,30 @@ export type Database = {
           type?: string;
           user_id?: string;
           version?: string;
+        };
+        Relationships: [];
+      };
+      events: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          props: Json;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          props?: Json;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          props?: Json;
+          user_id?: string;
         };
         Relationships: [];
       };
@@ -589,33 +619,42 @@ export type Database = {
         Row: {
           avatar_url: string | null;
           created_at: string;
+          dashboard_hint_dismissed_at: string | null;
           display_currency: string;
           display_name: string | null;
+          first_steps_dismissed_at: string | null;
           id: string;
           locale: string;
           onboarded_at: string | null;
+          onboarding_step: number | null;
           theme: string;
           timezone: string;
         };
         Insert: {
           avatar_url?: string | null;
           created_at?: string;
+          dashboard_hint_dismissed_at?: string | null;
           display_currency?: string;
           display_name?: string | null;
+          first_steps_dismissed_at?: string | null;
           id: string;
           locale?: string;
           onboarded_at?: string | null;
+          onboarding_step?: number | null;
           theme?: string;
           timezone?: string;
         };
         Update: {
           avatar_url?: string | null;
           created_at?: string;
+          dashboard_hint_dismissed_at?: string | null;
           display_currency?: string;
           display_name?: string | null;
+          first_steps_dismissed_at?: string | null;
           id?: string;
           locale?: string;
           onboarded_at?: string | null;
+          onboarding_step?: number | null;
           theme?: string;
           timezone?: string;
         };

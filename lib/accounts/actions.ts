@@ -15,6 +15,8 @@ import { scopeHouseholdId } from "@/lib/scope/constants";
 import { getScope } from "@/lib/scope/server";
 import { createClient } from "@/lib/supabase/server";
 
+import { creditColumns } from "./credit";
+
 export type AccountActionResult =
   | { ok: true; id: string }
   | { ok: false; error: "nameRequired" | "nameTooLong" | "invalid" | "failed" | "rateLimited" };
@@ -30,6 +32,10 @@ const createSchema = z.object({
   name: z.string(),
   type: z.enum(ACCOUNT_TYPES),
   currency: z.enum(CURRENCY_CODES),
+  /** Cupo en unidades menores. Solo se guarda en una tarjeta; si no, null. */
+  creditLimitMinor: z.number().int().positive().nullable().optional(),
+  /** Día de pago (1 a 31). Solo se guarda en una tarjeta; si no, null. */
+  paymentDay: z.number().int().min(1).max(31).nullable().optional(),
 });
 
 export async function createAccount(input: unknown): Promise<AccountActionResult> {
@@ -38,6 +44,13 @@ export async function createAccount(input: unknown): Promise<AccountActionResult
   if (!parsed.success) return { ok: false, error: "invalid" };
   const err = nameError(parsed.data.name);
   if (err) return { ok: false, error: err };
+  // Una tarjeta puede ir sin cupo (Ajustes). Otro tipo con cupo o día se rechaza.
+  const credit = creditColumns(
+    parsed.data.type,
+    parsed.data.creditLimitMinor,
+    parsed.data.paymentDay,
+  );
+  if (!credit) return { ok: false, error: "invalid" };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -47,6 +60,8 @@ export async function createAccount(input: unknown): Promise<AccountActionResult
       type: parsed.data.type,
       currency: parsed.data.currency,
       household_id: scopeHouseholdId(await getScope()),
+      credit_limit_minor: credit.credit_limit_minor,
+      payment_day: credit.payment_day,
     })
     .select("id")
     .single();

@@ -212,7 +212,126 @@
       "nameRequired": "Escribe un nombre para el hogar.",
       "nameTooLong": "El nombre puede tener hasta 80 caracteres.",
       "inviteInvalid": "Pega el enlace completo de la invitación."
+    },
+    "welcome": {
+      "title": "Tu dinero, claro y en calma.",
+      "body": "En un par de minutos verás tu primer dato real. Puedes saltar cualquier paso.",
+      "primary": "Empezar",
+      "login": "Ya tengo cuenta"
+    },
+    "common": {
+      "next": "Continuar",
+      "back": "Atrás",
+      "skip": "Omitir por ahora",
+      "skipAll": "Saltar la introducción",
+      "progress": "Paso {step} de {total}",
+      "saved": "Guardamos tu avance."
+    },
+    "currency": {
+      "title": "¿En qué moneda piensas tu dinero?",
+      "help": "Será la moneda de tus totales. Puedes registrar movimientos en otras cuando quieras.",
+      "cop": "Peso colombiano (COP)",
+      "usd": "Dólar (USD)",
+      "eur": "Euro (EUR)",
+      "rate": "Tasa de hoy: 1 {from} = {rate} {to}. Fuente: {source}.",
+      "rateUnavailable": "No pudimos traer la tasa de hoy. Lo intentaremos de nuevo; tus montos no cambian.",
+      "error": "Elige una moneda para seguir."
+    },
+    "account": {
+      "title": "Agrega tu primera cuenta",
+      "help": "Donde tienes tu plata: una cuenta de ahorros, efectivo o una tarjeta. El saldo es opcional.",
+      "typeLabel": "Tipo",
+      "types": {
+        "savings": "Cuenta de ahorros",
+        "checking": "Cuenta corriente",
+        "cash": "Efectivo",
+        "credit": "Tarjeta de crédito",
+        "wallet": "Billetera digital"
+      },
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Ej.: Ahorros Bancolombia",
+      "currencyLabel": "Moneda",
+      "balanceLabel": "Saldo actual (opcional)",
+      "balancePlaceholder": "0",
+      "limitLabel": "Cupo total",
+      "limitPlaceholder": "Ej.: 3.000.000",
+      "payDayLabel": "Día de pago",
+      "payDayPlaceholder": "Ej.: 15",
+      "payDayHelp": "El día del mes en que vence el pago de la tarjeta.",
+      "errors": {
+        "name": "Ponle un nombre a la cuenta.",
+        "balance": "Escribe solo números. Puedes dejarlo vacío.",
+        "limit": "El cupo debe ser un número mayor que cero.",
+        "payDay": "Usa un día entre 1 y 31.",
+        "save": "No pudimos guardar la cuenta. Revisa tu conexión e inténtalo otra vez."
+      }
+    },
+    "focus": {
+      "title": "¿Qué quieres controlar primero?",
+      "help": "Elige una cosa. Lo demás lo agregas cuando quieras.",
+      "savings": "Ahorros",
+      "savingsHelp": "Una meta y cuánto llevas.",
+      "debts": "Deudas",
+      "debtsHelp": "Cuánto debes y cuándo pagas.",
+      "subscriptions": "Suscripciones y pagos fijos",
+      "subscriptionsHelp": "Lo que se cobra cada mes.",
+      "error": "Elige una opción o toca Omitir por ahora.",
+      "goal": {
+        "nameLabel": "¿Para qué ahorras?",
+        "namePlaceholder": "Ej.: Viaje a México",
+        "targetLabel": "Meta",
+        "currentLabel": "Lo que ya llevas (opcional)",
+        "dateLabel": "Fecha objetivo (opcional)",
+        "errors": {
+          "target": "La meta debe ser mayor que cero."
+        }
+      },
+      "debt": {
+        "nameLabel": "Nombre de la deuda",
+        "namePlaceholder": "Ej.: Crédito de libre inversión",
+        "balanceLabel": "Cuánto debes hoy",
+        "rateLabel": "Tasa de interés anual (opcional)",
+        "paymentLabel": "Cuota mensual (opcional)",
+        "dueDayLabel": "Día de pago (opcional)",
+        "errors": {
+          "balance": "Escribe cuánto debes, mayor que cero.",
+          "rate": "Usa un porcentaje entre 0 y 100."
+        }
+      },
+      "sub": {
+        "chipsLabel": "Elige una o escribe la tuya",
+        "chips": "Arriendo, Internet, Celular, Gimnasio, Streaming",
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Ej.: Internet",
+        "amountLabel": "Valor",
+        "dayLabel": "Día de cobro",
+        "errors": {
+          "amount": "El valor debe ser mayor que cero.",
+          "day": "Usa un día entre 1 y 31."
+        }
+      },
+      "create": "Guardar y ver mi panel"
+    },
+    "done": {
+      "title": "Listo. Este es tu panel.",
+      "body": "Arriba ves tu total en {currency}. Debajo, lo que acabas de agregar. Cada número se actualiza cuando registras algo.",
+      "helpHint": "Si algo no se entiende, toca el botón de ayuda. También puedes presionar la tecla ?.",
+      "cta": "Entendido"
+    },
+    "skipped": {
+      "toast": "Sin problema. Usamos valores por defecto y puedes cambiarlos en Ajustes."
     }
+  },
+  "firstSteps": {
+    "title": "Primeros pasos",
+    "subtitle": "{done} de {total} listos",
+    "expense": "Registra un gasto",
+    "goal": "Crea una meta de ahorro",
+    "debt": "Agrega una deuda",
+    "household": "Invita a alguien a tu hogar",
+    "householdHelp": "Comparte gastos y metas con tu pareja o con quien vivas.",
+    "dismiss": "Ocultar",
+    "complete": "Ya tienes lo básico. Aquí lo dejamos."
   },
   "invite": {
     "title": "Invitación",

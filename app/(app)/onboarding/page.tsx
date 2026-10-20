@@ -1,30 +1,29 @@
 /**
- * /onboarding: se muestra después del primer login. Si el usuario ya lo
- * terminó, vuelve a la página principal.
+ * /onboarding: el wizard (bienvenida, moneda, cuenta, foco). Si la persona ya
+ * terminó o omitió, vuelve al panel. La lectura del perfil va dentro de
+ * Suspense: con cacheComponents no puede prerenderizarse.
  */
 import { redirect } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 
 import { Card } from "@/components/ui/card";
 import { CenteredPage } from "@/components/ui/centered-page";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { CURRENCY_CODES, type CurrencyCode } from "@/lib/db/types";
+import type { Rate } from "@/lib/money/convert";
+import { listRates } from "@/lib/money/rates";
+import { wizardStep } from "@/lib/onboarding/logic";
 
-import { OnboardingChoices } from "./onboarding-choices";
+import { Wizard } from "./wizard";
 
 export default function OnboardingPage() {
-  const t = useTranslations("onboarding");
   return (
-    <CenteredPage className="max-w-xl space-y-6">
-      <div>
-        <h1 className="text-title1 text-ink">{t("title")}</h1>
-        <p className="text-body text-ink-2 mt-1">{t("subtitle")}</p>
-      </div>
+    <CenteredPage className="max-w-xl">
       <Suspense
         fallback={
           <Card>
-            <SkeletonList rows={3} />
+            <SkeletonList rows={4} />
           </Card>
         }
       >
@@ -34,9 +33,18 @@ export default function OnboardingPage() {
   );
 }
 
-/** Redirige si el onboarding ya está hecho; si no, muestra las opciones. */
+/** Paso guardado y tasas ya conocidas. No pide una tasa nueva en este flujo. */
 async function OnboardingContent() {
   const profile = await getCurrentProfile();
   if (profile.onboarded_at) redirect("/");
-  return <OnboardingChoices />;
+  let rates: Rate[] = [];
+  try {
+    rates = await listRates();
+  } catch {
+    rates = [];
+  }
+  const currency = (CURRENCY_CODES as readonly string[]).includes(profile.display_currency)
+    ? (profile.display_currency as CurrencyCode)
+    : "COP";
+  return <Wizard step={wizardStep(profile.onboarding_step)} currency={currency} rates={rates} />;
 }
