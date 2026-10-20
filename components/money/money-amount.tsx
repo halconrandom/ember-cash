@@ -23,12 +23,22 @@ import { useTranslations } from "next-intl";
 
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { Tooltip } from "@/components/ui/tooltip";
+import type { CurrencyCode } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, isStale, otherCurrency } from "@/lib/money/convert";
+import { convert, isStale } from "@/lib/money/convert";
 import { money, type Money } from "@/lib/money/money";
 import { cn } from "@/lib/utils";
 
 import { useRate } from "./rate-provider";
+
+/**
+ * La otra moneda del par COP/USD, para la línea "≈" y el tooltip (spec §4,
+ * binaria). Con EUR en catálogo pero sin UI propia todavía, se mantiene así;
+ * la fase de diseño de E1 decide su significado con 3 monedas.
+ */
+function otherCurrency(c: CurrencyCode): CurrencyCode {
+  return c === "COP" ? "USD" : "COP";
+}
 
 type Props = {
   value: Money;

@@ -268,12 +268,12 @@ select pg_temp.expect_error(format($q$update public.accounts set household_id = 
 select pg_temp.login('00000000-0000-4000-b000-00000000000a');
 select pg_temp.expect_count($q$select count(*) from public.exchange_rates where source = 'sample'$q$, 1, 'A lee las tasas (la de ejemplo de este test)');
 select pg_temp.expect_count('select count(*) from public.categories', 9, 'A lee las 9 categorías');
-select pg_temp.expect_count('select count(*) from public.currencies', 2, 'A lee las 2 monedas');
+select pg_temp.expect_count('select count(*) from public.currencies', 3, 'A lee las 3 monedas');
 select pg_temp.expect_error($q$insert into public.exchange_rates (base, quote, rate, as_of, source) values ('USD', 'COP', 1, current_date, 'hack')$q$, '42501', 'A no escribe tasas');
 select pg_temp.expect_error($q$update public.exchange_rates set rate = 1$q$, '42501', 'A no edita tasas');
 select pg_temp.expect_error($q$delete from public.exchange_rates$q$, '42501', 'A no borra tasas');
 select pg_temp.expect_error($q$insert into public.categories (key, kind, sort) values ('mia', 'expense', 99)$q$, '42501', 'A no crea categorías');
-select pg_temp.expect_error($q$insert into public.currencies (code, exponent) values ('EUR', 2)$q$, '42501', 'A no crea monedas');
+select pg_temp.expect_error($q$insert into public.currencies (code, exponent) values ('GBP', 2)$q$, '42501', 'A no crea monedas');
 
 -- =============================================================================
 -- 6. Integridad básica
@@ -430,6 +430,70 @@ select pg_temp.expect_error(format($q$
     ('20000000-0000-4000-8000-00000000000b', '00000000-0000-4000-b000-00000000000b', 20000);
   set constraints all immediate$q$, current_setting('test.h')),
   '23514', 'gasto compartido sigue exigiendo que los repartos sumen', 'splits_sum_mismatch');
+
+-- =============================================================================
+-- 9. EUR (0019_eur_currency.sql): válida en todas las tablas con `currency`
+-- =============================================================================
+
+-- Las tasas cubren los 3 pares (en un sentido basta: convert() usa la
+-- inversa). El cron real los guarda con la service role; aquí se simula
+-- como postgres, antes de volver a actuar como A.
+select set_config('role', 'postgres', true);
+insert into public.exchange_rates (base, quote, rate, as_of, source) values
+  ('EUR', 'USD', 1.08, current_date, 'frankfurter.app'),
+  ('EUR', 'COP', 3430.7236, current_date, 'derived:datos.gov.co+frankfurter.app');
+
+select pg_temp.login('00000000-0000-4000-b000-00000000000a');
+
+select pg_temp.expect_ok($q$
+  insert into public.accounts (id, name, type, currency)
+  values ('10000000-0000-4000-8000-00000000000e', 'Cuenta EUR', 'checking', 'EUR')
+$q$, 'EUR es válida en accounts');
+
+select pg_temp.expect_ok($q$
+  insert into public.goals (id, name, target_minor, currency)
+  values ('30000000-0000-4000-8000-00000000000e', 'Meta EUR', 100000, 'EUR')
+$q$, 'EUR es válida en goals');
+
+select pg_temp.expect_ok($q$
+  insert into public.goal_contributions (goal_id, amount_minor, currency)
+  values ('30000000-0000-4000-8000-00000000000e', 5000, 'EUR')
+$q$, 'EUR es válida en goal_contributions');
+
+select pg_temp.expect_ok($q$
+  insert into public.debts (id, name, currency, original_principal_minor, apr_bps, apr_kind)
+  values ('40000000-0000-4000-8000-00000000000e', 'Deuda EUR', 'EUR', 100000, 1000, 'EA')
+$q$, 'EUR es válida en debts');
+
+select pg_temp.expect_ok($q$
+  insert into public.recurring_items (id, kind, name, category_key, amount_minor, currency,
+    account_id, frequency, anchor_date)
+  values ('50000000-0000-4000-8000-00000000000e', 'subscription', 'Spotify', 'subscriptions', 999,
+    'EUR', '10000000-0000-4000-8000-00000000000e', 'monthly', current_date)
+$q$, 'EUR es válida en recurring_items');
+
+select pg_temp.expect_ok($q$
+  insert into public.transactions (id, account_id, kind, category_key, description, amount_minor,
+    currency, occurred_on)
+  values ('20000000-0000-4000-8000-00000000000e', '10000000-0000-4000-8000-00000000000e',
+    'expense', 'food', 'Café', 350, 'EUR', current_date)
+$q$, 'EUR es válida en transactions');
+
+select pg_temp.expect_ok($q$
+  insert into public.budgets (id, owner_id, category_key, limit_minor, currency)
+  values ('60000000-0000-4000-8000-00000000000e', '00000000-0000-4000-b000-00000000000a', 'food',
+    100000, 'EUR')
+$q$, 'EUR es válida en budgets');
+
+select pg_temp.expect_ok(format($q$
+  insert into public.settlements (household_id, from_user, to_user, amount_minor, currency)
+  values (%L, '00000000-0000-4000-b000-00000000000b', '00000000-0000-4000-b000-00000000000a',
+    1000, 'EUR')
+$q$, current_setting('test.h')), 'EUR es válida en settlements');
+
+select pg_temp.expect_count(
+  $q$select count(*) from public.exchange_rates where base = 'EUR'$q$, 2,
+  'las tasas EUR/USD y EUR/COP quedan guardadas');
 
 select set_config('role', 'postgres', true);
 select 'OK: todas las pruebas RLS de finanzas pasaron' as resultado;

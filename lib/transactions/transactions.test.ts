@@ -178,7 +178,7 @@ describe("filtros", () => {
     });
     expect(
       parseFilters(
-        { category: "hack", account: "1; drop", currency: "EUR", page: "-2", month: "2026-13" },
+        { category: "hack", account: "1; drop", currency: "GBP", page: "-2", month: "2026-13" },
         today,
       ),
     ).toMatchObject({

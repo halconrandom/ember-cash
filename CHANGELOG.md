@@ -2,6 +2,20 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.15.0] - 2026-10-19
+
+### Añadido (fase E1: EUR)
+
+- EUR es moneda válida en toda la base: migración `0019_eur_currency.sql` la agrega a `currencies` (2 decimales). Como `currency` referencia ese catálogo por FK, cuentas, transacciones, deudas, recurrentes, metas, presupuestos y liquidaciones la aceptan sin tocar su definición. Prueba: sección 9 de `supabase/tests/rls_finance.sql`.
+- Tasas de cambio para los 3 pares (alcanza uno por par; `convert()` usa la inversa cuando hace falta):
+  - USD/COP: TRM oficial (como hoy), con open.er-api.com de respaldo.
+  - EUR/USD: Frankfurter (`api.frankfurter.app`, Banco Central Europeo), con open.er-api.com de respaldo (reciprocal de su tasa USD→EUR).
+  - EUR/COP: derivada (EUR/USD × USD/COP); no se deriva si falta cualquiera de los dos. Nunca se inventa una tasa: si una fuente falla se prueba la siguiente, y si todas fallan se conserva la última conocida.
+  - `lib/money/rate-sources.ts` y `lib/money/rates.ts` se generalizan a cualquier par (antes, solo USD/COP). El cron (`/api/cron/rates`) ahora trae y guarda los 3 pares cada vez; responde 502 solo si fallan los 3.
+- `lib/money/convert.ts` pierde `otherCurrency()` (asumía exactamente 2 monedas). Los 4 sitios de UI que lo usaban (`components/money/money-amount.tsx`, `goal-card.tsx`, `transaction-modal.tsx`) quedan con un `otherCurrency()` local idéntico al de antes (binario COP/USD): el significado de "la otra moneda" con 3 monedas es una decisión de diseño que no corresponde a esta fase de datos.
+- Por lo mismo, los presupuestos (`household/budget-modal.tsx`, `household/actions.ts`) y la liquidación parcial siguen aceptando solo COP/USD en la UI y su validación, aunque la base ya admite EUR.
+- No se agregó ningún campo de "tasa usada" a ninguna fila: hoy ningún movimiento cruza monedas al guardar (todo exige una sola moneda o convierte solo al mostrar). Queda para la fase que introduzca el primer movimiento cross-currency real.
+
 ## [0.14.15] - 2026-10-18
 
 ### Cambiado

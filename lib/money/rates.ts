@@ -1,18 +1,26 @@
 /**
- * Lectura y guardado de tasas en exchange_rates (servidor).
- * - getLatestRate: la tasa USD/COP más reciente que ve el usuario (RLS permite
- *   leer a cualquier autenticado). Entre tasas de la misma fecha prefiere la
- *   TRM oficial.
- * - fetchAndStoreRate: trae la tasa de las fuentes y la guarda con la service
- *   role. Si las dos fuentes fallan no escribe nada: queda la última.
+ * Lectura y guardado de tasas en exchange_rates (servidor). Fase E1: tres
+ * pares (USD/COP, EUR/USD, EUR/COP); `convert()` usa cada uno en el sentido
+ * que haga falta.
+ *
+ * - getLatestRate(base, quote): la tasa más reciente que ve el usuario para
+ *   ese par (RLS permite leer a cualquier autenticado). Entre tasas de la
+ *   misma fecha prefiere la fuente primaria sobre el respaldo
+ *   (open.er-api.com). Por defecto USD/COP (lo que usa hoy la UI).
+ * - fetchAndStoreRate: trae y guarda solo USD/COP (lo usa el botón
+ *   "Reintentar" de la UI, que hoy sigue siendo binaria COP/USD).
+ * - fetchAndStoreRates: trae y guarda los tres pares (la usa el cron). Si
+ *   USD/COP o EUR/USD fallan, EUR/COP tampoco se deriva: nunca se inventa
+ *   una tasa con el último valor conocido del otro par.
  */
 import "server-only";
 
+import type { CurrencyCode } from "@/lib/db/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import type { Rate } from "./convert";
-import { fetchUsdCop, type FetchedRate } from "./rate-sources";
+import { deriveEurCop, fetchEurUsd, fetchUsdCop, type FetchedRate } from "./rate-sources";
 
 type Row = {
   base: string;
@@ -34,23 +42,29 @@ function toRate(row: Row): Rate {
   };
 }
 
-/** Elige la más reciente por fecha de vigencia; a igual fecha, la TRM. */
+/**
+ * Elige la más reciente por fecha de vigencia; a igual fecha, prefiere
+ * cualquier fuente primaria sobre el respaldo (open.er-api.com).
+ */
 export function pickLatest(rows: Row[]): Rate | null {
   if (rows.length === 0) return null;
   const newest = rows.reduce((a, b) => (b.as_of > a.as_of ? b : a));
   const sameDay = rows.filter((r) => r.as_of === newest.as_of);
-  const official = sameDay.find((r) => r.source === "datos.gov.co");
-  return toRate(official ?? sameDay.reduce((a, b) => (b.fetched_at > a.fetched_at ? b : a)));
+  const primary = sameDay.find((r) => r.source !== "open.er-api.com");
+  return toRate(primary ?? sameDay.reduce((a, b) => (b.fetched_at > a.fetched_at ? b : a)));
 }
 
-/** Tasa USD/COP más reciente (con el cliente del usuario). */
-export async function getLatestRate(): Promise<Rate | null> {
+/** Tasa más reciente para un par (con el cliente del usuario). Por defecto USD/COP. */
+export async function getLatestRate(
+  base: CurrencyCode = "USD",
+  quote: CurrencyCode = "COP",
+): Promise<Rate | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("exchange_rates")
     .select("base, quote, rate, as_of, fetched_at, source")
-    .eq("base", "USD")
-    .eq("quote", "COP")
+    .eq("base", base)
+    .eq("quote", quote)
     .order("as_of", { ascending: false })
     .order("fetched_at", { ascending: false })
     .limit(6);
@@ -82,9 +96,44 @@ export async function saveRate(fetched: FetchedRate): Promise<Rate> {
 
 export type RefreshResult = { ok: true; rate: Rate } | { ok: false; errors: string[] };
 
-/** Trae la tasa de las fuentes y la guarda. No escribe nada si ambas fallan. */
+/** Trae la tasa USD/COP de las fuentes y la guarda. No escribe nada si ambas fallan. */
 export async function fetchAndStoreRate(fetchImpl?: typeof fetch): Promise<RefreshResult> {
   const { rate, errors } = await fetchUsdCop(fetchImpl);
   if (!rate) return { ok: false, errors };
   return { ok: true, rate: await saveRate(rate) };
+}
+
+export type RefreshAllResult = {
+  usdCop: RefreshResult;
+  eurUsd: RefreshResult;
+  eurCop: RefreshResult;
+};
+
+/**
+ * Trae y guarda los tres pares. EUR/COP se deriva de EUR/USD × USD/COP: si
+ * alguno de los dos no se pudo traer (ni de su fuente ni de su respaldo),
+ * EUR/COP tampoco se guarda esta vez (queda la última tasa conocida).
+ */
+export async function fetchAndStoreRates(fetchImpl?: typeof fetch): Promise<RefreshAllResult> {
+  const [usdCopFetched, eurUsdFetched] = await Promise.all([
+    fetchUsdCop(fetchImpl),
+    fetchEurUsd(fetchImpl),
+  ]);
+
+  const usdCop: RefreshResult = usdCopFetched.rate
+    ? { ok: true, rate: await saveRate(usdCopFetched.rate) }
+    : { ok: false, errors: usdCopFetched.errors };
+  const eurUsd: RefreshResult = eurUsdFetched.rate
+    ? { ok: true, rate: await saveRate(eurUsdFetched.rate) }
+    : { ok: false, errors: eurUsdFetched.errors };
+
+  const eurCop: RefreshResult =
+    usdCopFetched.rate && eurUsdFetched.rate
+      ? { ok: true, rate: await saveRate(deriveEurCop(eurUsdFetched.rate, usdCopFetched.rate)) }
+      : {
+          ok: false,
+          errors: ["No se pudo derivar EUR/COP: falta USD/COP, EUR/USD, o las dos."],
+        };
+
+  return { usdCop, eurUsd, eurCop };
 }

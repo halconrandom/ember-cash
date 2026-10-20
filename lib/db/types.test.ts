@@ -40,8 +40,8 @@ describe("lib/db/types", () => {
   });
 
   it("las constantes coinciden con lo sembrado en SQL", () => {
-    expect(CURRENCY_CODES).toEqual(["COP", "USD"]);
-    expect(CURRENCY_EXPONENT).toEqual({ COP: 0, USD: 2 });
+    expect(CURRENCY_CODES).toEqual(["COP", "USD", "EUR"]);
+    expect(CURRENCY_EXPONENT).toEqual({ COP: 0, USD: 2, EUR: 2 });
     expect(EXPENSE_CATEGORY_KEYS).toHaveLength(7);
     expect(INCOME_CATEGORY_KEYS).toEqual(["salary", "other_income"]);
   });

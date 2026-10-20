@@ -33,7 +33,7 @@ import { ACCOUNT_TYPE_ICON, CATEGORY_META, categoriesFor } from "@/lib/categorie
 import type { CategoryKey, CurrencyCode } from "@/lib/db/types";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, otherCurrency } from "@/lib/money/convert";
+import { convert } from "@/lib/money/convert";
 import { parseMoney } from "@/lib/money/parse";
 import { withFilters } from "@/lib/transactions/filters";
 import type { TransactionRow } from "@/lib/transactions/queries";
@@ -47,6 +47,15 @@ import { useDeleteTransaction } from "@/lib/transactions/use-delete-transaction"
 import { cn } from "@/lib/utils";
 
 import { saveTransaction } from "./actions";
+
+/**
+ * La otra moneda del par COP/USD, para la línea de conversión del monto
+ * (spec §4.8, binaria). Con EUR en catálogo pero sin UI propia todavía, se
+ * mantiene así; la fase de diseño de E1 decide su significado con 3 monedas.
+ */
+function otherCurrency(c: CurrencyCode): CurrencyCode {
+  return c === "COP" ? "USD" : "COP";
+}
 
 type Member = { userId: string; displayName: string | null };
 

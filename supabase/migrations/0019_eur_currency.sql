@@ -1,0 +1,19 @@
+-- =============================================================================
+-- 0019_eur_currency.sql
+-- Fase E1: agrega EUR como moneda válida.
+--
+-- `currencies` es un catálogo (no un enum ni un CHECK en cada tabla): todas
+-- las columnas `currency` referencian `currencies.code` por FK, así que
+-- sembrar la fila nueva basta para que cuentas, transacciones, deudas,
+-- recurrentes, metas, presupuestos y liquidaciones acepten EUR sin tocar su
+-- definición.
+--
+-- EUR usa 2 decimales en amount_minor, igual que USD.
+--
+-- `exchange_rates` ya es genérica (base/quote libres, cualquier par salvo
+-- base = quote): no necesita cambios de esquema para cubrir USD/COP,
+-- EUR/USD y EUR/COP. La lectura y escritura de tasas se generaliza en
+-- lib/money/rate-sources.ts y lib/money/rates.ts (código de aplicación, sin
+-- migración).
+-- =============================================================================
+insert into public.currencies (code, exponent) values ('EUR', 2);

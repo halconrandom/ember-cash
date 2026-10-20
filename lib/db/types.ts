@@ -17,12 +17,15 @@ export type { Database, Json, Tables, TablesInsert, TablesUpdate };
 // Valores permitidos (espejo de los CHECK y de los datos sembrados en SQL)
 // -----------------------------------------------------------------------------
 
-/** Monedas sembradas en `currencies` (0003_finance_model.sql). */
-export const CURRENCY_CODES = ["COP", "USD"] as const;
+/**
+ * Monedas sembradas en `currencies` (0003_finance_model.sql, más EUR en
+ * 0019_eur_currency.sql).
+ */
+export const CURRENCY_CODES = ["COP", "USD", "EUR"] as const;
 export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 /** Decimales de la unidad menor por moneda (columna currencies.exponent). */
-export const CURRENCY_EXPONENT: Record<CurrencyCode, number> = { COP: 0, USD: 2 };
+export const CURRENCY_EXPONENT: Record<CurrencyCode, number> = { COP: 0, USD: 2, EUR: 2 };
 
 /** Categorías de gasto sembradas, en su orden (`sort`). */
 export const EXPENSE_CATEGORY_KEYS = [

@@ -20,13 +20,23 @@ import { Card } from "@/components/ui/card";
 import { Badge, type Tone } from "@/components/ui/chip";
 import { Icon } from "@/components/ui/icon";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import type { CurrencyCode } from "@/lib/db/types";
 import type { GoalSummary } from "@/lib/goals/queries";
 import { goalPercent, goalStatus, type GoalStatus } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
-import { convert, otherCurrency } from "@/lib/money/convert";
+import { convert } from "@/lib/money/convert";
 import { subtract, type Money } from "@/lib/money/money";
 import { withFilters } from "@/lib/transactions/filters";
 import { cn } from "@/lib/utils";
+
+/**
+ * La otra moneda del par COP/USD, para la línea "≈" de la meta (spec §4,
+ * binaria). Con EUR en catálogo pero sin UI propia todavía, se mantiene así;
+ * la fase de diseño de E1 decide su significado con 3 monedas.
+ */
+function otherCurrency(c: CurrencyCode): CurrencyCode {
+  return c === "COP" ? "USD" : "COP";
+}
 
 /** Un color por estado (IVERN_FIXES §3). */
 const STATUS_TONE: Record<GoalStatus, Tone> = {

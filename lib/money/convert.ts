@@ -98,11 +98,6 @@ export function totalIn(
   return total;
 }
 
-/** La otra moneda del par COP/USD (para las líneas "≈" de los totales). */
-export function otherCurrency(c: CurrencyCode): CurrencyCode {
-  return c === "COP" ? "USD" : "COP";
-}
-
 /** ¿La tasa tiene más de 24 h desde que se obtuvo? (estado "Stale", spec §4.9). */
 export const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 export function isStale(rate: Pick<Rate, "fetchedAt">, now: number = Date.now()): boolean {

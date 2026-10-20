@@ -1,7 +1,18 @@
 // Tests de las fuentes de la tasa con fetch simulado.
 import { describe, expect, it, vi } from "vitest";
 
-import { fetchOpenEr, fetchTrm, fetchUsdCop, OPEN_ER_URL, TRM_URL } from "./rate-sources";
+import {
+  deriveEurCop,
+  fetchEurUsd,
+  fetchFrankfurter,
+  fetchOpenEr,
+  fetchOpenErEurUsd,
+  fetchTrm,
+  fetchUsdCop,
+  FRANKFURTER_URL,
+  OPEN_ER_URL,
+  TRM_URL,
+} from "./rate-sources";
 
 const json = (body: unknown, status = 200) =>
   Promise.resolve(
@@ -20,7 +31,13 @@ const TRM_OK = [
 const OPEN_ER_OK = {
   result: "success",
   time_last_update_unix: 1792195352,
-  rates: { COP: 3182.776456, USD: 1 },
+  rates: { COP: 3182.776456, USD: 1, EUR: 0.926 },
+};
+const FRANKFURTER_OK = {
+  amount: 1,
+  base: "EUR",
+  date: "2026-10-17",
+  rates: { USD: 1.0876 },
 };
 
 function fakeFetch(routes: Record<string, () => Promise<Response>>) {
@@ -28,7 +45,7 @@ function fakeFetch(routes: Record<string, () => Promise<Response>>) {
 }
 
 describe("fuentes de la tasa", () => {
-  it("lee la TRM oficial", async () => {
+  it("lee la TRM oficial (USD/COP)", async () => {
     const rate = await fetchTrm(fakeFetch({ [TRM_URL]: () => json(TRM_OK) }));
     expect(rate).toEqual({
       base: "USD",
@@ -39,7 +56,7 @@ describe("fuentes de la tasa", () => {
     });
   });
 
-  it("lee open.er-api", async () => {
+  it("lee open.er-api (USD/COP)", async () => {
     const rate = await fetchOpenEr(fakeFetch({ [OPEN_ER_URL]: () => json(OPEN_ER_OK) }));
     expect(rate.rate).toBe("3182.776456");
     expect(rate.source).toBe("open.er-api.com");
@@ -67,7 +84,7 @@ describe("fuentes de la tasa", () => {
     expect(errors[0]).toContain("503");
   });
 
-  it("si las dos fallan no inventa nada", async () => {
+  it("si las dos fallan no inventa nada (USD/COP)", async () => {
     const { rate, errors } = await fetchUsdCop(fakeFetch({}));
     expect(rate).toBeNull();
     expect(errors).toHaveLength(2);
@@ -81,5 +98,82 @@ describe("fuentes de la tasa", () => {
     await expect(
       fetchOpenEr(fakeFetch({ [OPEN_ER_URL]: () => json({ result: "error" }) })),
     ).rejects.toThrow();
+  });
+
+  it("lee Frankfurter (EUR/USD)", async () => {
+    const rate = await fetchFrankfurter(
+      fakeFetch({ [FRANKFURTER_URL]: () => json(FRANKFURTER_OK) }),
+    );
+    expect(rate).toEqual({
+      base: "EUR",
+      quote: "USD",
+      rate: "1.0876",
+      asOf: "2026-10-17",
+      source: "frankfurter.app",
+    });
+  });
+
+  it("lee open.er-api como reciprocal (EUR/USD)", async () => {
+    const rate = await fetchOpenErEurUsd(fakeFetch({ [OPEN_ER_URL]: () => json(OPEN_ER_OK) }));
+    expect(rate.base).toBe("EUR");
+    expect(rate.quote).toBe("USD");
+    // 1 / 0.926 ≈ 1.079914...
+    expect(rate.rate).toBe("1.079914");
+    expect(rate.source).toBe("open.er-api.com");
+  });
+
+  it("usa Frankfurter si responde, y el respaldo si falla", async () => {
+    const ok = await fetchEurUsd(fakeFetch({ [FRANKFURTER_URL]: () => json(FRANKFURTER_OK) }));
+    expect(ok.rate?.source).toBe("frankfurter.app");
+
+    const fallback = await fetchEurUsd(
+      fakeFetch({
+        [FRANKFURTER_URL]: () => json({ error: "down" }, 503),
+        [OPEN_ER_URL]: () => json(OPEN_ER_OK),
+      }),
+    );
+    expect(fallback.rate?.source).toBe("open.er-api.com");
+  });
+
+  it("descarta una tasa EUR/USD fuera de rango", async () => {
+    await expect(
+      fetchFrankfurter(
+        fakeFetch({
+          [FRANKFURTER_URL]: () => json({ ...FRANKFURTER_OK, rates: { USD: 42 } }),
+        }),
+      ),
+    ).rejects.toThrow(/rango/);
+  });
+
+  it("deriva EUR/COP multiplicando EUR/USD × USD/COP", () => {
+    const eurUsd = {
+      base: "EUR" as const,
+      quote: "USD" as const,
+      rate: "1.0876",
+      asOf: "2026-10-17",
+      source: "frankfurter.app" as const,
+    };
+    const usdCop = {
+      base: "USD" as const,
+      quote: "COP" as const,
+      rate: "3174.67",
+      asOf: "2026-10-17",
+      source: "datos.gov.co" as const,
+    };
+    const derived = deriveEurCop(eurUsd, usdCop);
+    expect(derived.base).toBe("EUR");
+    expect(derived.quote).toBe("COP");
+    // 1.0876 * 3174.67 = 3452.771092
+    expect(derived.rate).toBe("3452.771092");
+    expect(derived.asOf).toBe("2026-10-17");
+    expect(derived.source).toBe("derived:frankfurter.app+datos.gov.co");
+  });
+
+  it("la fecha derivada es la más vieja de las dos", () => {
+    const derived = deriveEurCop(
+      { base: "EUR", quote: "USD", rate: "1.08", asOf: "2026-10-15", source: "frankfurter.app" },
+      { base: "USD", quote: "COP", rate: "3174.67", asOf: "2026-10-17", source: "datos.gov.co" },
+    );
+    expect(derived.asOf).toBe("2026-10-15");
   });
 });
