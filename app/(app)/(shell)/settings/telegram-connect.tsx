@@ -17,6 +17,7 @@ export function TelegramConnect({ linked }: { linked: boolean }) {
   const t = useTranslations("settings");
   const [isLinked, setLinked] = useState(linked);
   const [url, setUrl] = useState<string | null>(null);
+  const [webUrl, setWebUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -26,9 +27,11 @@ export function TelegramConnect({ linked }: { linked: boolean }) {
       const result = await createTelegramLink();
       if (result.ok) {
         setUrl(result.url);
+        setWebUrl(result.webUrl);
         return;
       }
       setUrl(null);
+      setWebUrl(null);
       setError(
         result.error === "rate_limited"
           ? t("telegramRateLimited")
@@ -49,6 +52,7 @@ export function TelegramConnect({ linked }: { linked: boolean }) {
       }
       setLinked(false);
       setUrl(null);
+      setWebUrl(null);
     });
   }
 
@@ -57,14 +61,18 @@ export function TelegramConnect({ linked }: { linked: boolean }) {
       <p className="text-callout text-ink-2 font-semibold">{t("telegramTitle")}</p>
       <p className="text-body text-ink-2">{t("telegramBody")}</p>
       {isLinked ? <p className="text-body text-ink">{t("telegramLinked")}</p> : null}
-      {url ? (
+      {url && webUrl ? (
         <div className="space-y-2">
           <a
-            href={url}
-            className="text-body text-ember-text font-medium break-all underline-offset-4 hover:underline"
+            href={webUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-body text-ember-text font-medium underline-offset-4 hover:underline"
           >
-            {url}
+            {t("telegramOpenWeb")}
           </a>
+          <p className="text-body text-ink-2">{t("telegramOpenHint")}</p>
+          <p className="text-body text-ink break-all">{url}</p>
           <p className="text-body text-ink-2">{t("telegramExpires")}</p>
         </div>
       ) : null}

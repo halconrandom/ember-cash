@@ -503,6 +503,8 @@
     "telegramUnlink": "Desvincular",
     "telegramLinked": "Vinculado",
     "telegramExpires": "El enlace sirve una vez y vence en 10 minutos.",
+    "telegramOpenWeb": "Abrir en el navegador",
+    "telegramOpenHint": "En este equipo se abre en el navegador. En el teléfono, copia el enlace de abajo.",
     "telegramUnavailable": "Telegram no está disponible en este momento.",
     "telegramRateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "telegramFailed": "No se pudo generar el enlace. Inténtalo de nuevo.",

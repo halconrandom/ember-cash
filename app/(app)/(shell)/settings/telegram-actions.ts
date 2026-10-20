@@ -2,8 +2,9 @@
 
 /**
  * Vincular y desvincular Telegram desde Ajustes. El código lo crea la base
- * con auth.uid(); el token del bot no sale de esta acción. El enlace que
- * vuelve al navegador es t.me/<bot>?start=<código>, de un solo uso.
+ * con auth.uid(); el token del bot no sale de esta acción. url es t.me,
+ * para copiarlo al teléfono. webUrl abre Telegram Web: t.me intenta tg://
+ * y el navegador lo rechaza si no hay app instalada.
  */
 import { revalidatePath } from "next/cache";
 
@@ -13,11 +14,13 @@ import { isRateLimitedDbError } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { telegramBotUsername } from "@/lib/telegram/api";
 import { isTelegramConfigured } from "@/lib/telegram/config";
+import { telegramLinkUrls } from "@/lib/telegram/links";
 
 const CODE = /^[a-f0-9]{64}$/;
 
 export type TelegramLinkResult =
-  { ok: true; url: string } | { ok: false; error: "unavailable" | "rate_limited" | "failed" };
+  | { ok: true; url: string; webUrl: string }
+  | { ok: false; error: "unavailable" | "rate_limited" | "failed" };
 
 /** Pide un código y arma el enlace para abrir el chat del bot. */
 export async function createTelegramLink(): Promise<TelegramLinkResult> {
@@ -34,9 +37,11 @@ export async function createTelegramLink(): Promise<TelegramLinkResult> {
 
   const username = await telegramBotUsername(env.TELEGRAM_BOT_TOKEN);
   if (!username) return { ok: false, error: "unavailable" };
+  const links = telegramLinkUrls(username, data);
+  if (!links) return { ok: false, error: "failed" };
 
   revalidatePath("/settings");
-  return { ok: true, url: `https://t.me/${username}?start=${data}` };
+  return { ok: true, url: links.appUrl, webUrl: links.webUrl };
 }
 
 /** Borra el vínculo propio. La política solo deja borrar la fila de quien entra. */

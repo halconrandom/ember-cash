@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.26.2] - 2026-10-20
+
+### Corrección: vincular Telegram sin la app de escritorio
+
+- El enlace que se pulsa abre Telegram Web (`https://web.telegram.org`). `t.me` intenta `tg://` y el navegador lo rechaza si Telegram no está instalado. El enlace `t.me` sigue visible para copiarlo al teléfono.
+
 ## [0.26.1] - 2026-10-20
 
 ### Corrección: el webhook de Telegram compila con `cacheComponents`

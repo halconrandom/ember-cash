@@ -503,6 +503,8 @@
     "telegramUnlink": "Unlink",
     "telegramLinked": "Linked",
     "telegramExpires": "The link works once and expires in 10 minutes.",
+    "telegramOpenWeb": "Open in the browser",
+    "telegramOpenHint": "On this device it opens in the browser. On your phone, copy the link below.",
     "telegramUnavailable": "Telegram is not available right now.",
     "telegramRateLimited": "Too many attempts. Wait a moment and try again.",
     "telegramFailed": "The link could not be created. Try again.",
