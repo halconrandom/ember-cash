@@ -10,7 +10,7 @@
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { HelpPanel } from "@/components/help/help-panel";
 import { HelpTriggerButton } from "@/components/help/help-trigger-button";
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { recordEvent } from "@/lib/events/record";
 import { hasHelp } from "@/lib/help/content";
-import { hasSeenHelp, markHelpSeen } from "@/lib/help/seen";
+import { hasSeenHelp, markHelpSeen, subscribeHelpSeen } from "@/lib/help/seen";
 import { isTypingTarget } from "@/lib/help/shortcut";
 import { withFilters } from "@/lib/transactions/filters";
 
@@ -40,15 +40,19 @@ export function Topbar() {
   const actionLabel = page?.action ? t(page.action.label) : null;
   const helpPage = page?.title && hasHelp(page.title) ? page.title : null;
   const [helpOpen, setHelpOpen] = useState(false);
-  const [helpSeen, setHelpSeen] = useState(() => (helpPage ? hasSeenHelp(helpPage) : true));
-  // El punto de "ayuda nueva" y el panel abierto son por página: si la ruta
-  // cambió desde el último render, se recalculan ahora (patrón de React
-  // para ajustar estado derivado de una prop, en vez de un efecto aparte).
+  // true en el servidor y en la hidratación (sin punto). Después, el valor
+  // real de localStorage. Así el HTML coincide: error 418 si se lee antes.
+  const helpSeen = useSyncExternalStore(
+    subscribeHelpSeen,
+    () => (helpPage ? hasSeenHelp(helpPage) : true),
+    () => true,
+  );
+  // El panel abierto es por página: si la ruta cambió desde el último
+  // render, se cierra ahora (estado derivado de una prop, no un efecto).
   const [trackedPathname, setTrackedPathname] = useState(pathname);
   if (pathname !== trackedPathname) {
     setTrackedPathname(pathname);
     setHelpOpen(false);
-    setHelpSeen(helpPage ? hasSeenHelp(helpPage) : true);
   }
 
   // Tecla "?" abre la ayuda, salvo con el foco en un campo de escritura.
@@ -68,7 +72,6 @@ export function Topbar() {
     setHelpOpen(true);
     if (!helpPage) return;
     markHelpSeen(helpPage);
-    setHelpSeen(true);
     void recordEvent("help_opened", { page: helpPage });
   }
 
@@ -137,9 +140,7 @@ export function Topbar() {
           )}
         </div>
       )}
-      {helpPage && (
-        <HelpPanel page={helpPage} open={helpOpen} onClose={() => setHelpOpen(false)} />
-      )}
+      {helpPage && <HelpPanel page={helpPage} open={helpOpen} onClose={() => setHelpOpen(false)} />}
     </header>
   );
 }

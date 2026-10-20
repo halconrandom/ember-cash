@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.26.3] - 2026-10-20
+
+### Corrección: hidratación en Ajustes
+
+- El punto de "ayuda nueva" leía `localStorage` en el primer render. En el servidor no existe y la página salía sin el punto; en el navegador, si esa ayuda no se había abierto, el punto sobraba y React abortaba la hidratación (error 418). El primer HTML ya coincide y el punto aparece al montar.
+
 ## [0.26.2] - 2026-10-20
 
 ### Corrección: vincular Telegram sin la app de escritorio
