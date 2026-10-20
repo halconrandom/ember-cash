@@ -1247,5 +1247,23 @@
       "forbidden": "You don't have permission to record this payment.",
       "failed": "Couldn't record the payment. Try again."
     }
+  },
+  "help": {
+    "common": {
+      "button": "Help",
+      "close": "Close",
+      "whatYouSee": "What you see here",
+      "whatYouCanDo": "What you can do",
+      "faq": "Frequently asked questions",
+      "show": "Show",
+      "replay": "Replay the introduction",
+      "newDot": "New: help is here"
+    }
+  },
+  "glossary": {
+    "avalanche": "Avalanche: you pay off the debt with the highest rate first. This usually costs you less interest overall.",
+    "snowball": "Snowball: you pay off the smallest debt first. You gain momentum by closing debts quickly.",
+    "apr": "APR, or annual percentage rate: what the debt costs you in a year, as a percentage. Look for it on your statement.",
+    "fiftyFifty": "50/50 means each person pays half. You can change the split whenever you both agree."
   }
 }

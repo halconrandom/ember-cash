@@ -10,11 +10,17 @@
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
+import { HelpPanel } from "@/components/help/help-panel";
+import { HelpTriggerButton } from "@/components/help/help-trigger-button";
 import { DisplayCurrencyToggle } from "@/components/money/display-currency-toggle";
 import { LiveRateChip } from "@/components/money/live-rate-chip";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { recordEvent } from "@/lib/events/record";
+import { hasHelp } from "@/lib/help/content";
+import { hasSeenHelp, markHelpSeen } from "@/lib/help/seen";
 import { withFilters } from "@/lib/transactions/filters";
 
 import { MonthSelector } from "./month-selector";
@@ -31,6 +37,40 @@ export function Topbar() {
   const page = PAGE_TITLES[pathname];
   const subtitleText = subtitle ?? (page?.subtitle ? t(`pages.${page.subtitle}`) : null);
   const actionLabel = page?.action ? t(page.action.label) : null;
+  const helpPage = page?.title && hasHelp(page.title) ? page.title : null;
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpSeen, setHelpSeen] = useState(() => (helpPage ? hasSeenHelp(helpPage) : true));
+  // El punto de "ayuda nueva" y el panel abierto son por página: si la ruta
+  // cambió desde el último render, se recalculan ahora (patrón de React
+  // para ajustar estado derivado de una prop, en vez de un efecto aparte).
+  const [trackedPathname, setTrackedPathname] = useState(pathname);
+  if (pathname !== trackedPathname) {
+    setTrackedPathname(pathname);
+    setHelpOpen(false);
+    setHelpSeen(helpPage ? hasSeenHelp(helpPage) : true);
+  }
+
+  // Tecla "?" abre la ayuda, salvo con el foco en un campo de escritura.
+  useEffect(() => {
+    if (!helpPage) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "?") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      event.preventDefault();
+      setHelpOpen(true);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [helpPage]);
+
+  function openHelp() {
+    setHelpOpen(true);
+    if (!helpPage) return;
+    markHelpSeen(helpPage);
+    setHelpSeen(true);
+    void recordEvent("help_opened", { page: helpPage });
+  }
 
   function openAction() {
     if (!page?.action) return;
@@ -41,14 +81,26 @@ export function Topbar() {
 
   return (
     <header className="shell-topbar bar-material border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-3 lg:min-h-[72px] lg:flex-nowrap lg:border-0 lg:px-8">
-      <div className="order-1 min-w-0 flex-1">
-        <h1 className="text-title1 text-ink">
-          {page ? t(`nav.${page.title}`) : t("common.appName")}
-        </h1>
-        {subtitleText && <p className="text-body text-ink-2 mt-0.5">{subtitleText}</p>}
+      <div className="order-1 flex min-w-0 flex-1 items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-title1 text-ink">
+            {page ? t(`nav.${page.title}`) : t("common.appName")}
+          </h1>
+          {subtitleText && <p className="text-body text-ink-2 mt-0.5">{subtitleText}</p>}
+        </div>
+        {helpPage && (
+          <HelpTriggerButton onOpen={openHelp} showDot={!helpSeen} className="shrink-0 lg:hidden" />
+        )}
       </div>
 
       <div className="order-2 flex shrink-0 items-center gap-2 lg:order-4">
+        {helpPage && (
+          <HelpTriggerButton
+            onOpen={openHelp}
+            showDot={!helpSeen}
+            className="hidden lg:inline-flex"
+          />
+        )}
         <DisplayCurrencyToggle />
         {page?.action && !actionHidden && actionLabel && (
           <>
@@ -84,6 +136,9 @@ export function Topbar() {
             </button>
           )}
         </div>
+      )}
+      {helpPage && (
+        <HelpPanel page={helpPage} open={helpOpen} onClose={() => setHelpOpen(false)} />
       )}
     </header>
   );

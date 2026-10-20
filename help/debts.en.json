@@ -1,0 +1,19 @@
+{
+  "purpose": "How much you owe, to whom, and the best order to pay it off.",
+  "see": "Each debt with its balance, rate, and installment. · The total you owe. · The suggested order based on the method you choose.",
+  "do": "Add a debt. · Record a payment. · Choose a method: Avalanche or Snowball. · See when you'd be done.",
+  "faq": [
+    {
+      "q": "Which method is better for me?",
+      "a": "Avalanche usually pays less interest overall. Snowball gives you quick wins. Both work if you're consistent."
+    },
+    {
+      "q": "I don't know my debt's rate.",
+      "a": "Look for it on your statement as the annual percentage rate. You can leave it empty and add it later."
+    },
+    {
+      "q": "Is this financial advice?",
+      "a": "No. It's a tool to help you organize your numbers. The decision is yours."
+    }
+  ]
+}

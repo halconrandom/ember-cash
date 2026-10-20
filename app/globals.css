@@ -638,3 +638,70 @@ main,
     translate: 0 0;
   }
 }
+
+/* Panel de ayuda (fase F2): lateral de 360 px y no modal en escritorio;
+   bottom sheet (y sí modal) bajo 600 px, igual que .modal-popup. */
+.help-panel {
+  top: 0;
+  right: 0;
+  left: auto;
+  bottom: auto;
+  height: 100dvh;
+  width: 360px;
+  max-width: 100vw;
+  max-height: 100dvh;
+  translate: 0 0;
+  transition:
+    opacity 220ms var(--ease-out-ember),
+    translate 220ms var(--ease-out-ember);
+}
+.help-panel[data-starting-style],
+.help-panel[data-ending-style] {
+  opacity: 0;
+  translate: 24px 0;
+}
+@media (max-width: 599px) {
+  .help-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100dvh - 1rem);
+    translate: 0 0;
+    border-radius: 28px 28px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    transition:
+      opacity 400ms var(--ease-out-ember),
+      translate 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .help-panel[data-starting-style],
+  .help-panel[data-ending-style] {
+    translate: 0 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .help-panel,
+  .help-panel[data-starting-style],
+  .help-panel[data-ending-style] {
+    transition: none;
+  }
+}
+@media (max-width: 599px) and (prefers-reduced-motion: reduce) {
+  .help-panel,
+  .help-panel[data-starting-style],
+  .help-panel[data-ending-style] {
+    translate: 0 0;
+  }
+}
+
+/* "Mostrar" del panel de ayuda: resalta la sección sin tapar nada (solo un
+   contorno temporal, nunca un velo ni un desplazamiento del layout). */
+.help-highlight {
+  outline: 2px solid var(--ember-text);
+  outline-offset: 4px;
+  border-radius: 12px;
+  transition: outline-color 200ms var(--ease-out-ember);
+}

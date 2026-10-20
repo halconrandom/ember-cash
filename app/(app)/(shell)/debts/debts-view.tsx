@@ -11,6 +11,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
+import { GlossaryTerm } from "@/components/help/glossary-term";
 import { MoneyAmount } from "@/components/money/money-amount";
 import { useRate } from "@/components/money/rate-provider";
 import { TopbarSubtitle } from "@/components/shell/topbar-context";
@@ -90,7 +91,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
 
   if (debts.length === 0) {
     return (
-      <>
+      <div id="help-see-debts">
         <TopbarSubtitle text={t("subtitleNoRate", { count: 0 })} />
         <EmptyState
           icon="credit-card"
@@ -107,7 +108,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
             </Button>
           }
         />
-      </>
+      </div>
     );
   }
 
@@ -159,7 +160,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
   const methodLabel = t(method).toLowerCase();
 
   return (
-    <div className="space-y-6">
+    <div id="help-see-debts" className="space-y-6">
       <TopbarSubtitle
         text={
           paidPct === null
@@ -264,6 +265,11 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
                 onChange={setMethod}
               />
             </div>
+            <p className="text-footnote text-ink-3 -mt-2">
+              <GlossaryTerm term="avalanche">{t("avalanche")}</GlossaryTerm>
+              {" · "}
+              <GlossaryTerm term="snowball">{t("snowball")}</GlossaryTerm>
+            </p>
             {!converted ? (
               <p className="text-body text-ink-2">{t("timelineUnavailable")}</p>
             ) : plan && !plan.ok ? (
@@ -393,7 +399,7 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
             </p>
           )}
         </Stat>
-        <Stat label={t("apr")}>
+        <Stat label={<GlossaryTerm term="apr">{t("apr")}</GlossaryTerm>}>
           <p className="text-body text-ink font-semibold tabular-nums">
             {f.number(debt.aprBps / 100, 1)}%
           </p>
@@ -455,7 +461,7 @@ function ProgressBarLabel({ percent }: { percent: number }) {
   return <span className="sr-only">{`${t("paidOff")}: ${percent}%`}</span>;
 }
 
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+function Stat({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <dt className="text-caption text-ink-2 uppercase">{label}</dt>

@@ -1247,5 +1247,23 @@
       "forbidden": "No tienes permiso para registrar este pago.",
       "failed": "No se pudo registrar el pago. Intenta de nuevo."
     }
+  },
+  "help": {
+    "common": {
+      "button": "Ayuda",
+      "close": "Cerrar",
+      "whatYouSee": "Qué ves aquí",
+      "whatYouCanDo": "Qué puedes hacer",
+      "faq": "Preguntas frecuentes",
+      "show": "Mostrar",
+      "replay": "Repetir la introducción",
+      "newDot": "Nuevo: aquí tienes ayuda"
+    }
+  },
+  "glossary": {
+    "avalanche": "Avalanche: pagas primero la deuda con la tasa más alta. Así sueles pagar menos intereses en total.",
+    "snowball": "Snowball: pagas primero la deuda más pequeña. Ganas impulso al cerrar deudas rápido.",
+    "apr": "APR o tasa efectiva anual: lo que te cuesta la deuda en un año, en porcentaje. Búscala en tu extracto.",
+    "fiftyFifty": "50/50 significa que cada uno paga la mitad. Puedes cambiar la proporción cuando quieran."
   }
 }

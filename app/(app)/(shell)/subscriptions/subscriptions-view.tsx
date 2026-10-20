@@ -155,7 +155,7 @@ export function SubscriptionsView({
   );
 
   return (
-    <div className="space-y-6">
+    <div id="help-see-subscriptions" className="space-y-6">
       <TopbarSubtitle text={t("subtitle", { count: active.length })} />
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">

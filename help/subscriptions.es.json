@@ -1,0 +1,15 @@
+{
+  "purpose": "Lo que se cobra solo cada mes, para que nada te tome por sorpresa.",
+  "see": "Tus pagos fijos y su valor. · El día de cobro. · El total mensual.",
+  "do": "Agregar una suscripción. · Pausarla o borrarla. · Cambiar el valor o el día.",
+  "faq": [
+    {
+      "q": "¿Ember Cash cobra o cancela por mí?",
+      "a": "No. No nos conectamos a tu banco. Solo te ayudamos a llevar la cuenta."
+    },
+    {
+      "q": "¿Y si se cobra cada año?",
+      "a": "Elige la frecuencia al crearla y la repartimos en tu vista mensual."
+    }
+  ]
+}

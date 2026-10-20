@@ -42,7 +42,7 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
       <Suspense fallback={null}>
         <Subtitle searchParams={searchParams} />
       </Suspense>
-      <div className="space-y-6">
+      <div id="help-see-dashboard" className="space-y-6">
         <Suspense fallback={null}>
           <SkippedSlot searchParams={searchParams} />
         </Suspense>

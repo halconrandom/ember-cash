@@ -1,0 +1,15 @@
+{
+  "purpose": "Tu dinero en una mirada. Aquí ves cuánto tienes, qué viene y cómo vas.",
+  "see": "Tu total en la moneda principal. · Saldos por cuenta. · Próximos pagos. · Tus metas y deudas activas.",
+  "do": "Registrar un gasto o ingreso. · Cambiar la moneda con el selector de arriba. · Tocar cualquier tarjeta para ver el detalle.",
+  "faq": [
+    {
+      "q": "¿Por qué mi total no cuadra con el banco?",
+      "a": "Solo suma lo que registraste aquí. Revisa que el saldo inicial de cada cuenta esté al día."
+    },
+    {
+      "q": "¿Qué tasa usan para convertir?",
+      "a": "La tasa real del día. Si no se pudo traer, usamos la última disponible y te lo indicamos."
+    }
+  ]
+}

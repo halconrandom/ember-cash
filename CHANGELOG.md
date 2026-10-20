@@ -2,6 +2,17 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.20.0] - 2026-10-20
+
+### Añadido (fase F2: botón de ayuda contextual)
+
+- Botón de ayuda (44x44, "?") en Panel, Deudas y Suscripciones: en escritorio junto al selector de moneda de la topbar; en móvil en la fila del título/subtítulo. Tecla "?" lo abre (salvo con el foco en un campo de texto).
+- Panel lateral de 360 px, no modal, en escritorio (el resto de la página sigue interactiva, sin velo); bottom sheet modal (foco atrapado, Escape cierra) bajo 600 px — mismo `Dialog` de Base UI que `<Modal>`, con `modal` según el ancho. Estructura: propósito, "Qué ves aquí" con "Mostrar" (desplaza y resalta la sección de la página con un contorno temporal, sin tapar nada), "Qué puedes hacer", preguntas frecuentes (acordeón `<details>`, accesible sin JS) y, en el pie, "Repetir la introducción" (deshabilitado hasta la fase F3).
+- Contenido por página en `help/<página>.es.json` y `help/<página>.en.json` (`lib/help/content.ts`, cargado con `import()` dinámico: no entra al paquete principal), con la copia de Leona tal cual (`docs/onboarding/copy.md`) y su traducción al inglés. Solo Panel, Deudas y Suscripciones por ahora (`HELP_PAGES_READY`); el resto llega en la fase F3. Prueba de paridad es/en (`lib/help/messages.test.ts`), igual que `messages/*.json`.
+- Punto indicador (azul, nunca naranja: el ember es solo marca/acción) la primera vez que se visita cada página, hasta que se abre su ayuda; se recuerda con `localStorage` (`lib/help/seen.ts`). Cada apertura registra el evento `help_opened` (ya cerrado desde la fase F1).
+- Popovers de jerga (`components/help/glossary-term.tsx`, `glossary.*`): Avalanche y Snowball junto al selector de método, y APR en su dato, en Deudas. Se abren al tocar, cierran con Escape o tocando fuera; no atrapan el foco.
+- Tests: `glossary-term.test.tsx` (abre, Escape, tocar fuera), `help-trigger-button.test.tsx` (etiqueta, punto, clic) y `lib/help/content.test.ts` (páginas listas y carga real de los 6 archivos).
+
 ## [0.19.2] - 2026-10-20
 
 ### Corregido (F1.2: `0024` no reescribe filas)

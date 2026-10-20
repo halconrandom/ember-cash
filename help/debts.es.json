@@ -1,0 +1,19 @@
+{
+  "purpose": "Cuánto debes, a quién y en qué orden te conviene pagar.",
+  "see": "Cada deuda con saldo, tasa y cuota. · El total que debes. · El orden sugerido según el método que elijas.",
+  "do": "Agregar una deuda. · Registrar un pago. · Elegir método: Avalanche o Snowball. · Ver cuándo terminarías.",
+  "faq": [
+    {
+      "q": "¿Cuál método me conviene?",
+      "a": "Avalanche suele pagar menos intereses. Snowball da victorias rápidas. Ambos funcionan si eres constante."
+    },
+    {
+      "q": "No sé la tasa de mi deuda.",
+      "a": "Búscala en el extracto como tasa efectiva anual. Puedes dejarla vacía y agregarla luego."
+    },
+    {
+      "q": "¿Esto es asesoría financiera?",
+      "a": "No. Es una ayuda para ordenar tus números. La decisión es tuya."
+    }
+  ]
+}

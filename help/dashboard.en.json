@@ -1,0 +1,15 @@
+{
+  "purpose": "Your money at a glance. See how much you have, what's coming, and how you're doing.",
+  "see": "Your total in your main currency. · Balances by account. · Upcoming payments. · Your active goals and debts.",
+  "do": "Record an expense or income. · Change the currency with the selector above. · Tap any card to see the detail.",
+  "faq": [
+    {
+      "q": "Why doesn't my total match the bank?",
+      "a": "It only adds up what you recorded here. Check that each account's starting balance is up to date."
+    },
+    {
+      "q": "What rate do you use to convert?",
+      "a": "The real rate of the day. If we couldn't fetch it, we use the latest one available and let you know."
+    }
+  ]
+}

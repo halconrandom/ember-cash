@@ -1,0 +1,15 @@
+{
+  "purpose": "What gets charged automatically every month, so nothing catches you off guard.",
+  "see": "Your fixed payments and their amount. · The billing day. · The monthly total.",
+  "do": "Add a subscription. · Pause or delete it. · Change the amount or the day.",
+  "faq": [
+    {
+      "q": "Does Ember Cash charge or cancel on my behalf?",
+      "a": "No. We don't connect to your bank. We only help you keep track."
+    },
+    {
+      "q": "What if it's billed yearly?",
+      "a": "Choose the frequency when you create it, and we'll spread it across your monthly view."
+    }
+  ]
+}
