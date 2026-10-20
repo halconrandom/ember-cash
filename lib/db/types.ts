@@ -46,7 +46,8 @@ export type CategoryKey = ExpenseCategoryKey | IncomeCategoryKey;
 export type CategoryKind = "expense" | "income";
 
 export type AccountType = "checking" | "savings" | "credit_card" | "cash" | "other";
-export type TransactionKind = "expense" | "income" | "transfer";
+/** Incluye `opening`: el saldo inicial de una cuenta (0024). No es un ingreso. */
+export type TransactionKind = "expense" | "income" | "transfer" | "opening";
 export type AprKind = "EA" | "nominal";
 export type RecurringKind = "subscription" | "bill" | "income" | "debt_payment";
 export type RecurringFrequency = "weekly" | "monthly" | "yearly";

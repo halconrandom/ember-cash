@@ -92,7 +92,7 @@ export type LinkableTransaction = {
   occurredOn: string;
 };
 
-/** Transacciones recientes del scope en una moneda, para vincular un aporte. */
+/** Transacciones recientes del scope en una moneda, para vincular un aporte. El saldo inicial no es un aporte. */
 export async function listLinkableTransactions(
   scope: Scope,
   currency: CurrencyCode,
@@ -102,6 +102,7 @@ export async function listLinkableTransactions(
     .from("transactions")
     .select("id, description, amount_minor, currency, occurred_on")
     .is("deleted_at", null)
+    .neq("kind", "opening")
     .eq("currency", currency)
     .order("occurred_on", { ascending: false })
     .limit(30);

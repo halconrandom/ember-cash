@@ -191,20 +191,6 @@ export function validateAccountForm(
   };
 }
 
-/**
- * Cómo se anota el saldo inicial. La cuenta no tiene columna de saldo (0003):
- * se guarda una transacción. En una tarjeta es un gasto (lo que se debe); en
- * el resto, un ingreso. El panel suma ingresos y gastos del mes, así que ese
- * movimiento aparece en el mes en curso. No es un saldo de libro contable.
- */
-export function openingBalanceKind(type: AccountType): {
-  kind: "income" | "expense";
-  categoryKey: "other_income" | "other";
-} {
-  if (type === "credit_card") return { kind: "expense", categoryKey: "other" };
-  return { kind: "income", categoryKey: "other_income" };
-}
-
 /** Próximo día `day` en o después de `today`. Si el mes no llega, usa el último día. */
 export function nextChargeDate(today: string, day: number): string {
   const [year, month, current] = today.split("-").map(Number);

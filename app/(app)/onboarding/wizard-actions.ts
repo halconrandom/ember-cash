@@ -4,8 +4,8 @@
  * Acciones del wizard. Extienden /onboarding: guardan profiles.onboarding_step
  * y, al terminar o al omitir, onboarded_at. No crean un segundo flujo.
  * La cuenta, la meta, la deuda y la suscripción pasan por las acciones que
- * ya existen. El saldo inicial es una transacción porque la cuenta no tiene
- * columna de saldo.
+ * ya existen. El saldo inicial es un movimiento kind opening: no es un
+ * ingreso ni un gasto del mes, y la cuenta sigue sin columna de saldo.
  */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -14,16 +14,15 @@ import { getLocale } from "next-intl/server";
 import { saveDebt } from "@/app/(app)/(shell)/debts/actions";
 import { addContribution, saveGoal } from "@/app/(app)/(shell)/savings/actions";
 import { saveRecurringItem } from "@/app/(app)/(shell)/subscriptions/actions";
-import { saveTransaction } from "@/app/(app)/(shell)/transactions/actions";
 import { createAccount } from "@/lib/accounts/actions";
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
 import type { CurrencyCode } from "@/lib/db/types";
 import { recordEventOnce } from "@/lib/events/record";
 import type { EventName } from "@/lib/events/validate";
 import { DEFAULT_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
+import { parseMoney } from "@/lib/money/parse";
 import {
   defaultCurrencyForLocale,
-  openingBalanceKind,
   validateAccountForm,
   validateFocusForm,
   type FieldErrors,
@@ -228,28 +227,23 @@ export async function saveFirstAccount(_prev: StepResult, formData: FormData): P
     if (error) return failed("failed", "onboarding.account.errors.save");
     if ((count ?? 0) === 0) {
       const profile = await getCurrentProfile();
-      const kind = openingBalanceKind(draft.dbType);
-      // El saldo queda como movimiento del mes: el panel no lleva un libro por cuenta.
-      const saved = await saveTransaction({
-        id: null,
-        kind: kind.kind,
-        amount: draft.balance,
-        currency: draft.currency,
-        categoryKey: kind.categoryKey,
+      const amount = parseMoney(draft.balance, draft.currency, locale);
+      if (!amount.ok) return failed("failed", "onboarding.account.errors.balance");
+      // opening no pasa por save_transaction: esa RPC solo reparte gastos e
+      // ingresos. En una tarjeta el signo (deuda) lo pone account_balance.
+      const { error: insertError } = await supabase.from("transactions").insert({
+        household_id: scopeHouseholdId(scope),
+        account_id: accountId,
+        kind: "opening",
         description: draft.name,
-        note: "",
-        occurredOn: todayIn(profile.timezone),
-        accountId,
-        transferToAccountId: null,
-        paidBy: null,
-        repeat: "never",
+        amount_minor: Number(amount.value.amountMinor),
+        currency: draft.currency,
+        occurred_on: todayIn(profile.timezone),
       });
-      if (!saved.ok) {
-        return failed(
-          saved.error === "rateLimited" ? "rateLimited" : "failed",
-          "onboarding.account.errors.save",
-        );
+      if (isRateLimitedDbError(insertError)) {
+        return failed("rateLimited", "onboarding.account.errors.save");
       }
+      if (insertError) return failed("failed", "onboarding.account.errors.save");
     }
   }
 

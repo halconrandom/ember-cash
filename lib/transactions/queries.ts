@@ -1,6 +1,7 @@
 /**
  * Consultas de transacciones (servidor). Siempre respetan el scope y nunca
- * incluyen las borradas (deleted_at). La paginación es del lado del servidor.
+ * incluyen las borradas (deleted_at) ni el saldo inicial (kind opening):
+ * ese movimiento no se edita como un ingreso. La paginación es del servidor.
  */
 import "server-only";
 
@@ -92,7 +93,8 @@ export async function listTransactions(
   let query = supabase
     .from("transactions")
     .select(COLUMNS, { count: "exact" })
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .neq("kind", "opening");
 
   query =
     scope.kind === "personal"
@@ -131,7 +133,7 @@ export async function listTransactions(
   };
 }
 
-/** Una transacción para editar (null si no existe, es ajena o está borrada). */
+/** Una transacción para editar. Null si no existe, es ajena, está borrada o es un saldo inicial. */
 export async function getTransaction(id: string): Promise<TransactionRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -141,7 +143,10 @@ export async function getTransaction(id: string): Promise<TransactionRow | null>
     .is("deleted_at", null)
     .maybeSingle();
   if (error || !data) return null;
-  const row = toRow(data as unknown as DbRow);
+  const raw = data as unknown as DbRow;
+  // El formulario solo conoce gasto, ingreso y transferencia.
+  if (raw.kind === "opening") return null;
+  const row = toRow(raw);
   if (!(data as unknown as { household_id: string | null }).household_id) return row;
   const { data: locked } = await supabase.rpc("transaction_has_former_member", { tid: id });
   return { ...row, locked: Boolean(locked) };

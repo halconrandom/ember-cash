@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.19.1] - 2026-10-20
+
+### Corregido (F1.1: el saldo inicial no entra en el mes)
+
+- El wizard ya no guarda el saldo inicial como ingreso (`other_income`) ni como gasto de tarjeta (`other`). Migración `0024_opening_balance.sql`: el movimiento es `kind = 'opening'`, sin categoría, sin pagador y sin repartos. `dashboard_totals`, los presupuestos, la lista del hogar y `household_member_settled` solo suman `expense` e `income`, así que queda fuera igual que una transferencia.
+- La cuenta sigue sin columna de saldo (0003). `account_balance` lo calcula con las transacciones. En una tarjeta ese monto es deuda que ya existía; en el resto, dinero en la cuenta. No cambia los ingresos ni los gastos del mes.
+- `save_transaction` no lo crea ni lo edita. Un disparador solo deja cambiar `deleted_at`. El wizard lo inserta directo y la lista de transacciones no lo abre como un ingreso.
+- `migrate_wizard_opening_balances` convierte las filas que el wizard de F1 ya pudo guardar en local: misma descripción que la cuenta, sin nota y pagadas por el dueño. Si hay dos, se queda con la más antigua.
+
 ## [0.19.0] - 2026-10-20
 
 ### Añadido (fase F1: onboarding)

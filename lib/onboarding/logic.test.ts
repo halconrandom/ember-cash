@@ -11,7 +11,6 @@ import {
   defaultCurrencyForLocale,
   formatRateText,
   nextChargeDate,
-  openingBalanceKind,
   rateForDisplayCurrency,
   stepMotion,
   subscriptionChipLabels,
@@ -88,11 +87,6 @@ describe("onboarding", () => {
       "es",
     );
     expect(card.ok && card.value.dbType).toBe("other");
-  });
-
-  it("el saldo de una tarjeta es un gasto y el de una cuenta, un ingreso", () => {
-    expect(openingBalanceKind("credit_card").kind).toBe("expense");
-    expect(openingBalanceKind("savings").categoryKey).toBe("other_income");
   });
 
   it("elige el próximo día de cobro y lo recorta al fin de mes", () => {

@@ -8,11 +8,18 @@ import { EXPORT_TABLES } from "@/lib/export/backup";
 
 describe("alcance de RPC y de la exportación", () => {
   it("save_transaction, post_occurrence y dashboard_totals son security invoker", () => {
-    const save = readFileSync("supabase/migrations/0010_household_leave.sql", "utf8");
+    // 0024 reemplaza el cuerpo de 0010. La función viva es esta.
+    const save = readFileSync("supabase/migrations/0024_opening_balance.sql", "utf8");
     const post = readFileSync("supabase/migrations/0011_manual_occurrences.sql", "utf8");
     // 0022 reemplaza el cuerpo de 0021. La función viva es esta.
     const dash = readFileSync("supabase/migrations/0022_dashboard_totals_guard.sql", "utf8");
     expect(save).toMatch(/function public\.save_transaction[\s\S]*?security invoker/);
+    expect(save).toMatch(/function public\.save_transaction[\s\S]*?set search_path = ''/);
+    expect(save).toContain("opening_not_editable");
+    expect(save).toContain("p_kind in ('expense', 'income')");
+    expect(save).toContain("opening_has_splits");
+    expect(save).toMatch(/function public\.account_balance[\s\S]*?security invoker/);
+    expect(save).toMatch(/function public\.account_balance[\s\S]*?set search_path = ''/);
     expect(post).toMatch(/function public\.post_occurrence[\s\S]*?security invoker/);
     expect(dash).toMatch(/function public\.dashboard_totals[\s\S]*?security invoker/);
     expect(dash).toMatch(/set search_path = ''/);
