@@ -1,9 +1,9 @@
 /**
  * GET /api/cron/rates
  * Lo llama el cron diario de Vercel (vercel.json) con el encabezado
- * `Authorization: Bearer <CRON_SECRET>`. Trae y guarda los tres pares de la
- * fase E1 (USD/COP, EUR/USD y EUR/COP derivada). Si los tres fallan responde
- * 502 y no escribe nada: se conserva la última tasa de cada par.
+ * `Authorization: Bearer <CRON_SECRET>`. Trae y guarda las cuatro patas a
+ * USD (fase E4: USD/COP, EUR/USD, USD/MXN, USD/ARS). Si las cuatro fallan
+ * responde 502 y no escribe nada: se conserva la última tasa de cada una.
  */
 import { timingSafeEqual } from "node:crypto";
 

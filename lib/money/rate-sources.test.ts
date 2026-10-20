@@ -2,13 +2,18 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  deriveEurCop,
   fetchEurUsd,
   fetchFrankfurter,
+  fetchFrankfurterUsdMxn,
   fetchOpenEr,
   fetchOpenErEurUsd,
+  fetchOpenErUsdArs,
+  fetchOpenErUsdMxn,
   fetchTrm,
+  fetchUsdArs,
   fetchUsdCop,
+  fetchUsdMxn,
+  FRANKFURTER_MXN_URL,
   FRANKFURTER_URL,
   OPEN_ER_URL,
   TRM_URL,
@@ -31,13 +36,19 @@ const TRM_OK = [
 const OPEN_ER_OK = {
   result: "success",
   time_last_update_unix: 1792195352,
-  rates: { COP: 3182.776456, USD: 1, EUR: 0.926 },
+  rates: { COP: 3182.776456, USD: 1, EUR: 0.926, ARS: 1480.5, MXN: 18.62 },
 };
 const FRANKFURTER_OK = {
   amount: 1,
   base: "EUR",
   date: "2026-10-17",
   rates: { USD: 1.0876 },
+};
+const FRANKFURTER_MXN_OK = {
+  amount: 1,
+  base: "USD",
+  date: "2026-10-17",
+  rates: { MXN: 18.5 },
 };
 
 function fakeFetch(routes: Record<string, () => Promise<Response>>) {
@@ -145,35 +156,69 @@ describe("fuentes de la tasa", () => {
     ).rejects.toThrow(/rango/);
   });
 
-  it("deriva EUR/COP multiplicando EUR/USD × USD/COP", () => {
-    const eurUsd = {
-      base: "EUR" as const,
-      quote: "USD" as const,
-      rate: "1.0876",
+  it("lee Frankfurter (USD/MXN): el peso mexicano sí está en el BCE", async () => {
+    const rate = await fetchFrankfurterUsdMxn(
+      fakeFetch({ [FRANKFURTER_MXN_URL]: () => json(FRANKFURTER_MXN_OK) }),
+    );
+    expect(rate).toEqual({
+      base: "USD",
+      quote: "MXN",
+      rate: "18.5",
       asOf: "2026-10-17",
-      source: "frankfurter.app" as const,
-    };
-    const usdCop = {
-      base: "USD" as const,
-      quote: "COP" as const,
-      rate: "3174.67",
-      asOf: "2026-10-17",
-      source: "datos.gov.co" as const,
-    };
-    const derived = deriveEurCop(eurUsd, usdCop);
-    expect(derived.base).toBe("EUR");
-    expect(derived.quote).toBe("COP");
-    // 1.0876 * 3174.67 = 3452.771092
-    expect(derived.rate).toBe("3452.771092");
-    expect(derived.asOf).toBe("2026-10-17");
-    expect(derived.source).toBe("derived:frankfurter.app+datos.gov.co");
+      source: "frankfurter.app",
+    });
   });
 
-  it("la fecha derivada es la más vieja de las dos", () => {
-    const derived = deriveEurCop(
-      { base: "EUR", quote: "USD", rate: "1.08", asOf: "2026-10-15", source: "frankfurter.app" },
-      { base: "USD", quote: "COP", rate: "3174.67", asOf: "2026-10-17", source: "datos.gov.co" },
+  it("lee open.er-api (USD/MXN), respaldo de Frankfurter", async () => {
+    const rate = await fetchOpenErUsdMxn(fakeFetch({ [OPEN_ER_URL]: () => json(OPEN_ER_OK) }));
+    expect(rate).toEqual({
+      base: "USD",
+      quote: "MXN",
+      rate: "18.62",
+      asOf: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      source: "open.er-api.com",
+    });
+  });
+
+  it("usa Frankfurter para MXN si responde, y el respaldo si falla", async () => {
+    const ok = await fetchUsdMxn(
+      fakeFetch({ [FRANKFURTER_MXN_URL]: () => json(FRANKFURTER_MXN_OK) }),
     );
-    expect(derived.asOf).toBe("2026-10-15");
+    expect(ok.rate?.source).toBe("frankfurter.app");
+
+    const fallback = await fetchUsdMxn(
+      fakeFetch({
+        [FRANKFURTER_MXN_URL]: () => json({ error: "down" }, 503),
+        [OPEN_ER_URL]: () => json(OPEN_ER_OK),
+      }),
+    );
+    expect(fallback.rate?.source).toBe("open.er-api.com");
+  });
+
+  it("lee open.er-api (USD/ARS): el peso argentino no está en el BCE", async () => {
+    const rate = await fetchOpenErUsdArs(fakeFetch({ [OPEN_ER_URL]: () => json(OPEN_ER_OK) }));
+    expect(rate).toEqual({
+      base: "USD",
+      quote: "ARS",
+      rate: "1480.5",
+      asOf: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      source: "open.er-api.com",
+    });
+  });
+
+  it("ARS solo tiene una fuente: si falla, no inventa nada", async () => {
+    const { rate, errors } = await fetchUsdArs(fakeFetch({}));
+    expect(rate).toBeNull();
+    expect(errors).toHaveLength(1);
+  });
+
+  it("descarta una tasa ARS fuera de rango", async () => {
+    await expect(
+      fetchOpenErUsdArs(
+        fakeFetch({
+          [OPEN_ER_URL]: () => json({ ...OPEN_ER_OK, rates: { ...OPEN_ER_OK.rates, ARS: 1 } }),
+        }),
+      ),
+    ).rejects.toThrow(/rango/);
   });
 });

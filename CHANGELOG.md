@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.23.0] - 2026-10-20
+
+### Fase E4: ARS y MXN, monedas generalizadas
+
+- Catálogo: ARS (peso argentino) y MXN (peso mexicano), 2 decimales cada una (migración `0025_currencies_ars_mxn.sql`, **sin aplicar aún**: falta `pnpm db:push`). `profiles.display_currency` admite las 5; nueva `profiles.enabled_currencies text[]` (default `{COP, USD, EUR}`) con un trigger que valida cada código contra `currencies` (no puede ser un CHECK, por la subconsulta) y un CHECK de que `display_currency` esté entre las habilitadas. `dashboard_totals` deja de buscar un par directo (o su inverso) y triangula por USD para cualquier cruce.
+- `lib/money/convert.ts`: `latestRateFor`/`rateAt` ya no dependen de que el cruce exacto esté guardado — si falta, lo derivan triangulando por USD (`usdPerUnit(A) / usdPerUnit(B)`), y solo si falta la pata de alguna de las dos monedas siguen devolviendo `null` (nunca una tasa inventada). `convert()` no cambió.
+- `lib/money/rate-sources.ts` y `rates.ts`: cada moneda trae y guarda solo su pata a USD (COP de la TRM, EUR de Frankfurter/ECB, MXN de Frankfurter —el peso mexicano sí está en el BCE—, ARS de open.er-api —no está en el BCE, sin respaldo propio—); ya no se deriva ni se guarda EUR/COP. El cron guarda las 4 patas, cada una sin depender de que las otras se hayan traído bien.
+- `lib/money`: el formato deja de usar símbolo (`US$`/`€`); el código ISO va siempre después del número ("20,00 USD", "125.000 COP"), con los separadores y decimales de siempre.
+- Fuentes de cada moneda documentadas en `docs/DESIGN_SPEC.md` §4.
+- Sin cambios de UI deliberados: lo que cambia visualmente (selectores de moneda ahora de 5 opciones, el nuevo formato sin símbolo) es consecuencia directa de generalizar `CURRENCY_CODES` y el formato, no un rediseño.
+- Tests nuevos en Postgres local: conversión cruzada por USD (dashboard_totals con EUR y con MXN: USD→EUR, COP→MXN, ARS→COP), rechazo de moneda inexistente y validación de `enabled_currencies`.
+
 ## [0.22.3] - 2026-10-20
 
 ### Corregido

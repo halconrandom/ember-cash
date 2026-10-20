@@ -10,6 +10,17 @@
  *   es simétrico para negativos.
  * - Los totales se convierten con la tasa más reciente: primero se suma por
  *   moneda y después se convierte cada suma una sola vez (menos redondeos).
+ *
+ * Fase E4 (5 monedas): ya no se guarda un par por cada cruce posible (10
+ * pares entre 5 monedas, 20 si se cuentan ambos sentidos). Cada moneda
+ * guarda solo su "pata a USD" (USD/COP, EUR/USD, USD/MXN, USD/ARS); un
+ * cruce A→B que no esté guardado directo (p. ej. EUR→MXN) se deriva
+ * triangulando por USD: 1 A = usdPerUnit(A) USD = usdPerUnit(A)/usdPerUnit(B)
+ * B. `latestRateFor`/`rateAt` intentan primero el par directo (por si existe,
+ * p. ej. USD→cualquiera) y solo si falta alguna de las dos patas a USD
+ * derivan el cruce; si falta una, siguen devolviendo `null` (nunca se
+ * inventa una tasa). `convert()` no cambia: sigue recibiendo una sola tasa
+ * ya resuelta, directa o derivada.
  */
 import type { CurrencyCode } from "@/lib/db/types";
 
@@ -55,6 +66,77 @@ export function divRound(numerator: bigint, denominator: bigint): bigint {
   let q = n / d;
   if ((n % d) * 2n >= d) q += 1n;
   return negative ? -q : q;
+}
+
+/** Inversa de `parseRate`: el bigint escalado vuelve a un decimal en texto. */
+function formatRateScaled(scaled: bigint): string {
+  if (scaled <= 0n) throw new RangeError("Tasa derivada inválida");
+  const intPart = scaled / RATE_SCALE;
+  const fracPart = (scaled % RATE_SCALE).toString().padStart(RATE_DECIMALS, "0");
+  const frac = fracPart.replace(/0+$/, "");
+  return frac ? `${intPart}.${frac}` : `${intPart}`;
+}
+
+/**
+ * La tasa (en cualquier sentido) entre `currency` y USD, de entre las
+ * dadas: la más reciente. `null` si `currency` es USD (no hace falta pata)
+ * o si no hay ninguna.
+ */
+function usdLeg(rates: readonly Rate[], currency: CurrencyCode): Rate | null {
+  if (currency === "USD") return null;
+  const candidates = rates.filter(
+    (r) =>
+      (r.base === currency && r.quote === "USD") || (r.base === "USD" && r.quote === currency),
+  );
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.asOf > a.asOf ? b : a));
+}
+
+/** "1 unidad de `currency` en USD", como bigint escalado a RATE_SCALE. */
+function usdPerUnitScaled(leg: Rate, currency: CurrencyCode): bigint {
+  const r = parseRate(leg.rate);
+  if (leg.base === currency && leg.quote === "USD") return r; // 1 currency = r USD
+  // leg.base === "USD" && leg.quote === currency: 1 USD = r currency.
+  return divRound(RATE_SCALE * RATE_SCALE, r);
+}
+
+/**
+ * Deriva la tasa `from`→`to` triangulando por USD (ninguna de las dos es
+ * USD, o falta el par directo entre ellas). `null` si falta la pata a USD
+ * de `from` o de `to`: nunca se inventa una tasa con una sola pata.
+ */
+function deriveViaUsd(rates: readonly Rate[], from: CurrencyCode, to: CurrencyCode): Rate | null {
+  const legFrom = usdLeg(rates, from);
+  const legTo = usdLeg(rates, to);
+  if (from !== "USD" && !legFrom) return null;
+  if (to !== "USD" && !legTo) return null;
+
+  const pFrom = from === "USD" ? RATE_SCALE : usdPerUnitScaled(legFrom!, from);
+  const pTo = to === "USD" ? RATE_SCALE : usdPerUnitScaled(legTo!, to);
+  const rateScaled = divRound(pFrom * RATE_SCALE, pTo);
+
+  const legs = [legFrom, legTo].filter((l): l is Rate => l !== null);
+  // La derivada no es más fresca que su insumo más viejo.
+  const oldest = legs.reduce((a, b) => (b.asOf < a.asOf ? b : a));
+  const earliestFetch = legs.reduce((a, b) => (b.fetchedAt < a.fetchedAt ? b : a));
+
+  return {
+    base: from,
+    quote: to,
+    rate: formatRateScaled(rateScaled),
+    asOf: oldest.asOf,
+    fetchedAt: earliestFetch.fetchedAt,
+    source: `derived:${legs.map((l) => `${l.base}/${l.quote}`).join("+")}`,
+  };
+}
+
+/** La tasa directa `from`/`to` (en cualquier sentido) más reciente entre las dadas. */
+function directRateFor(rates: readonly Rate[], from: CurrencyCode, to: CurrencyCode): Rate | null {
+  const candidates = rates.filter(
+    (r) => (r.base === from && r.quote === to) || (r.base === to && r.quote === from),
+  );
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.asOf > a.asOf ? b : a));
 }
 
 /** Convierte `m` a `to` con la tasa dada. Si ya está en `to`, lo devuelve igual. */
@@ -109,11 +191,7 @@ export function latestRateFor(
   to: CurrencyCode,
 ): Rate | null {
   if (from === to) return null;
-  const candidates = rates.filter(
-    (r) => (r.base === from && r.quote === to) || (r.base === to && r.quote === from),
-  );
-  if (candidates.length === 0) return null;
-  return candidates.reduce((a, b) => (b.asOf > a.asOf ? b : a));
+  return directRateFor(rates, from, to) ?? deriveViaUsd(rates, from, to);
 }
 
 /**

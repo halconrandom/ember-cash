@@ -1,7 +1,8 @@
 /**
- * Lectura y guardado de tasas en exchange_rates (servidor). Fase E1: tres
- * pares (USD/COP, EUR/USD, EUR/COP); `convert()` usa cada uno en el sentido
- * que haga falta.
+ * Lectura y guardado de tasas en exchange_rates (servidor). Fase E4: cada
+ * moneda guarda solo su "pata a USD" (USD/COP, EUR/USD, USD/MXN, USD/ARS);
+ * ya no se guardan pares derivados (EUR/COP, etc.) porque `convert()` los
+ * triangula por USD al vuelo (lib/money/convert.ts).
  *
  * - getLatestRate(base, quote): la tasa más reciente que ve el usuario para
  *   ese par (RLS permite leer a cualquier autenticado). Entre tasas de la
@@ -9,9 +10,8 @@
  *   (open.er-api.com). Por defecto USD/COP (lo que usa hoy la UI).
  * - fetchAndStoreRate: trae y guarda solo USD/COP (lo usa el botón
  *   "Reintentar" de la UI, que hoy sigue siendo binaria COP/USD).
- * - fetchAndStoreRates: trae y guarda los tres pares (la usa el cron). Si
- *   USD/COP o EUR/USD fallan, EUR/COP tampoco se deriva: nunca se inventa
- *   una tasa con el último valor conocido del otro par.
+ * - fetchAndStoreRates: trae y guarda las cuatro patas (la usa el cron).
+ *   Cada una se guarda si se pudo traer, sin depender de las otras.
  */
 import "server-only";
 
@@ -20,7 +20,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import type { Rate } from "./convert";
-import { deriveEurCop, fetchEurUsd, fetchUsdCop, type FetchedRate } from "./rate-sources";
+import { fetchEurUsd, fetchUsdArs, fetchUsdCop, fetchUsdMxn, type FetchedRate } from "./rate-sources";
 
 type Row = {
   base: string;
@@ -132,34 +132,37 @@ export async function fetchAndStoreRate(fetchImpl?: typeof fetch): Promise<Refre
 export type RefreshAllResult = {
   usdCop: RefreshResult;
   eurUsd: RefreshResult;
-  eurCop: RefreshResult;
+  usdMxn: RefreshResult;
+  usdArs: RefreshResult;
 };
 
 /**
- * Trae y guarda los tres pares. EUR/COP se deriva de EUR/USD × USD/COP: si
- * alguno de los dos no se pudo traer (ni de su fuente ni de su respaldo),
- * EUR/COP tampoco se guarda esta vez (queda la última tasa conocida).
+ * Trae y guarda las cuatro patas a USD, cada una sin depender de las otras
+ * (a diferencia de la EUR/COP derivada de antes de la fase E4, ninguna
+ * pata necesita que otra se haya traído bien). Cualquier cruce entre dos
+ * monedas que no sea alguna de estas patas se triangula al leerlo
+ * (lib/money/convert.ts), no se guarda aquí.
  */
 export async function fetchAndStoreRates(fetchImpl?: typeof fetch): Promise<RefreshAllResult> {
-  const [usdCopFetched, eurUsdFetched] = await Promise.all([
+  const [usdCopFetched, eurUsdFetched, usdMxnFetched, usdArsFetched] = await Promise.all([
     fetchUsdCop(fetchImpl),
     fetchEurUsd(fetchImpl),
+    fetchUsdMxn(fetchImpl),
+    fetchUsdArs(fetchImpl),
   ]);
 
-  const usdCop: RefreshResult = usdCopFetched.rate
-    ? { ok: true, rate: await saveRate(usdCopFetched.rate) }
-    : { ok: false, errors: usdCopFetched.errors };
-  const eurUsd: RefreshResult = eurUsdFetched.rate
-    ? { ok: true, rate: await saveRate(eurUsdFetched.rate) }
-    : { ok: false, errors: eurUsdFetched.errors };
+  async function toResult(fetched: { rate: FetchedRate | null; errors: string[] }) {
+    return fetched.rate
+      ? ({ ok: true, rate: await saveRate(fetched.rate) } as const)
+      : ({ ok: false, errors: fetched.errors } as const);
+  }
 
-  const eurCop: RefreshResult =
-    usdCopFetched.rate && eurUsdFetched.rate
-      ? { ok: true, rate: await saveRate(deriveEurCop(eurUsdFetched.rate, usdCopFetched.rate)) }
-      : {
-          ok: false,
-          errors: ["No se pudo derivar EUR/COP: falta USD/COP, EUR/USD, o las dos."],
-        };
+  const [usdCop, eurUsd, usdMxn, usdArs] = await Promise.all([
+    toResult(usdCopFetched),
+    toResult(eurUsdFetched),
+    toResult(usdMxnFetched),
+    toResult(usdArsFetched),
+  ]);
 
-  return { usdCop, eurUsd, eurCop };
+  return { usdCop, eurUsd, usdMxn, usdArs };
 }

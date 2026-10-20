@@ -46,34 +46,35 @@ describe("operaciones", () => {
 describe("formato", () => {
   it("0 y 1 en cada moneda", () => {
     expect(formatMoney(money(0n, "COP"), "es")).toBe(`0${NBSP}COP`);
-    expect(formatMoney(money(0n, "USD"), "en")).toBe(`US$${NBSP}0.00`);
+    expect(formatMoney(money(0n, "USD"), "en")).toBe(`0.00${NBSP}USD`);
     expect(formatMoney(money(1n, "COP"), "en")).toBe(`1${NBSP}COP`);
-    expect(formatMoney(money(1n, "USD"), "en")).toBe(`US$${NBSP}0.01`);
+    expect(formatMoney(money(1n, "USD"), "en")).toBe(`0.01${NBSP}USD`);
   });
 
-  it("COP sin decimales y USD con 2, separadores según el idioma", () => {
+  it("COP sin decimales y USD con 2, separadores según el idioma, código siempre después", () => {
     expect(formatMoney(money(125000n, "COP"), "es")).toBe(`125.000${NBSP}COP`);
     expect(formatMoney(money(125000n, "COP"), "en")).toBe(`125,000${NBSP}COP`);
-    expect(formatMoney(money(1599n, "USD"), "es")).toBe(`US$${NBSP}15,99`);
-    expect(formatMoney(money(1599n, "USD"), "en")).toBe(`US$${NBSP}15.99`);
-    expect(formatMoney(money(3125n, "USD"), "en", { unit: "code" })).toBe(`31.25${NBSP}USD`);
+    expect(formatMoney(money(1599n, "USD"), "es")).toBe(`15,99${NBSP}USD`);
+    expect(formatMoney(money(1599n, "USD"), "en")).toBe(`15.99${NBSP}USD`);
   });
 
-  it("EUR con 2 decimales y símbolo €, igual que USD", () => {
-    expect(formatMoney(money(1250n, "EUR"), "es")).toBe(`€${NBSP}12,50`);
-    expect(formatMoney(money(1250n, "EUR"), "en")).toBe(`€${NBSP}12.50`);
-    expect(formatMoney(money(3125n, "EUR"), "en", { unit: "code" })).toBe(`31.25${NBSP}EUR`);
+  it("EUR, ARS y MXN con 2 decimales, código detrás, sin símbolo", () => {
+    expect(formatMoney(money(1250n, "EUR"), "es")).toBe(`12,50${NBSP}EUR`);
+    expect(formatMoney(money(1250n, "EUR"), "en")).toBe(`12.50${NBSP}EUR`);
+    expect(formatMoney(money(1_500_000n, "ARS"), "es")).toBe(`15.000,00${NBSP}ARS`);
+    expect(formatMoney(money(1_500_000n, "ARS"), "en")).toBe(`15,000.00${NBSP}ARS`);
+    expect(formatMoney(money(1250n, "MXN"), "es")).toBe(`12,50${NBSP}MXN`);
   });
 
   it("12 dígitos, negativos y aproximados", () => {
     expect(formatMoney(money(999_999_999_999n, "COP"), "es")).toBe(`999.999.999.999${NBSP}COP`);
     expect(formatMoney(money(123_456_789_012_34n, "USD"), "en")).toBe(
-      `US$${NBSP}123,456,789,012.34`,
+      `123,456,789,012.34${NBSP}USD`,
     );
     expect(formatMoney(money(-18500n, "COP"), "en")).toBe(`-18,500${NBSP}COP`);
-    expect(formatMoney(money(-1599n, "USD"), "en")).toBe(`-US$${NBSP}15.99`);
+    expect(formatMoney(money(-1599n, "USD"), "en")).toBe(`-15.99${NBSP}USD`);
     expect(formatMoney(money(230000n, "USD"), "en", { approx: true })).toBe(
-      `≈${NBSP}US$${NBSP}2,300.00`,
+      `≈${NBSP}2,300.00${NBSP}USD`,
     );
     expect(formatAmount(money(-5n, "USD"), "es")).toBe("-0,05");
   });
@@ -192,26 +193,48 @@ describe("conversión", () => {
     expect(isStale({ fetchedAt: "2026-10-16T13:00:02Z" }, now)).toBe(false);
   });
 
-  describe("latestRateFor y rateAt (fase E2: 3 monedas)", () => {
+  describe("latestRateFor y rateAt (fase E4: triangula por USD)", () => {
     const EUR_USD: Rate = { ...RATE, base: "EUR", quote: "USD", rate: "1.08", asOf: "2026-10-17" };
-    const ALL = [RATE, TRM, EUR_USD];
+    const USD_MXN: Rate = { ...RATE, base: "USD", quote: "MXN", rate: "18.5", asOf: "2026-10-17" };
+    const ALL = [RATE, TRM, EUR_USD, USD_MXN];
 
     it("la misma moneda no necesita tasa", () => {
       expect(latestRateFor(ALL, "COP", "COP")).toBeNull();
     });
 
-    it("elige la más reciente del par, en cualquier sentido", () => {
+    it("elige la más reciente del par directo, en cualquier sentido", () => {
       expect(latestRateFor(ALL, "COP", "USD")).toEqual(TRM);
       expect(latestRateFor(ALL, "USD", "EUR")).toEqual(EUR_USD);
     });
 
-    it("sin ninguna tasa del par, null (nunca se inventa)", () => {
-      expect(latestRateFor(ALL, "EUR", "COP")).toBeNull();
+    it("sin par directo, deriva triangulando por USD (cada pata, la más reciente)", () => {
+      const derived = latestRateFor(ALL, "EUR", "COP");
+      expect(derived?.base).toBe("EUR");
+      expect(derived?.quote).toBe("COP");
+      // 1 EUR = 1,08 USD; la pata USD/COP más reciente es la TRM (3.174,67, 17 oct).
+      expect(Number(derived?.rate)).toBeCloseTo(1.08 * 3174.67, 2);
+      expect(derived?.asOf).toBe("2026-10-17");
+      expect(derived?.source).toBe("derived:EUR/USD+USD/COP");
     });
 
-    it("rateAt solo mira tasas vigentes en la fecha del movimiento o antes", () => {
+    it("COP→MXN también triangula (ninguna tiene pata directa con la otra)", () => {
+      const derived = latestRateFor(ALL, "COP", "MXN");
+      expect(derived?.base).toBe("COP");
+      expect(derived?.quote).toBe("MXN");
+      expect(Number(derived?.rate)).toBeCloseTo(18.5 / 3174.67, 6);
+    });
+
+    it("si falta la pata a USD de una de las dos, sigue sin inventar nada", () => {
+      expect(latestRateFor(ALL, "EUR", "ARS")).toBeNull();
+      expect(latestRateFor(ALL, "ARS", "COP")).toBeNull();
+    });
+
+    it("rateAt solo mira tasas (y patas) vigentes en la fecha del movimiento o antes", () => {
       expect(rateAt(ALL, "USD", "COP", "2026-10-16")).toEqual(RATE);
       expect(rateAt(ALL, "USD", "COP", "2026-10-15")).toBeNull();
+      // EUR/USD y la TRM son del 17: antes de esa fecha no hay con qué triangular.
+      expect(rateAt(ALL, "EUR", "COP", "2026-10-16")).toBeNull();
+      expect(rateAt(ALL, "EUR", "COP", "2026-10-17")).not.toBeNull();
     });
   });
 });

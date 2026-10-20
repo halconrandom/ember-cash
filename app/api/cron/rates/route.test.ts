@@ -25,13 +25,21 @@ const eurUsdRate = {
   fetchedAt: "2026-10-17T13:00:00Z",
   source: "frankfurter.app",
 };
-const eurCopRate = {
-  base: "EUR",
-  quote: "COP",
-  rate: "3430.6236",
+const usdMxnRate = {
+  base: "USD",
+  quote: "MXN",
+  rate: "18.5",
   asOf: "2026-10-17",
   fetchedAt: "2026-10-17T13:00:00Z",
-  source: "derived:frankfurter.app+datos.gov.co",
+  source: "frankfurter.app",
+};
+const usdArsRate = {
+  base: "USD",
+  quote: "ARS",
+  rate: "1480.5",
+  asOf: "2026-10-17",
+  fetchedAt: "2026-10-17T13:00:00Z",
+  source: "open.er-api.com",
 };
 
 // El bloque no devuelve el mock: Vitest trataría esa función como limpieza.
@@ -50,11 +58,12 @@ describe("GET /api/cron/rates", () => {
     expect(fetchAndStoreRates).not.toHaveBeenCalled();
   });
 
-  it("con el secreto guarda los tres pares y los devuelve", async () => {
+  it("con el secreto guarda las cuatro patas y las devuelve", async () => {
     const rates = {
       usdCop: { ok: true, rate: usdCopRate },
       eurUsd: { ok: true, rate: eurUsdRate },
-      eurCop: { ok: true, rate: eurCopRate },
+      usdMxn: { ok: true, rate: usdMxnRate },
+      usdArs: { ok: true, rate: usdArsRate },
     };
     fetchAndStoreRates.mockResolvedValue(rates);
     const res = await GET(new Request("http://x/api/cron/rates", { headers: AUTH }));
@@ -62,22 +71,24 @@ describe("GET /api/cron/rates", () => {
     expect(await res.json()).toEqual({ ok: true, rates });
   });
 
-  it("si falla un solo par responde 200 (los otros dos sí se guardaron)", async () => {
+  it("si falla una sola pata responde 200 (las otras tres sí se guardaron)", async () => {
     fetchAndStoreRates.mockResolvedValue({
       usdCop: { ok: true, rate: usdCopRate },
       eurUsd: { ok: false, errors: ["HTTP 503", "sin red"] },
-      eurCop: { ok: false, errors: ["No se pudo derivar EUR/COP: falta USD/COP, EUR/USD, o las dos."] },
+      usdMxn: { ok: true, rate: usdMxnRate },
+      usdArs: { ok: true, rate: usdArsRate },
     });
     const res = await GET(new Request("http://x/api/cron/rates", { headers: AUTH }));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true });
   });
 
-  it("si los tres fallan responde 502", async () => {
+  it("si las cuatro fallan responde 502", async () => {
     fetchAndStoreRates.mockResolvedValue({
       usdCop: { ok: false, errors: ["HTTP 503", "sin red"] },
       eurUsd: { ok: false, errors: ["HTTP 503", "sin red"] },
-      eurCop: { ok: false, errors: ["falta USD/COP, EUR/USD, o las dos."] },
+      usdMxn: { ok: false, errors: ["HTTP 503", "sin red"] },
+      usdArs: { ok: false, errors: ["sin red"] },
     });
     const res = await GET(new Request("http://x/api/cron/rates", { headers: AUTH }));
     expect(res.status).toBe(502);

@@ -118,13 +118,13 @@ The design-system sheet (10) shows exactly this scale. Because text2 and text3 a
 - Shadows (light only; dark uses a 1px border): card `0 1px 2px rgba(29,29,31,.04), 0 8px 24px rgba(29,29,31,.04)`; glow (primary button) `0 10px 24px rgba(198,80,11,.25)`; pop (modal) `0 24px 64px rgba(0,0,0,.15), 0 2px 6px rgba(0,0,0,.10)`.
 - Materials: modal scrim `rgba(0,0,0,.32)` light / `.50` dark; blur only on floating layers, solid fallback under `prefers-reduced-transparency`.
 
-## 4. Currency rules (phase E2, 3 currencies — supersedes the old 2-currency rule; Ivern's rule, IVERN_FIXES §4)
+## 4. Currency rules (phase E4, 5 currencies — supersedes the phase E2 3-currency rule; Ivern's rule, IVERN_FIXES §4)
 
-1. **displayCurrency** is the user's own preference — COP, USD or **EUR** — set with the currency toggle and persisted to `profiles.display_currency`. Default: whichever currency used to act as primary (COP).
+1. **displayCurrency** is the user's own preference — COP, USD, EUR, **ARS** or **MXN** (phase E4) — set with the currency toggle and persisted to `profiles.display_currency`; it must be one of `profiles.enabled_currencies` (phase E4, default `{COP, USD, EUR}`). Default: whichever currency used to act as primary (COP).
 2. **Secondary line**: only when the amount's original currency differs from displayCurrency, and at most one per amount. If they match, nothing — no line, no `≈`.
 3. The equivalent is computed **at display time** with the `exchange_rates` rate of the movement's date (never stored on the row). Missing rate for that pair: `Rate unavailable` in text3 — never 0, never an invented number.
 4. A **neutral (slate) badge** with the original currency's code sits next to the secondary line when it differs from displayCurrency. No flags, no emoji.
-5. Formats: COP with no decimals and a small `COP` suffix; USD with a `US$` prefix and 2 decimals; EUR with a `€` prefix and 2 decimals (force `€` if a formatter would otherwise print the code `EUR`). Amounts are always `tabular-nums`.
+5. **Format (phase E4)**: the ISO code always comes **after** the number (`20,00 USD`, `18,50 EUR`, `15.000,00 ARS`, `125.000 COP`) — no currency symbol (`US$`/`€`) in front; with 5 currencies a symbol would only ever disambiguate one pair, and the code already identifies all of them the same way. Decimals: 0 for COP, 2 for the rest. Separators follow the UI language, never the currency. Amounts are always `tabular-nums`. (The `US$ 12.50` / `€ 12.50` examples in bullets 6–12 below predate this change; the rule here is the current one — `lib/money/format.ts`.)
 6. **List rows** (`<MoneyAmount variant="row">`): the primary figure is in displayCurrency; below, small, `original € 12.50` only if it differs — never `≈` on a row.
 7. **Totals** (`<MoneyAmount variant="total">`, hero, dashboard sums, stat cards): the total is already in displayCurrency, with no secondary conversion line. A small `Converted with today's rates` text, when the sum mixed currencies, opens a sheet with the breakdown by origin currency on tap.
 8. **Savings goals**: always shown in the goal's own currency (`€ 640 of € 1,200`); the ring and the percent are computed in that same currency. If it differs from displayCurrency, one line `≈ … saved` (the saved amount only, never the target).
@@ -139,7 +139,20 @@ The design-system sheet (10) shows exactly this scale. Because text2 and text3 a
 13. Debts timeline axis shows the **year on every label** (`Oct 2026`, `Oct 2027`, `Oct 2028`, with unlabeled grid lines every 6 months), so "Oct 26" can never read as day 26. End-of-bar labels also carry month and year (`Jun 2027`).
 14. Month selector appears where data is monthly (Dashboard, Transactions, Calendar, Household). It is hidden in Savings, Debts and Subscriptions.
 
-All currency pickers — accounts, goals, debts, recurring items, budgets and partial settlements — now offer the same 3-way COP/USD/EUR segmented control (phase E2.1). The Transactions screen's original-currency filter chip is 3-way too (phase E3). The dashboard's totals (balance, income, expenses, trend, by category) are converted to displayCurrency in the database with the exchange rate of each movement's own date (phase E3) — not the latest rate, unlike the rest of the app's totals.
+All currency pickers — accounts, goals, debts, recurring items, budgets and partial settlements — now offer every currency in `CURRENCY_CODES` (phase E2.1; 5-way since phase E4). The Transactions screen's original-currency filter chip follows the same list (phase E3). The dashboard's totals (balance, income, expenses, trend, by category) are converted to displayCurrency in the database with the exchange rate of each movement's own date (phase E3) — not the latest rate, unlike the rest of the app's totals.
+
+### Rate sources (phase E4: 5 currencies, one "USD leg" each)
+
+With 5 currencies, storing every pair (10 crosses, 20 if both directions count) doesn't scale. Each currency instead stores only its own rate against USD (`lib/money/rate-sources.ts`); any other cross (EUR→MXN, COP→ARS, ...) is derived at read time by triangulating through USD (`lib/money/convert.ts` on the client, the `dashboard_totals` SQL function on the server) — never stored. A leg missing for either currency means that amount stays uncovered (`Rate unavailable` / `uncovered_minor`), never an invented number.
+
+| Currency | Leg stored | Primary source | Fallback |
+| --- | --- | --- | --- |
+| COP | USD/COP | TRM oficial (Superintendencia Financiera, datos.gov.co) | open.er-api.com |
+| EUR | EUR/USD | Frankfurter (ECB reference rates) | open.er-api.com (reciprocal of its USD→EUR) |
+| MXN | USD/MXN | Frankfurter (the Mexican peso is in the ECB's published list) | open.er-api.com |
+| ARS | USD/ARS | open.er-api.com (the Argentine peso isn't in the ECB's list, so there's no Frankfurter leg for it) | — (single source) |
+
+USD itself needs no leg: it's the triangulation base. The daily cron (`/api/cron/rates`) fetches and stores all four legs independently of each other; one failing doesn't block the others (unlike the old EUR/COP, which used to depend on both EUR/USD and USD/COP succeeding together).
 
 ## 5. Components
 

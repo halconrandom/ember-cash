@@ -18,14 +18,20 @@ export type { Database, Json, Tables, TablesInsert, TablesUpdate };
 // -----------------------------------------------------------------------------
 
 /**
- * Monedas sembradas en `currencies` (0003_finance_model.sql, más EUR en
- * 0019_eur_currency.sql).
+ * Monedas sembradas en `currencies` (0003_finance_model.sql; EUR en
+ * 0019_eur_currency.sql; ARS y MXN en 0025_currencies_ars_mxn.sql).
  */
-export const CURRENCY_CODES = ["COP", "USD", "EUR"] as const;
+export const CURRENCY_CODES = ["COP", "USD", "EUR", "ARS", "MXN"] as const;
 export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 /** Decimales de la unidad menor por moneda (columna currencies.exponent). */
-export const CURRENCY_EXPONENT: Record<CurrencyCode, number> = { COP: 0, USD: 2, EUR: 2 };
+export const CURRENCY_EXPONENT: Record<CurrencyCode, number> = {
+  COP: 0,
+  USD: 2,
+  EUR: 2,
+  ARS: 2,
+  MXN: 2,
+};
 
 /** Categorías de gasto sembradas, en su orden (`sort`). */
 export const EXPENSE_CATEGORY_KEYS = [

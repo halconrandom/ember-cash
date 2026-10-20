@@ -1,33 +1,33 @@
 /**
- * Fuentes de las tasas de cambio (fase E1: USD, COP, EUR).
+ * Fuentes de las tasas de cambio (fase E4: 5 monedas, una "pata a USD" por
+ * cada una que no sea USD; `convert.ts` deriva cualquier cruce triangulando
+ * por USD, así que aquí ya no se guardan pares combinados).
  *
- * Pares que se guardan (alcanza con un sentido por par; `convert()` usa la
- * tasa en el sentido que haga falta):
- * - USD/COP: TRM oficial (Superintendencia Financiera) en datos.gov.co,
- *   conjunto 32sa-8pi3: el registro con la vigencia más reciente. Respaldo:
- *   open.er-api.com (base USD).
- * - EUR/USD: Frankfurter (api.frankfurter.app, tasas del Banco Central
- *   Europeo). Respaldo: open.er-api.com (reciprocal de su tasa USD→EUR).
- * - EUR/COP: no se consulta directo; se deriva multiplicando EUR/USD por
- *   USD/COP (1 EUR = (EUR/USD) USD = (EUR/USD × USD/COP) COP). Si falta
- *   cualquiera de los dos, no se deriva nada.
+ * Pata de cada moneda (documentado también en docs/DESIGN_SPEC.md §4):
+ * - COP (USD/COP): TRM oficial (Superintendencia Financiera) en
+ *   datos.gov.co, conjunto 32sa-8pi3: el registro con la vigencia más
+ *   reciente. Respaldo: open.er-api.com (base USD).
+ * - EUR (EUR/USD): Frankfurter (api.frankfurter.app, tasas del Banco
+ *   Central Europeo). Respaldo: open.er-api.com (reciprocal de su tasa
+ *   USD→EUR).
+ * - MXN (USD/MXN): Frankfurter (el peso mexicano sí está en las tasas de
+ *   referencia del BCE). Respaldo: open.er-api.com.
+ * - ARS (USD/ARS): el peso argentino no está en el BCE, así que no hay
+ *   Frankfurter para él. Sale solo de open.er-api.com (tasa oficial que
+ *   agrega esa fuente); sin respaldo propio.
  *
  * Cada respuesta se valida (forma y rango razonable para ese par). Si una
  * fuente devuelve algo raro se descarta: nunca se inventa una tasa.
  */
 import { z } from "zod";
 
-export type RateSource =
-  | "datos.gov.co"
-  | "frankfurter.app"
-  | "open.er-api.com"
-  | `derived:${string}`;
+import type { CurrencyCode } from "@/lib/db/types";
 
-export type RatePair = { base: "USD" | "EUR"; quote: "COP" | "USD" };
+export type RateSource = "datos.gov.co" | "frankfurter.app" | "open.er-api.com";
 
 export type FetchedRate = {
-  base: "USD" | "EUR";
-  quote: "COP" | "USD";
+  base: CurrencyCode;
+  quote: CurrencyCode;
   /** Decimal en texto ("3174.67"). */
   rate: string;
   /** Fecha de vigencia (AAAA-MM-DD). */
@@ -39,11 +39,15 @@ export const TRM_URL =
   "https://www.datos.gov.co/resource/32sa-8pi3.json?$order=vigenciadesde%20DESC&$limit=1";
 export const OPEN_ER_URL = "https://open.er-api.com/v6/latest/USD";
 export const FRANKFURTER_URL = "https://api.frankfurter.app/latest?from=EUR&to=USD";
+export const FRANKFURTER_MXN_URL = "https://api.frankfurter.app/latest?from=USD&to=MXN";
 
 /** Rango razonable por par; fuera de esto la respuesta se descarta. */
-const RATE_RANGE: Record<"USD/COP" | "EUR/USD", { min: number; max: number }> = {
+const RATE_RANGE: Record<"USD/COP" | "EUR/USD" | "USD/MXN" | "USD/ARS", { min: number; max: number }> = {
   "USD/COP": { min: 1000, max: 20000 },
   "EUR/USD": { min: 0.5, max: 2.5 },
+  "USD/MXN": { min: 5, max: 50 },
+  // El peso argentino es muy volátil (alta inflación): rango amplio a propósito.
+  "USD/ARS": { min: 50, max: 5_000_000 },
 };
 const TIMEOUT_MS = 8000;
 
@@ -62,7 +66,18 @@ const trmSchema = z
 const openErSchema = z.object({
   result: z.literal("success"),
   time_last_update_unix: z.number().int().positive(),
-  rates: z.object({ COP: z.number().positive(), EUR: z.number().positive() }),
+  rates: z.object({
+    COP: z.number().positive(),
+    EUR: z.number().positive(),
+    ARS: z.number().positive(),
+    MXN: z.number().positive(),
+  }),
+});
+
+const frankfurterUsdBaseSchema = z.object({
+  base: z.literal("USD"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  rates: z.object({ MXN: z.number().positive() }),
 });
 
 const frankfurterSchema = z.object({
@@ -113,6 +128,18 @@ export async function fetchFrankfurter(fetchImpl: FetchLike = fetch): Promise<Fe
   };
 }
 
+/** Tasa USD/MXN del Banco Central Europeo (Frankfurter). */
+export async function fetchFrankfurterUsdMxn(fetchImpl: FetchLike = fetch): Promise<FetchedRate> {
+  const data = frankfurterUsdBaseSchema.parse(await getJson(fetchImpl, FRANKFURTER_MXN_URL));
+  return {
+    base: "USD",
+    quote: "MXN",
+    rate: inRange("USD/MXN", trimRate(data.rates.MXN)),
+    asOf: data.date,
+    source: "frankfurter.app",
+  };
+}
+
 /** USD/COP de open.er-api (respaldo de la TRM). */
 export async function fetchOpenEr(fetchImpl: FetchLike = fetch): Promise<FetchedRate> {
   const data = openErSchema.parse(await getJson(fetchImpl, OPEN_ER_URL));
@@ -135,6 +162,30 @@ export async function fetchOpenErEurUsd(fetchImpl: FetchLike = fetch): Promise<F
     base: "EUR",
     quote: "USD",
     rate: inRange("EUR/USD", trimRate(1 / data.rates.EUR)),
+    asOf: new Date(data.time_last_update_unix * 1000).toISOString().slice(0, 10),
+    source: "open.er-api.com",
+  };
+}
+
+/** USD/MXN de open.er-api (respaldo de Frankfurter). */
+export async function fetchOpenErUsdMxn(fetchImpl: FetchLike = fetch): Promise<FetchedRate> {
+  const data = openErSchema.parse(await getJson(fetchImpl, OPEN_ER_URL));
+  return {
+    base: "USD",
+    quote: "MXN",
+    rate: inRange("USD/MXN", trimRate(data.rates.MXN)),
+    asOf: new Date(data.time_last_update_unix * 1000).toISOString().slice(0, 10),
+    source: "open.er-api.com",
+  };
+}
+
+/** USD/ARS de open.er-api: única fuente (el peso argentino no está en el BCE). */
+export async function fetchOpenErUsdArs(fetchImpl: FetchLike = fetch): Promise<FetchedRate> {
+  const data = openErSchema.parse(await getJson(fetchImpl, OPEN_ER_URL));
+  return {
+    base: "USD",
+    quote: "ARS",
+    rate: inRange("USD/ARS", trimRate(data.rates.ARS)),
     asOf: new Date(data.time_last_update_unix * 1000).toISOString().slice(0, 10),
     source: "open.er-api.com",
   };
@@ -168,17 +219,12 @@ export async function fetchEurUsd(fetchImpl: FetchLike = fetch): Promise<SourceR
   return tryInOrder([fetchFrankfurter, fetchOpenErEurUsd], fetchImpl);
 }
 
-/**
- * EUR/COP derivada de EUR/USD y USD/COP (1 EUR = eurUsd × usdCop COP). La
- * fecha de vigencia es la más vieja de las dos (la derivada no es más fresca
- * que su insumo más viejo que su insumo más viejo).
- */
-export function deriveEurCop(eurUsd: FetchedRate, usdCop: FetchedRate): FetchedRate {
-  return {
-    base: "EUR",
-    quote: "COP",
-    rate: trimRate(Number(eurUsd.rate) * Number(usdCop.rate)),
-    asOf: eurUsd.asOf < usdCop.asOf ? eurUsd.asOf : usdCop.asOf,
-    source: `derived:${eurUsd.source}+${usdCop.source}`,
-  };
+/** Tasa USD/MXN: Frankfurter y, si falla, open.er-api. */
+export async function fetchUsdMxn(fetchImpl: FetchLike = fetch): Promise<SourceResult> {
+  return tryInOrder([fetchFrankfurterUsdMxn, fetchOpenErUsdMxn], fetchImpl);
+}
+
+/** Tasa USD/ARS: solo open.er-api (el peso argentino no está en el BCE). */
+export async function fetchUsdArs(fetchImpl: FetchLike = fetch): Promise<SourceResult> {
+  return tryInOrder([fetchOpenErUsdArs], fetchImpl);
 }

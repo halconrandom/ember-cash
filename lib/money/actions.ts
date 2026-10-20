@@ -3,10 +3,11 @@
 /**
  * Server Actions de moneda:
  * - refreshRates: lo usan el chip (clic en estado "Stale") y el botón Retry.
- *   Si la tasa más reciente de los 3 pares se obtuvo hace menos de 15
+ *   Si la tasa más reciente de las 4 patas se obtuvo hace menos de 15
  *   minutos la devuelve sin consultar las fuentes (evita abusar de ellas con
  *   clics repetidos).
- * - saveDisplayCurrency: guarda profiles.display_currency (COP, USD o EUR).
+ * - saveDisplayCurrency: guarda profiles.display_currency (cualquier moneda
+ *   del catálogo).
  */
 import { requireUser } from "@/lib/auth/session";
 import { CURRENCY_CODES } from "@/lib/db/types";
@@ -37,7 +38,7 @@ export async function refreshRates(): Promise<RefreshRatesResult> {
   if (!limit.allowed) return { ok: false, rates: latest };
   const result = await fetchAndStoreRates();
   // Si todas las fuentes fallan se informa el error y se conservan las últimas tasas.
-  const anyOk = result.usdCop.ok || result.eurUsd.ok || result.eurCop.ok;
+  const anyOk = Object.values(result).some((r) => r.ok);
   return { ok: anyOk, rates: anyOk ? await listRates() : latest };
 }
 

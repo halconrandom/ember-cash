@@ -268,7 +268,7 @@ select pg_temp.expect_error(format($q$update public.accounts set household_id = 
 select pg_temp.login('00000000-0000-4000-b000-00000000000a');
 select pg_temp.expect_count($q$select count(*) from public.exchange_rates where source = 'sample'$q$, 1, 'A lee las tasas (la de ejemplo de este test)');
 select pg_temp.expect_count('select count(*) from public.categories', 9, 'A lee las 9 categorías');
-select pg_temp.expect_count('select count(*) from public.currencies', 3, 'A lee las 3 monedas');
+select pg_temp.expect_count('select count(*) from public.currencies', 5, 'A lee las 5 monedas');
 select pg_temp.expect_error($q$insert into public.exchange_rates (base, quote, rate, as_of, source) values ('USD', 'COP', 1, current_date, 'hack')$q$, '42501', 'A no escribe tasas');
 select pg_temp.expect_error($q$update public.exchange_rates set rate = 1$q$, '42501', 'A no edita tasas');
 select pg_temp.expect_error($q$delete from public.exchange_rates$q$, '42501', 'A no borra tasas');
@@ -492,8 +492,9 @@ select pg_temp.expect_ok(format($q$
 $q$, current_setting('test.h')), 'EUR es válida en settlements');
 
 select pg_temp.expect_count(
-  $q$select count(*) from public.exchange_rates where base = 'EUR'$q$, 2,
-  'las tasas EUR/USD y EUR/COP quedan guardadas');
+  $q$select count(*) from public.exchange_rates
+     where base = 'EUR' and source in ('frankfurter.app', 'derived:datos.gov.co+frankfurter.app')$q$,
+  2, 'las tasas EUR/USD y EUR/COP de este archivo quedan guardadas');
 
 select set_config('role', 'postgres', true);
 select 'OK: todas las pruebas RLS de finanzas pasaron' as resultado;

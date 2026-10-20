@@ -1,18 +1,23 @@
 /**
  * Parseo de lo que el usuario escribe en un campo de monto, según su idioma.
- * - Acepta separadores de miles del idioma, espacios, "$", "US$" y el código.
+ * - Acepta separadores de miles del idioma, espacios, "$", "US$", "€" y el
+ *   código de cualquier moneda del catálogo (ya no se muestran símbolos,
+ *   pero si alguien los escribe por costumbre no se rechaza el monto).
  * - El separador decimal es el del idioma (es ",", en "."). Si el texto trae
  *   solo el otro separador y no puede ser de miles (p. ej. "15.99" en es con
  *   2 cifras al final), se toma como decimal para no castigar al usuario.
- * - Rechaza más decimales de los que admite la moneda (COP 0, USD 2).
+ * - Rechaza más decimales de los que admite la moneda (COP 0, USD/EUR/ARS/MXN 2).
  */
-import type { CurrencyCode } from "@/lib/db/types";
+import { CURRENCY_CODES, type CurrencyCode } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/config";
 
 import { exponentOf, money, scaleOf, type Money } from "./money";
 
 /** Máximo de 15 cifras enteras: cabe en bigint de Postgres con margen. */
 const MAX_INTEGER_DIGITS = 15;
+
+/** "$", "US$", "€" y cualquier código del catálogo, además de espacios. */
+const NOISE_PATTERN = new RegExp(`US\\$|€|\\$|${CURRENCY_CODES.join("|")}|\\s`, "gi");
 
 export type ParseError = "empty" | "invalid" | "tooManyDecimals" | "tooLarge" | "notPositive";
 export type ParseResult = { ok: true; value: Money } | { ok: false; error: ParseError };
@@ -35,7 +40,7 @@ export function parseMoney(
   locale: Locale,
   { allowNegative = false, allowZero = false }: ParseOptions = {},
 ): ParseResult {
-  let text = input.replace(/US\$|\$|COP|USD|\s| /gi, "");
+  let text = input.replace(NOISE_PATTERN, "");
   if (text === "") return { ok: false, error: "empty" };
 
   let negative = false;

@@ -63,7 +63,7 @@ describe("MoneyAmount: variant=row", () => {
     const { container } = setup(<MoneyAmount value={money(1599n, "USD")} />);
     expect(container.textContent).toContain(`63,960${NBSP}COP`);
     expect(container.querySelector(".text-footnote")?.textContent).toBe(
-      `original US$${NBSP}15.99USD`,
+      `original 15.99${NBSP}USDUSD`,
     );
     expect(container.textContent).not.toContain("≈");
   });
@@ -75,14 +75,14 @@ describe("MoneyAmount: variant=row", () => {
 
   it("tasa faltante: el original sigue como principal y dice 'rate unavailable', nunca 0", () => {
     const { container } = setup(<MoneyAmount value={money(1599n, "USD")} />, "COP", undefined, []);
-    expect(container.textContent).toContain(`US$${NBSP}15.99`);
+    expect(container.textContent).toContain(`15.99${NBSP}USD`);
     expect(screen.getByText("rate unavailable")).toBeTruthy();
     expect(container.textContent).not.toContain("COP");
   });
 
   it("error de red: el original sigue como principal, no un número viejo", () => {
     const { container } = setup(<MoneyAmount value={money(1599n, "USD")} />, "COP", "error");
-    expect(container.textContent).toContain(`US$${NBSP}15.99`);
+    expect(container.textContent).toContain(`15.99${NBSP}USD`);
     expect(screen.getByText("rate unavailable")).toBeTruthy();
   });
 
@@ -112,7 +112,7 @@ describe("MoneyAmount: variant=total", () => {
     fireEvent.click(toggle);
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("Breakdown by currency");
-    expect(dialog.textContent).toContain(`US$${NBSP}340.00`);
+    expect(dialog.textContent).toContain(`340.00${NBSP}USD`);
     expect(dialog.textContent).toContain("rate 4,000.00, as of Oct 16");
   });
 });
