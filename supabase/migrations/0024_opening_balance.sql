@@ -17,10 +17,9 @@
 -- account_balance es esa suma. Positivo = dinero en la cuenta, salvo en
 -- credit_card, donde positivo = lo que se debe.
 --
--- migrate_wizard_opening_balances convierte las filas que el wizard de F1
--- guardó como other_income (o other en una tarjeta): misma descripción que
--- la cuenta, sin nota, pagadas por el dueño. Si hay dos en la misma cuenta,
--- se convierte la más antigua.
+-- Esta migración no reescribe filas. En el proyecto real 0023 no corrió, así
+-- que no hay saldos del wizard que convertir, y emparejar la descripción con
+-- el nombre de la cuenta podría tomar un ingreso real.
 -- =============================================================================
 
 alter table public.transactions drop constraint transactions_kind_check;
@@ -307,74 +306,3 @@ revoke execute on function public.save_transaction(
 grant execute on function public.save_transaction(
   uuid, uuid, uuid, text, text, text, text, bigint, text, date, uuid, uuid
 ) to authenticated;
-
--- Convierte los saldos que F1 guardó como ingreso o gasto. Corre como dueño
--- de la tabla (la migración y un test). authenticated no la ejecuta.
-create function public.migrate_wizard_opening_balances()
-returns integer
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_n integer;
-begin
-  with candidates as (
-    select distinct on (t.account_id) t.id
-    from public.transactions t
-    join public.accounts a on a.id = t.account_id
-    where t.deleted_at is null
-      and t.transfer_to_account_id is null
-      and t.goal_id is null
-      and t.debt_id is null
-      and t.recurring_item_id is null
-      and coalesce(t.note, '') = ''
-      and t.description = a.name
-      and t.currency = a.currency
-      and t.paid_by = t.owner_id
-      and (
-        (a.type <> 'credit_card' and t.kind = 'income' and t.category_key = 'other_income')
-        or (a.type = 'credit_card' and t.kind = 'expense' and t.category_key = 'other')
-      )
-      and not exists (
-        select 1 from public.transactions o
-        where o.account_id = t.account_id
-          and o.kind = 'opening'
-          and o.deleted_at is null
-      )
-    order by t.account_id, t.created_at, t.id
-  ),
-  cleared as (
-    delete from public.transaction_splits s
-    using candidates c
-    where s.transaction_id = c.id
-    returning s.transaction_id
-  ),
-  updated as (
-    update public.transactions t
-    set kind = 'opening',
-        category_key = null,
-        paid_by = null,
-        transfer_to_account_id = null,
-        goal_id = null,
-        debt_id = null,
-        recurring_item_id = null
-    from candidates c
-    where t.id = c.id
-    returning t.id
-  )
-  -- cleared tiene que aparecer en la consulta: si no, el DELETE puede no
-  -- correr y el reparto se queda en una fila que ya es saldo inicial.
-  select count(*) into v_n
-  from updated u
-  left join cleared c on false;
-  return v_n;
-end;
-$$;
-
-comment on function public.migrate_wizard_opening_balances() is
-  'Pasa a kind opening las filas de saldo inicial que F1 guardó como ingreso o gasto.';
-
-revoke all on function public.migrate_wizard_opening_balances() from public, anon, authenticated;
-
-select public.migrate_wizard_opening_balances();

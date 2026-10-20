@@ -18,6 +18,7 @@ describe("alcance de RPC y de la exportación", () => {
     expect(save).toContain("opening_not_editable");
     expect(save).toContain("p_kind in ('expense', 'income')");
     expect(save).toContain("opening_has_splits");
+    expect(save).not.toContain("migrate_wizard_opening_balances");
     expect(save).toMatch(/function public\.account_balance[\s\S]*?security invoker/);
     expect(save).toMatch(/function public\.account_balance[\s\S]*?set search_path = ''/);
     expect(post).toMatch(/function public\.post_occurrence[\s\S]*?security invoker/);

@@ -1,8 +1,7 @@
 -- =============================================================================
 -- Saldo inicial (0024). kind opening entra en account_balance y no en
 -- dashboard_totals. En una tarjeta es deuda, no un gasto del mes. No se
--- edita como ingreso y no se reparte. Las filas que F1 guardó como
--- other_income (o other en una tarjeta) se convierten.
+-- edita como ingreso y no se reparte. 0024 no reescribe filas ya guardadas.
 -- Todo en una transacción con ROLLBACK. Ayudas con prefijo opb_.
 -- =============================================================================
 begin;
@@ -67,11 +66,9 @@ select set_config('test.opb_h', public.create_household('Casa OPB')::text, true)
 insert into public.accounts (id, name, type, currency) values
   ('00000000-0000-4000-c024-0000000000a1', 'Ahorros', 'savings', 'COP'),
   ('00000000-0000-4000-c024-0000000000a2', 'Tarjeta', 'credit_card', 'COP'),
-  ('00000000-0000-4000-c024-0000000000a3', 'Alcancia', 'cash', 'COP'),
-  ('00000000-0000-4000-c024-0000000000a6', 'Visa', 'credit_card', 'COP');
+  ('00000000-0000-4000-c024-0000000000a3', 'Alcancia', 'cash', 'COP');
 insert into public.accounts (id, household_id, name, type, currency) values
-  ('00000000-0000-4000-c024-0000000000a4', current_setting('test.opb_h')::uuid, 'Casa', 'checking', 'COP'),
-  ('00000000-0000-4000-c024-0000000000a5', current_setting('test.opb_h')::uuid, 'Olla', 'cash', 'COP');
+  ('00000000-0000-4000-c024-0000000000a4', current_setting('test.opb_h')::uuid, 'Casa', 'checking', 'COP');
 
 insert into public.household_invites (household_id, token_hash)
 values (
@@ -174,101 +171,33 @@ select pg_temp.opb_expect(
   'el saldo del hogar no entra en los totales personales'
 );
 
--- 4. Huella de F1: ingreso other_income, gasto other en tarjeta, ingreso compartido.
+-- 4. Un ingreso con el mismo nombre que la cuenta sigue siendo ingreso.
+-- 0024 no trae una función que reescriba filas por esa coincidencia.
+select pg_temp.opb_expect(
+  not exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'migrate_wizard_opening_balances'
+  ),
+  '0024 no convierte filas existentes'
+);
 select public.save_transaction(
   null, null, '00000000-0000-4000-c024-0000000000a3',
   'income', 'other_income', 'Alcancia', null, 3000, 'COP', current_date,
   '00000000-0000-4000-c024-00000000000a', null
 );
-select public.save_transaction(
-  null, null, '00000000-0000-4000-c024-0000000000a6',
-  'expense', 'other', 'Visa', '', 4000, 'COP', current_date,
-  '00000000-0000-4000-c024-00000000000a', null
-);
-select public.save_transaction(
-  null, current_setting('test.opb_h')::uuid, '00000000-0000-4000-c024-0000000000a5',
-  'income', 'other_income', 'Olla', null, 8000, 'COP', current_date,
-  '00000000-0000-4000-c024-00000000000a', null
-);
 set constraints all immediate;
 set constraints all deferred;
-
-select pg_temp.opb_expect(pg_temp.opb_total(null, 'income') = 53000, 'antes de migrar, Alcancia cuenta como ingreso');
-select pg_temp.opb_expect(pg_temp.opb_total(null, 'expense') = 15000, 'antes de migrar, Visa cuenta como gasto');
 select pg_temp.opb_expect(
-  pg_temp.opb_total(current_setting('test.opb_h')::uuid, 'income') = 8000,
-  'antes de migrar, Olla cuenta como ingreso del hogar'
-);
-select pg_temp.opb_expect(
-  (select count(*) = 2 from public.transaction_splits s
-   join public.transactions t on t.id = s.transaction_id
-   where t.account_id = '00000000-0000-4000-c024-0000000000a5'),
-  'el ingreso compartido de F1 sí se repartió'
-);
-
-select pg_temp.opb_expect_error(
-  $q$select public.migrate_wizard_opening_balances()$q$,
-  '42501',
-  'authenticated no ejecuta la migración'
-);
-
-select set_config('role', 'postgres', true);
-select set_config('request.jwt.claims', '', true);
-select set_config('request.jwt.claim.sub', '', true);
-
-select pg_temp.opb_expect(
-  public.household_member_settled(
-    current_setting('test.opb_h')::uuid,
-    '00000000-0000-4000-c024-00000000000a'
-  ) = false,
-  'antes de migrar el hogar no está saldado'
-);
-select pg_temp.opb_expect(
-  public.migrate_wizard_opening_balances() = 3,
-  'se convierten las tres filas del wizard'
-);
-select pg_temp.opb_expect(
-  public.household_member_settled(
-    current_setting('test.opb_h')::uuid,
-    '00000000-0000-4000-c024-00000000000a'
-  ) = true,
-  'al quitar el reparto el hogar queda saldado'
-);
-
-select pg_temp.opb_login('00000000-0000-4000-c024-00000000000a');
-select pg_temp.opb_expect(pg_temp.opb_total(null, 'income') = 50000, 'después, el ingreso del mes no incluye Alcancia');
-select pg_temp.opb_expect(pg_temp.opb_total(null, 'expense') = 11000, 'después, el gasto del mes no incluye Visa');
-select pg_temp.opb_expect(
-  pg_temp.opb_total(current_setting('test.opb_h')::uuid, 'income') = 0,
-  'después, el hogar no tiene ese ingreso'
-);
-select pg_temp.opb_expect(
-  public.account_balance('00000000-0000-4000-c024-0000000000a3') = 3000,
-  'Alcancia conserva el saldo'
-);
-select pg_temp.opb_expect(
-  public.account_balance('00000000-0000-4000-c024-0000000000a6') = 4000,
-  'Visa conserva la deuda y ya no es gasto del mes'
-);
-select pg_temp.opb_expect(
-  public.account_balance('00000000-0000-4000-c024-0000000000a5') = 8000,
-  'Olla conserva el saldo'
-);
-select pg_temp.opb_expect(
-  (select count(*) = 3 and bool_and(category_key is null and paid_by is null)
+  (select kind = 'income' and category_key = 'other_income'
    from public.transactions
-   where account_id in (
-     '00000000-0000-4000-c024-0000000000a3',
-     '00000000-0000-4000-c024-0000000000a5',
-     '00000000-0000-4000-c024-0000000000a6'
-   ) and kind = 'opening' and deleted_at is null),
-  'las tres filas quedaron como saldo inicial, sin categoría ni pagador'
+   where account_id = '00000000-0000-4000-c024-0000000000a3' and deleted_at is null),
+  'un ingreso con el nombre de la cuenta no cambia de tipo'
 );
 select pg_temp.opb_expect(
-  (select count(*) = 0 from public.transaction_splits s
-   join public.transactions t on t.id = s.transaction_id
-   where t.account_id = '00000000-0000-4000-c024-0000000000a5'),
-  'el reparto de Olla se borró'
+  pg_temp.opb_total(null, 'income') = 53000,
+  'ese ingreso sí entra en el mes'
 );
 
 -- 5. No se edita como ingreso, no se duplica y borrarlo sí baja el saldo.

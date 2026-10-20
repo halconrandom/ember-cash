@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.19.2] - 2026-10-20
+
+### Corregido (F1.2: `0024` no reescribe filas)
+
+- `0024_opening_balance.sql` ya no convierte movimientos existentes. En el proyecto real `0023` no corrió, así que no hay saldos del wizard, y la heurística (descripción igual al nombre de la cuenta) podía tomar un ingreso real. La migración solo deja el esquema: `kind = 'opening'`, el disparador que impide editarlo y las exclusiones de totales, repartos y `save_transaction`. No está aplicada en Supabase.
+
 ## [0.19.1] - 2026-10-20
 
 ### Corregido (F1.1: el saldo inicial no entra en el mes)
