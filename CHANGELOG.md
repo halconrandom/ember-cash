@@ -2,6 +2,17 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.25.0] - 2026-10-20
+
+### Fase E6: modal de suscripción más compacto
+
+- `subscription-modal.tsx` reorganizado según `docs/mockups/monedas/05_modal_suscripcion_*` (480 px, padding y radios del spec, pie fijo con divisor): mismos campos y misma validación de siempre (`validateRecurring`), sin agregar ninguno.
+- Orden: Nombre (con el botón de ícono de 48×48 a la izquierda, en la misma fila) → Monto (`CurrencyAmountField`) → Frecuencia (segmented Mensual/Anual/Semanal + "Otra…", que despliega "Cada [n] [período]" reusando `frequency`/`interval`; "Una vez" entra por "Otra…") → Próximo cobro → Categoría. "Más opciones" (detalle y fecha de fin) es un disclosure cerrado por defecto: chevron abajo cerrado, arriba abierto, con `aria-expanded`.
+- El selector de ícono y el de categoría salen del cuerpo del modal: ahora viven en `<PopoverSheet>` (nuevo, popover en escritorio / bottom sheet en móvil, mismo patrón que `<CurrencyPicker>`). La cuadrícula de íconos es de 6 columnas en escritorio y 5 en móvil, 48 px con gap 8; el elegido lleva contorno de acento, fondo suave y un check, y cada ícono tiene su `aria-label`.
+- Validación al enviar y al salir de cada campo; al enviar con errores, el foco va al primero (para eso, `<Input>` ahora reenvía el `ref`, antes no se podía).
+- El párrafo "Nada se registra solo…" baja a una línea sobre el pie; la ayuda de "Próximo cobro" queda en su propio texto.
+- `enabled_currencies` (pendiente desde la fase E5): **no se quitó** la lectura/escritura con reserva de `lib/db/types.ts`/`lib/money/actions.ts`. Se intentó usar los tipos generados directamente y `pnpm typecheck` falló: `database.types.ts` en este repo todavía no trae esa columna (sin `enabled_currencies` en `Tables<"profiles">`). Falta `pnpm db:types` (después de `db:push`) en este entorno; en cuanto se regeneren los tipos, el cambio es mecánico.
+
 ## [0.24.0] - 2026-10-20
 
 ### Fase E5: selector de moneda unificado

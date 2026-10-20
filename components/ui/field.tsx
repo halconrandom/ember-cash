@@ -3,7 +3,7 @@
  * Estados: normal (surface2), foco (anillo global de 2 px), error (borde rojo
  * de 1.5 px, ícono y mensaje), deshabilitado (gris).
  */
-import { useId } from "react";
+import { forwardRef, useId } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,10 @@ import { Icon } from "./icon";
 
 type InputProps = React.ComponentProps<"input"> & { invalid?: boolean };
 
-export function Input({ className, invalid, ...props }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className, invalid, ...props },
+  ref,
+) {
   return (
     <div className="relative">
       {invalid && (
@@ -22,6 +25,7 @@ export function Input({ className, invalid, ...props }: InputProps) {
         />
       )}
       <input
+        ref={ref}
         aria-invalid={invalid || undefined}
         className={cn(
           "rounded-control bg-surface2 text-body text-ink h-11 w-full border border-transparent px-4",
@@ -34,7 +38,7 @@ export function Input({ className, invalid, ...props }: InputProps) {
       />
     </div>
   );
-}
+});
 
 type FieldProps = Omit<InputProps, "id"> & {
   label: string;
