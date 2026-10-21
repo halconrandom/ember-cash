@@ -1169,10 +1169,12 @@ export type Database = {
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: Json };
       account_balance: { Args: { p_account_id: string }; Returns: number };
-      consume_rate_limit: {
-        Args: { p_action: string; p_telegram_user_id?: number };
-        Returns: Json;
-      };
+      consume_rate_limit:
+        | { Args: { p_action: string }; Returns: Json }
+        | {
+            Args: { p_action: string; p_telegram_user_id: number };
+            Returns: Json;
+          };
       create_household: { Args: { p_name: string }; Returns: string };
       create_telegram_link_code: { Args: never; Returns: string };
       dashboard_totals: {
@@ -1265,6 +1267,17 @@ export type Database = {
         Returns: Json;
       };
       telegram_context: { Args: { p_telegram_user_id: number }; Returns: Json };
+      telegram_create_subscription: {
+        Args: {
+          p_amount_minor: number;
+          p_anchor_date: string;
+          p_currency: string;
+          p_frequency: string;
+          p_name: string;
+          p_owner: string;
+        };
+        Returns: string;
+      };
       telegram_due_occurrences: {
         Args: { p_telegram_user_id: number };
         Returns: Json;
@@ -1275,7 +1288,7 @@ export type Database = {
       };
       telegram_put_draft: {
         Args: {
-          p_account_id: string | null;
+          p_account_id: string;
           p_amount_minor: number;
           p_category_key: string;
           p_chat_id: number;
@@ -1299,7 +1312,7 @@ export type Database = {
           p_amount_minor: number;
           p_chat_id: number;
           p_currency: string;
-          p_day_of_month: number | null;
+          p_day_of_month: number;
           p_frequency: string;
           p_name: string;
           p_telegram_user_id: number;

@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Graphify (grafo del código)
+
+Hay un grafo del repo en `graphify-out/` (skill en `.agents/skills/graphify/SKILL.md`). Antes de buscar o leer archivos, consulta el grafo con `graphify query "<tema>"`, `graphify explain "<símbolo>"` o `graphify path "<a>" "<b>"`, y lee solo los archivos que señale. Después de editar código, corre `graphify update .` (no gasta tokens).

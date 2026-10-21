@@ -53,3 +53,6 @@ next-env.d.ts
 # supabase CLI
 supabase/.temp
 supabase/.branches
+
+# Graphify
+graphify-out/
