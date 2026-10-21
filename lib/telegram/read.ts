@@ -5,7 +5,17 @@
 import { CURRENCY_CODES, type CurrencyCode } from "@/lib/db/types";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 
-import type { ActionResult, ContextResult, DraftResult, LimitResult, LinkResult } from "./types";
+import type {
+  ActionResult,
+  ContextResult,
+  DraftResult,
+  DueOccurrence,
+  DueOccurrencesResult,
+  LimitResult,
+  LinkResult,
+  OccurrenceDraftResult,
+  SubscriptionDraftResult,
+} from "./types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -125,6 +135,89 @@ export function readDraft(value: unknown): DraftResult {
   };
 }
 
+const FREQUENCIES = ["weekly", "monthly", "yearly"] as const;
+
+const SUBSCRIPTION_DRAFT_ERRORS = [
+  "invalid",
+  "currency_disabled",
+  "day_only_monthly",
+  "not_linked",
+] as const;
+
+/** Borrador de suscripción listo para confirmar, o un error conocido. */
+export function readSubscriptionDraft(value: unknown): SubscriptionDraftResult {
+  const row = record(value);
+  if (!row) return { ok: false, error: "failed" };
+  if (row.ok !== true) {
+    const error = errorOf(row.error, SUBSCRIPTION_DRAFT_ERRORS);
+    return { ok: false, error: error ?? "failed" };
+  }
+  const amountMinor = minorOf(row.amount_minor);
+  const draftId = typeof row.draft_id === "string" ? row.draft_id : "";
+  const name = typeof row.name === "string" ? row.name.trim() : "";
+  const frequency = errorOf(row.frequency, FREQUENCIES);
+  const nextCharge = typeof row.next_charge === "string" ? row.next_charge : "";
+  if (
+    !amountMinor ||
+    !isCurrency(row.currency) ||
+    !UUID.test(draftId) ||
+    name === "" ||
+    !frequency ||
+    !DAY.test(nextCharge)
+  ) {
+    return { ok: false, error: "failed" };
+  }
+  return {
+    ok: true,
+    draftId,
+    name,
+    amountMinor,
+    currency: row.currency,
+    frequency,
+    nextCharge,
+  };
+}
+
+const OCCURRENCE_DRAFT_ERRORS = ["not_found", "no_account", "not_linked"] as const;
+
+/** Borrador de "Marcar como pagado" listo para confirmar, o un error conocido. */
+export function readOccurrenceDraft(value: unknown): OccurrenceDraftResult {
+  const row = record(value);
+  if (!row) return { ok: false, error: "failed" };
+  if (row.ok !== true) {
+    const error = errorOf(row.error, OCCURRENCE_DRAFT_ERRORS);
+    return { ok: false, error: error ?? "failed" };
+  }
+  const amountMinor = minorOf(row.amount_minor);
+  const draftId = typeof row.draft_id === "string" ? row.draft_id : "";
+  const name = typeof row.name === "string" ? row.name.trim() : "";
+  const dueOn = typeof row.due_on === "string" ? row.due_on : "";
+  if (!amountMinor || !isCurrency(row.currency) || !UUID.test(draftId) || name === "" || !DAY.test(dueOn)) {
+    return { ok: false, error: "failed" };
+  }
+  return { ok: true, draftId, name, amountMinor, currency: row.currency, dueOn };
+}
+
+/** Hasta 5 vencimientos vencidos o de hoy. */
+export function readDueOccurrences(value: unknown): DueOccurrencesResult {
+  const row = record(value);
+  if (!row || row.ok !== true || !Array.isArray(row.items)) return { ok: false };
+  const items: DueOccurrence[] = [];
+  for (const raw of row.items) {
+    const item = record(raw);
+    if (!item) continue;
+    const occurrenceId = typeof item.occurrence_id === "string" ? item.occurrence_id : "";
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+    const dueOn = typeof item.due_on === "string" ? item.due_on : "";
+    const amountMinor = minorOf(item.amount_minor);
+    if (!UUID.test(occurrenceId) || name === "" || !DAY.test(dueOn) || !amountMinor || !isCurrency(item.currency)) {
+      continue;
+    }
+    items.push({ occurrenceId, name, amountMinor, currency: item.currency, dueOn });
+  }
+  return { ok: true, items };
+}
+
 const ACTION_ERRORS = [
   "expired",
   "not_found",
@@ -133,6 +226,7 @@ const ACTION_ERRORS = [
   "not_linked",
   "account_forbidden",
   "rate_limited",
+  "cannot_undo",
 ] as const;
 
 /** Guardar, cancelar o deshacer. */

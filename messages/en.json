@@ -537,7 +537,21 @@
     "undoNone": "There is no recent bot movement to undo.",
     "expense": "Expense",
     "income": "Income",
-    "summary": "{kind}\n{amount}\n{category}\n{description}\n{account}\n{date}\n\n{confirm}"
+    "summary": "{kind}\n{amount}\n{category}\n{description}\n{account}\n{date}\n\n{confirm}",
+    "help": "Commands:\n/gasto amount, currency and description — record an expense. E.g.: /gasto 25000 groceries\n/ingreso amount, currency and description — record an income. E.g.: /ingreso 1200000 salary\n/sub amount, currency, name, frequency (monthly, yearly or weekly) and day — create a subscription. E.g.: /sub 44900 cop Netflix monthly 15\n/pagar — lists your overdue or due-today charges to mark as paid.\n/deshacer — undoes the last thing the bot saved (10 minutes).\n\nYou can also write the movement as free text, like \"spent 25000 groceries\".",
+    "freqWeekly": "Weekly",
+    "freqMonthly": "Monthly",
+    "freqYearly": "Yearly",
+    "subSummary": "Subscription\n{name}\n{amount}\n{frequency}\nNext charge: {nextCharge}\n\n{confirm}",
+    "subInvalid": "I did not understand that subscription. Try: /sub 44900 cop Netflix mensual 15.",
+    "subNameRequired": "Write a name for the subscription.",
+    "subInvalidDay": "That day has to be between 1 and 31.",
+    "subDayOnlyMonthly": "The day only applies to monthly. Try without the day, or switch the frequency to monthly.",
+    "payPrompt": "Pick a charge to mark as paid:",
+    "paySummary": "{name}\n{amount}\nDue: {date}\n\n{confirm}",
+    "noDue": "You have no pending charges.",
+    "payNotFound": "That charge is no longer available.",
+    "cannotUndo": "That can no longer be safely undone."
   },
   "account": {
     "exportNotice": "Before deleting your account, download your data as CSV. You won't be able to recover it afterwards.",

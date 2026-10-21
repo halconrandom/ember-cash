@@ -9,8 +9,17 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/db/types";
 
-import { readAction, readContext, readDraft, readLimit, readLink } from "./read";
-import type { DraftInput, TelegramGateway } from "./types";
+import {
+  readAction,
+  readContext,
+  readDraft,
+  readDueOccurrences,
+  readLimit,
+  readLink,
+  readOccurrenceDraft,
+  readSubscriptionDraft,
+} from "./read";
+import type { DraftInput, SubscriptionDraftInput, TelegramGateway } from "./types";
 
 type Admin = SupabaseClient<Database>;
 
@@ -54,6 +63,35 @@ export function telegramGateway(supabase: Admin): TelegramGateway {
       });
       if (error) return { ok: false, error: "failed" };
       return readDraft(data);
+    },
+    async putSubscriptionDraft(input: SubscriptionDraftInput) {
+      const { data, error } = await supabase.rpc("telegram_put_subscription_draft", {
+        p_telegram_user_id: input.telegramUserId,
+        p_chat_id: input.chatId,
+        p_name: input.name,
+        p_amount_minor: Number(input.amountMinor),
+        p_currency: input.currency,
+        p_frequency: input.frequency,
+        p_day_of_month: input.dayOfMonth,
+      });
+      if (error) return { ok: false, error: "failed" };
+      return readSubscriptionDraft(data);
+    },
+    async putOccurrenceDraft(telegramUserId, chatId, occurrenceId) {
+      const { data, error } = await supabase.rpc("telegram_put_occurrence_draft", {
+        p_telegram_user_id: telegramUserId,
+        p_chat_id: chatId,
+        p_occurrence_id: occurrenceId,
+      });
+      if (error) return { ok: false, error: "failed" };
+      return readOccurrenceDraft(data);
+    },
+    async dueOccurrences(telegramUserId) {
+      const { data, error } = await supabase.rpc("telegram_due_occurrences", {
+        p_telegram_user_id: telegramUserId,
+      });
+      if (error) return { ok: false };
+      return readDueOccurrences(data);
     },
     async commit(telegramUserId, draftId) {
       const { data, error } = await supabase.rpc("telegram_commit_draft", {

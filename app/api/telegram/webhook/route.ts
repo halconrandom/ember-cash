@@ -58,7 +58,8 @@ export async function POST(request: Request) {
     await handleTelegramUpdate(update, telegramGateway(createAdminClient()), {
       send: (chatId, text, buttons) => telegramSend(token, chatId, text, buttons),
       answer: (callbackId) => telegramAnswer(token, callbackId),
-      edit: (chatId, messageId, text) => telegramEdit(token, chatId, messageId, text),
+      edit: (chatId, messageId, text, buttons) =>
+        telegramEdit(token, chatId, messageId, text, buttons),
     });
   } catch (error) {
     logServerError("telegram.webhook", error);

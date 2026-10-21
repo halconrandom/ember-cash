@@ -4,9 +4,17 @@ import { describe, expect, it, vi } from "vitest";
 import es from "@/messages/es.json";
 
 import { handleTelegramUpdate } from "./handle";
-import type { ContextResult, DraftResult, TelegramGateway, TelegramSender } from "./types";
+import type {
+  ContextResult,
+  DraftResult,
+  OccurrenceDraftResult,
+  SubscriptionDraftResult,
+  TelegramGateway,
+  TelegramSender,
+} from "./types";
 
 const DRAFT_ID = "00000000-0000-4000-8000-0000000000d1";
+const OCC_ID = "00000000-0000-4000-8000-0000000000e1";
 
 const LINKED: ContextResult = {
   ok: true,
@@ -44,12 +52,34 @@ function callback(data: string, id = 1001) {
   };
 }
 
+const SUB_DRAFT: SubscriptionDraftResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Netflix",
+  amountMinor: 44900n,
+  currency: "COP",
+  frequency: "monthly",
+  nextCharge: "2026-10-15",
+};
+
+const OCC_DRAFT: OccurrenceDraftResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Internet",
+  amountMinor: 80000n,
+  currency: "COP",
+  dueOn: "2026-10-20",
+};
+
 function gateway(partial: Partial<TelegramGateway> = {}): TelegramGateway {
   return {
     consumeLimit: vi.fn(async () => ({ ok: true as const, allowed: true })),
     link: vi.fn(async () => ({ ok: true as const })),
     context: vi.fn(async () => ({ ok: true as const, linked: false as const })),
     putDraft: vi.fn(async () => DRAFT),
+    putSubscriptionDraft: vi.fn(async () => SUB_DRAFT),
+    putOccurrenceDraft: vi.fn(async () => OCC_DRAFT),
+    dueOccurrences: vi.fn(async () => ({ ok: true as const, items: [] })),
     commit: vi.fn(async () => ({ ok: true as const })),
     cancel: vi.fn(async () => ({ ok: true as const })),
     undo: vi.fn(async () => ({ ok: true as const })),
@@ -142,6 +172,113 @@ describe("handleTelegramUpdate", () => {
     expect(db.undo).toHaveBeenCalledWith(1001);
     expect(out.send).toHaveBeenCalledWith(1001, es.telegram.undoOk);
     expect(db.putDraft).not.toHaveBeenCalled();
+  });
+
+  it("/ayuda lista los comandos sin necesitar vínculo", async () => {
+    const db = gateway();
+    const out = sender();
+    await handleTelegramUpdate(message("/ayuda"), db, out);
+    expect(out.send).toHaveBeenCalledWith(1001, es.telegram.help);
+    expect(db.context).toHaveBeenCalledOnce();
+  });
+
+  it("/gasto fuerza el tipo de movimiento sin adivinar", async () => {
+    const db = gateway({ context: vi.fn(async () => LINKED) });
+    const out = sender();
+    await handleTelegramUpdate(message("/gasto 25000 mercado"), db, out);
+    expect(db.putDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "expense", amountMinor: 25000n, categoryKey: "food" }),
+    );
+  });
+
+  it("/ingreso fuerza income aunque el texto no tenga ninguna pista", async () => {
+    const db = gateway({ context: vi.fn(async () => LINKED) });
+    const out = sender();
+    await handleTelegramUpdate(message("/ingreso 25000 mercado"), db, out);
+    expect(db.putDraft).toHaveBeenCalledWith(expect.objectContaining({ kind: "income" }));
+  });
+
+  it("/sub propone la suscripción con Guardar y Cancelar", async () => {
+    const db = gateway({ context: vi.fn(async () => LINKED) });
+    const out = sender();
+    await handleTelegramUpdate(message("/sub 44900 cop Netflix mensual 15"), db, out);
+    expect(db.putSubscriptionDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Netflix", frequency: "monthly", dayOfMonth: 15 }),
+    );
+    const text = String(out.send.mock.calls[0]?.[1]);
+    expect(text).toContain("Netflix");
+    expect(out.send).toHaveBeenCalledWith(1001, text, [
+      { label: "Guardar", data: `save:${DRAFT_ID}` },
+      { label: "Cancelar", data: `cancel:${DRAFT_ID}` },
+    ]);
+  });
+
+  it("confirmar una suscripción llama a commit igual que cualquier borrador", async () => {
+    const db = gateway({ context: vi.fn(async () => LINKED) });
+    const out = sender();
+    await handleTelegramUpdate(callback(`save:${DRAFT_ID}`), db, out);
+    expect(db.commit).toHaveBeenCalledWith(1001, DRAFT_ID);
+    expect(out.edit).toHaveBeenCalledWith(1001, 7, es.telegram.saved);
+  });
+
+  it("/pagar sin vencimientos pendientes lo dice y no ofrece botones", async () => {
+    const db = gateway({ context: vi.fn(async () => LINKED) });
+    const out = sender();
+    await handleTelegramUpdate(message("/pagar"), db, out);
+    expect(out.send).toHaveBeenCalledWith(1001, es.telegram.noDue);
+  });
+
+  it("/pagar lista los vencimientos, uno por fila", async () => {
+    const db = gateway({
+      context: vi.fn(async () => LINKED),
+      dueOccurrences: vi.fn(async () => ({
+        ok: true as const,
+        items: [
+          { occurrenceId: OCC_ID, name: "Internet", amountMinor: 80000n, currency: "COP" as const, dueOn: "2026-10-20" },
+        ],
+      })),
+    });
+    const out = sender();
+    await handleTelegramUpdate(message("/pagar"), db, out);
+    expect(out.send).toHaveBeenCalledWith(1001, es.telegram.payPrompt, [
+      { label: expect.stringContaining("Internet"), data: `pay:${OCC_ID}` },
+    ]);
+  });
+
+  it("elegir un cobro de /pagar pide confirmación con Guardar y Cancelar", async () => {
+    const db = gateway({ context: vi.fn(async () => LINKED) });
+    const out = sender();
+    await handleTelegramUpdate(callback(`pay:${OCC_ID}`), db, out);
+    expect(db.putOccurrenceDraft).toHaveBeenCalledWith(1001, 1001, OCC_ID);
+    expect(out.edit).toHaveBeenCalledWith(
+      1001,
+      7,
+      expect.stringContaining("Internet"),
+      [
+        { label: "Guardar", data: `save:${DRAFT_ID}` },
+        { label: "Cancelar", data: `cancel:${DRAFT_ID}` },
+      ],
+    );
+  });
+
+  it("pagar un cobro ajeno (no encontrado) no ofrece botones", async () => {
+    const db = gateway({
+      context: vi.fn(async () => LINKED),
+      putOccurrenceDraft: vi.fn(async () => ({ ok: false as const, error: "not_found" as const })),
+    });
+    const out = sender();
+    await handleTelegramUpdate(callback(`pay:${OCC_ID}`), db, out);
+    expect(out.edit).toHaveBeenCalledWith(1001, 7, es.telegram.payNotFound);
+  });
+
+  it("/deshacer dice cuando algo ya no se puede deshacer de forma segura", async () => {
+    const db = gateway({
+      context: vi.fn(async () => LINKED),
+      undo: vi.fn(async () => ({ ok: false as const, error: "cannot_undo" as const })),
+    });
+    const out = sender();
+    await handleTelegramUpdate(message("/deshacer"), db, out);
+    expect(out.send).toHaveBeenCalledWith(1001, es.telegram.cannotUndo);
   });
 
   it("ignora un grupo y no gasta el cupo", async () => {

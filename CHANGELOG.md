@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.27.0] - 2026-10-20
+
+### Fase T3: comandos del bot de Telegram (1/2)
+
+- `telegram_drafts` ahora lleva `draft_kind` ('transaction', 'subscription', 'occurrence_payment', y 'debt'/'debt_payment'/'goal_contribution' listos para T4) y un `payload` jsonb con lo propio de cada tipo; `telegram_commit_draft`, `telegram_cancel_draft` y `telegram_undo` despachan por ese campo.
+- `/ayuda` lista los comandos (funciona sin estar vinculado). `/gasto` e `/ingreso` son el mismo parser de texto libre de T1, pero sin adivinar el tipo.
+- `/sub <monto> [moneda] <nombre> [mensual|anual|semanal] [día]` crea una suscripción personal con la categoría Suscripciones, con la misma validación del formulario de la app (`telegram_create_subscription`, SQL). El día solo aplica a mensual (1-31, recortado al último día del mes si no existe) y mueve al mes siguiente si ya pasó.
+- `/pagar` lista hasta 5 cobros vencidos o de hoy, de la cuenta personal y de cualquier hogar, con un botón por fila; al elegir uno se confirma con Guardar o Cancelar y se llama a `post_occurrence` con la cuenta por defecto, igual que "Marcar como pagado" en la app.
+- `/deshacer` cubre también la suscripción o el pago recién creados (10 min): borra la suscripción si nadie pagó nada todavía, y revierte el vencimiento a su estado anterior si fue un pago. Si no es seguro, lo dice y no hace nada.
+- Mismo límite de 30 mensajes cada 10 minutos de T1. Un `telegram_user_id` no ve ni paga cobros de un hogar ajeno (`telegram_due_occurrences`, `telegram_put_occurrence_draft`).
+- Menú de comandos (`setMyCommands`, es y en) en `scripts/telegram-set-webhook.mjs`.
+
 ## [0.26.3] - 2026-10-20
 
 ### Corrección: hidratación en Ajustes

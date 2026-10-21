@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { CurrencyCode } from "@/lib/db/types";
 
-import { parseTelegramMessage } from "./parse";
+import { parseSubscriptionCommand, parseTelegramMessage } from "./parse";
 
 const ENABLED = ["COP", "USD", "EUR"] as const satisfies readonly CurrencyCode[];
 
@@ -94,5 +94,82 @@ describe("parseTelegramMessage", () => {
     expect(parse("25 30 mercado")).toEqual({ ok: false, error: "invalid" });
     expect(parse(`${"9".repeat(15)} usd`)).toEqual({ ok: false, error: "too_large" });
     expect(parse("x".repeat(501))).toEqual({ ok: false, error: "invalid" });
+  });
+
+  it("con forcedKind no adivina el tipo por palabras clave", () => {
+    // /ingreso fuerza income aunque la palabra sea de categoría de gasto ("salario" sin pista).
+    expect(
+      parseTelegramMessage(
+        "25000 salario",
+        { enabled: ENABLED, defaultCurrency: "COP" },
+        "income",
+      ),
+    ).toMatchObject({ ok: true, value: { kind: "income", categoryKey: "salary" } });
+    // /gasto ignora que el texto diga "ingreso": no se trata como palabra clave.
+    expect(
+      parseTelegramMessage(
+        "ingreso 5000 mercado",
+        { enabled: ENABLED, defaultCurrency: "COP" },
+        "expense",
+      ),
+    ).toMatchObject({ ok: true, value: { kind: "expense", description: "ingreso mercado" } });
+  });
+});
+
+function sub(text: string, currency: CurrencyCode = "COP") {
+  return parseSubscriptionCommand(text, { enabled: ENABLED, defaultCurrency: currency });
+}
+
+describe("parseSubscriptionCommand", () => {
+  it("lee monto, moneda, nombre, frecuencia y día", () => {
+    expect(sub("44900 cop Netflix mensual 15")).toEqual({
+      ok: true,
+      value: {
+        name: "Netflix",
+        amountMinor: 44900n,
+        currency: "COP",
+        frequency: "monthly",
+        dayOfMonth: 15,
+      },
+    });
+  });
+
+  it("por defecto es mensual y sin día (próximo cobro hoy)", () => {
+    expect(sub("50000 Spotify")).toEqual({
+      ok: true,
+      value: {
+        name: "Spotify",
+        amountMinor: 50000n,
+        currency: "COP",
+        frequency: "monthly",
+        dayOfMonth: null,
+      },
+    });
+  });
+
+  it("acepta semanal y anual sin día", () => {
+    expect(sub("10 usd Revista semanal")).toMatchObject({
+      ok: true,
+      value: { frequency: "weekly", dayOfMonth: null },
+    });
+    expect(sub("10 usd Revista anual")).toMatchObject({
+      ok: true,
+      value: { frequency: "yearly", dayOfMonth: null },
+    });
+  });
+
+  it("rechaza el día con una frecuencia que no es mensual", () => {
+    expect(sub("10 usd Revista anual 15")).toEqual({ ok: false, error: "day_only_monthly" });
+    expect(sub("10 usd Revista semanal 3")).toEqual({ ok: false, error: "day_only_monthly" });
+  });
+
+  it("rechaza un día fuera de 1-31, sin nombre o sin monto", () => {
+    expect(sub("10 usd Revista mensual 32")).toEqual({ ok: false, error: "invalid_day" });
+    expect(sub("10 usd mensual 15")).toEqual({ ok: false, error: "name_required" });
+    expect(sub("Netflix mensual 15")).toEqual({ ok: false, error: "no_amount" });
+  });
+
+  it("rechaza una moneda que no está activa", () => {
+    expect(sub("10 ars Netflix")).toEqual({ ok: false, error: "currency_disabled" });
   });
 });

@@ -104,21 +104,21 @@ export type TelegramParsed = {
 export type TelegramParseResult =
   { ok: true; value: TelegramParsed } | { ok: false; error: TelegramParseError };
 
-type AmountResult =
+export type AmountResult =
   | { ok: true; minor: bigint }
   | { ok: false; error: "invalid" | "too_many_decimals" | "too_large" | "not_positive" };
 
 /** Minúsculas y sin tildes, para comparar palabras. */
-function fold(value: string): string {
+export function fold(value: string): string {
   return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
 
 /** Quita signos pegados al token. No toca los separadores del monto. */
-function cleanToken(token: string): string {
+export function cleanToken(token: string): string {
   return token.replace(/^[¿¡"'“”]+/u, "").replace(/[.;:!?¿¡"'“”]+$/u, "");
 }
 
-function isCurrency(value: string): value is CurrencyCode {
+export function isCurrency(value: string): value is CurrencyCode {
   return (CURRENCY_CODES as readonly string[]).includes(value);
 }
 
@@ -130,7 +130,7 @@ function isAmountText(value: string): boolean {
  * Separa "25usd" en monto y moneda. "euros" no cuenta como EUR: lo que sobra
  * tiene que ser un monto, no letras.
  */
-function peel(token: string): { amount?: string; currency?: CurrencyCode; word?: string } {
+export function peel(token: string): { amount?: string; currency?: CurrencyCode; word?: string } {
   const folded = fold(token);
   for (const code of CURRENCY_CODES) {
     const lower = code.toLowerCase();
@@ -161,7 +161,7 @@ function groupedInteger(parts: string[]): string | null {
  * aunque la moneda tenga decimales. Si hay punto y coma, el último es el
  * decimal. Más decimales de los que admite la moneda se rechazan.
  */
-function parseAmount(raw: string, exponent: number): AmountResult {
+export function parseAmount(raw: string, exponent: number): AmountResult {
   if (!isAmountText(raw)) return { ok: false, error: "invalid" };
   const hasDot = raw.includes(".");
   const hasComma = raw.includes(",");
@@ -242,10 +242,14 @@ function matchCategory(words: readonly string[], kind: "expense" | "income"): Ca
  * Interpreta el texto. `defaultCurrency` se usa si el mensaje no trae moneda
  * y tiene que estar en `enabled`; una moneda escrita que no esté activa se
  * rechaza, no se sustituye.
+ *
+ * `forcedKind` es para /gasto e /ingreso: el tipo lo da el comando, no se
+ * adivina por palabras clave ("gasté", "ingreso"...) dentro del texto.
  */
 export function parseTelegramMessage(
   text: string,
   options: { enabled: readonly CurrencyCode[]; defaultCurrency: CurrencyCode },
+  forcedKind?: "expense" | "income",
 ): TelegramParseResult {
   const trimmed = text.trim();
   if (trimmed === "") return { ok: false, error: "empty" };
@@ -257,20 +261,22 @@ export function parseTelegramMessage(
     .filter((token) => token !== "");
   let kind: "expense" | "income" | null = null;
   let kindIndex = -1;
-  for (let index = 0; index < tokens.length; index += 1) {
-    const folded = fold(tokens[index] ?? "");
-    if (EXPENSE_WORDS.has(folded)) {
-      kind = "expense";
-      kindIndex = index;
-      break;
-    }
-    if (INCOME_WORDS.has(folded)) {
-      kind = "income";
-      kindIndex = index;
-      break;
+  if (!forcedKind) {
+    for (let index = 0; index < tokens.length; index += 1) {
+      const folded = fold(tokens[index] ?? "");
+      if (EXPENSE_WORDS.has(folded)) {
+        kind = "expense";
+        kindIndex = index;
+        break;
+      }
+      if (INCOME_WORDS.has(folded)) {
+        kind = "income";
+        kindIndex = index;
+        break;
+      }
     }
   }
-  const resolvedKind = kind ?? "expense";
+  const resolvedKind = forcedKind ?? kind ?? "expense";
 
   let currency: CurrencyCode | null = null;
   let amountText: string | null = null;
@@ -314,6 +320,121 @@ export function parseTelegramMessage(
       currency: chosen,
       categoryKey: matchCategory(words, resolvedKind),
       description: label === "" ? "Telegram" : label,
+    },
+  };
+}
+
+const FREQUENCY_WORDS: Record<string, "weekly" | "monthly" | "yearly"> = {
+  semanal: "weekly",
+  weekly: "weekly",
+  mensual: "monthly",
+  monthly: "monthly",
+  anual: "yearly",
+  yearly: "yearly",
+};
+
+export type SubscriptionParseError =
+  | "empty"
+  | "no_amount"
+  | "invalid"
+  | "too_many_decimals"
+  | "too_large"
+  | "not_positive"
+  | "currency_disabled"
+  | "name_required"
+  | "invalid_day"
+  | "day_only_monthly";
+
+export type SubscriptionParsed = {
+  name: string;
+  amountMinor: bigint;
+  currency: CurrencyCode;
+  frequency: "weekly" | "monthly" | "yearly";
+  dayOfMonth: number | null;
+};
+
+export type SubscriptionParseResult =
+  { ok: true; value: SubscriptionParsed } | { ok: false; error: SubscriptionParseError };
+
+/**
+ * /sub <monto> [moneda] <nombre> [mensual|anual|semanal] [día]. El día solo
+ * vale con mensual (1-31, recortado al último día del mes en la base); el
+ * ancla exacta la resuelve telegram_put_subscription_draft con la zona del
+ * perfil, no este parser.
+ */
+export function parseSubscriptionCommand(
+  text: string,
+  options: { enabled: readonly CurrencyCode[]; defaultCurrency: CurrencyCode },
+): SubscriptionParseResult {
+  const trimmed = text.trim();
+  if (trimmed === "") return { ok: false, error: "empty" };
+  if (trimmed.length > MAX_INPUT) return { ok: false, error: "invalid" };
+
+  const tokens = trimmed
+    .split(/\s+/)
+    .map(cleanToken)
+    .filter((token) => token !== "");
+
+  let currency: CurrencyCode | null = null;
+  let amountText: string | null = null;
+  let frequency: "weekly" | "monthly" | "yearly" | null = null;
+  let dayText: string | null = null;
+  const nameTokens: string[] = [];
+
+  for (const token of tokens) {
+    const folded = fold(token);
+    if (!frequency && FREQUENCY_WORDS[folded]) {
+      frequency = FREQUENCY_WORDS[folded];
+      continue;
+    }
+    if (frequency && dayText === null && /^\d{1,2}$/.test(token)) {
+      dayText = token;
+      continue;
+    }
+    const peeled = peel(token);
+    let matched = false;
+    if (peeled.currency) {
+      if (!currency) currency = peeled.currency;
+      matched = true;
+    }
+    if (peeled.amount) {
+      if (!amountText) amountText = peeled.amount;
+      matched = true;
+    }
+    if (!matched) nameTokens.push(token);
+  }
+
+  if (!amountText) return { ok: false, error: "no_amount" };
+
+  const chosen = currency ?? options.defaultCurrency;
+  if (!isCurrency(chosen) || !options.enabled.includes(chosen)) {
+    return { ok: false, error: "currency_disabled" };
+  }
+
+  const amount = parseAmount(amountText, CURRENCY_EXPONENT[chosen]);
+  if (!amount.ok) return amount;
+
+  const name = nameTokens.join(" ").trim().slice(0, 80);
+  if (name === "") return { ok: false, error: "name_required" };
+
+  const resolvedFrequency = frequency ?? "monthly";
+  let dayOfMonth: number | null = null;
+  if (dayText !== null) {
+    dayOfMonth = Number(dayText);
+    if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+      return { ok: false, error: "invalid_day" };
+    }
+    if (resolvedFrequency !== "monthly") return { ok: false, error: "day_only_monthly" };
+  }
+
+  return {
+    ok: true,
+    value: {
+      name,
+      amountMinor: amount.minor,
+      currency: chosen,
+      frequency: resolvedFrequency,
+      dayOfMonth,
     },
   };
 }

@@ -482,7 +482,7 @@ select pg_temp.tlg_expect(
 -- -----------------------------------------------------------------------------
 select pg_temp.tlg_expect(
   (
-    select count(*) = 8
+    select count(*) = 12
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
@@ -496,7 +496,11 @@ select pg_temp.tlg_expect(
           'telegram_put_draft',
           'telegram_commit_draft',
           'telegram_cancel_draft',
-          'telegram_undo'
+          'telegram_undo',
+          'telegram_put_subscription_draft',
+          'telegram_create_subscription',
+          'telegram_due_occurrences',
+          'telegram_put_occurrence_draft'
         )
         or (
           p.proname = 'consume_rate_limit'
@@ -507,6 +511,8 @@ select pg_temp.tlg_expect(
   'las funciones del bot son security definer con search_path fijo'
 );
 -- p_telegram_user_id sí entra: es el id de Telegram, no el user_id de Ember.
+-- telegram_create_subscription recibe p_owner (ya resuelto por el commit, no
+-- el user_id del llamador), así que no cuenta como excepción a esta regla.
 select pg_temp.tlg_expect(
   not exists (
     select 1
@@ -523,9 +529,197 @@ select pg_temp.tlg_expect(
   has_function_privilege('authenticated', 'public.create_telegram_link_code()', 'execute')
     and not has_function_privilege('authenticated', 'public.telegram_commit_draft(bigint, uuid)', 'execute')
     and not has_function_privilege('authenticated', 'public.telegram_put_draft(bigint, bigint, text, bigint, text, text, text, uuid)', 'execute')
-    and not has_function_privilege('authenticated', 'public.consume_rate_limit(text, bigint)', 'execute'),
+    and not has_function_privilege('authenticated', 'public.consume_rate_limit(text, bigint)', 'execute')
+    and not has_function_privilege(
+      'authenticated',
+      'public.telegram_put_subscription_draft(bigint, bigint, text, bigint, text, text, integer)',
+      'execute'
+    )
+    and not has_function_privilege(
+      'authenticated', 'public.telegram_create_subscription(uuid, text, bigint, text, text, date)', 'execute'
+    )
+    and not has_function_privilege('authenticated', 'public.telegram_due_occurrences(bigint)', 'execute')
+    and not has_function_privilege(
+      'authenticated', 'public.telegram_put_occurrence_draft(bigint, bigint, uuid)', 'execute'
+    ),
   'authenticated solo puede pedir su código'
 );
+
+-- -----------------------------------------------------------------------------
+-- Fase T3: comandos. Suscripción, "Marcar como pagado" y /deshacer de cada
+-- uno. A comparte el hogar con C; D es ajeno a ambos.
+-- -----------------------------------------------------------------------------
+insert into auth.users (id, aud, role, email, raw_user_meta_data, raw_app_meta_data) values
+  ('00000000-0000-4000-c026-00000000000d', 'authenticated', 'authenticated', 'tlg-d@test.local', '{}', '{}');
+
+select pg_temp.tlg_login('00000000-0000-4000-c026-00000000000d');
+insert into public.accounts (id, name, type, currency) values
+  ('00000000-0000-4000-c026-0000000000d9', 'Cuenta D', 'savings', 'COP');
+select set_config('test.tlg_code_d', public.create_telegram_link_code(), true);
+select pg_temp.tlg_service();
+select public.telegram_link_with_code(4004, 4004, current_setting('test.tlg_code_d'));
+
+-- Suscripción: se crea con telegram_put_subscription_draft + commit, con la
+-- categoría Suscripciones y sin cuenta ni hogar.
+select pg_temp.tlg_service();
+select set_config(
+  'test.tlg_sub',
+  public.telegram_put_subscription_draft(1001, 1001, 'Netflix', 44900, 'COP', 'monthly', 15)::text,
+  true
+);
+select pg_temp.tlg_expect(
+  (current_setting('test.tlg_sub')::jsonb ->> 'name') = 'Netflix',
+  'el borrador de suscripción guarda el nombre'
+);
+select set_config('test.tlg_sub_draft', current_setting('test.tlg_sub')::jsonb ->> 'draft_id', true);
+select set_config(
+  'test.tlg_sub_commit',
+  public.telegram_commit_draft(1001, current_setting('test.tlg_sub_draft')::uuid)::text,
+  true
+);
+select pg_temp.tlg_expect(
+  (current_setting('test.tlg_sub_commit')::jsonb ->> 'ok')::boolean,
+  'confirmar la suscripción crea el recurrente'
+);
+select set_config(
+  'test.tlg_sub_id', current_setting('test.tlg_sub_commit')::jsonb ->> 'created_id', true
+);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  (
+    select owner_id = '00000000-0000-4000-c026-00000000000a'
+      and household_id is null
+      and category_key = 'subscriptions'
+      and amount_minor = 44900
+      and frequency = 'monthly'
+    from public.recurring_items
+    where id = current_setting('test.tlg_sub_id')::uuid
+  ),
+  'la suscripción del bot es personal, con la categoría y el monto del borrador'
+);
+
+-- El día solo aplica a mensual: con anual, ni borrador.
+select pg_temp.tlg_service();
+select pg_temp.tlg_expect(
+  (public.telegram_put_subscription_draft(1001, 1001, 'Revista', 10000, 'COP', 'yearly', 15) ->> 'error')
+    = 'day_only_monthly',
+  'un día con una frecuencia que no es mensual no deja borrador'
+);
+
+-- /deshacer de la suscripción recién creada: la borra entera.
+select pg_temp.tlg_service();
+select pg_temp.tlg_expect(
+  (public.telegram_undo(1001) ->> 'ok')::boolean,
+  'deshacer borra la suscripción recién creada'
+);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  not exists (select 1 from public.recurring_items where id = current_setting('test.tlg_sub_id')::uuid),
+  'la suscripción deshecha ya no existe'
+);
+
+-- Un vencimiento del hogar de A: C (su compañero de hogar) lo paga con
+-- telegram_put_occurrence_draft + commit; D (ajeno) no lo ve.
+select pg_temp.tlg_login('00000000-0000-4000-c026-00000000000a');
+with ins as (
+  insert into public.recurring_items (
+    owner_id, household_id, kind, name, category_key, amount_minor, currency,
+    frequency, "interval", anchor_date, account_id, status
+  ) values (
+    '00000000-0000-4000-c026-00000000000a',
+    current_setting('test.tlg_h')::uuid,
+    'bill', 'Internet', 'subscriptions', 80000, 'COP',
+    'monthly', 1, current_date, '00000000-0000-4000-c026-0000000000a2', 'active'
+  ) returning id
+)
+select set_config('test.tlg_item', (select id::text from ins), true);
+select pg_temp.tlg_postgres();
+with ins as (
+  insert into public.recurring_occurrences (recurring_item_id, due_on, status)
+  values (current_setting('test.tlg_item')::uuid, current_date, 'overdue')
+  returning id
+)
+select set_config('test.tlg_occ', (select id::text from ins), true);
+
+-- D no ve ni paga un cobro de un hogar ajeno.
+select pg_temp.tlg_service();
+select pg_temp.tlg_expect(
+  (public.telegram_due_occurrences(4004) ->> 'items') = '[]',
+  'D no ve cobros del hogar de A'
+);
+select pg_temp.tlg_expect(
+  (public.telegram_put_occurrence_draft(4004, 4004, current_setting('test.tlg_occ')::uuid) ->> 'error')
+    = 'not_found',
+  'D no prepara el pago de un cobro ajeno'
+);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  (select status from public.recurring_occurrences where id = current_setting('test.tlg_occ')::uuid) = 'overdue',
+  'el intento ajeno no cambia el estado del vencimiento'
+);
+
+-- C, que comparte el hogar, sí lo ve y lo paga (con su propio vínculo,
+-- distinto del de B).
+select pg_temp.tlg_login('00000000-0000-4000-c026-00000000000c');
+select set_config('test.tlg_code_c', public.create_telegram_link_code(), true);
+select pg_temp.tlg_service();
+select public.telegram_link_with_code(6006, 6006, current_setting('test.tlg_code_c'));
+select pg_temp.tlg_expect(
+  jsonb_array_length((public.telegram_due_occurrences(6006) ->> 'items')::jsonb) = 1,
+  'C ve el cobro del hogar que comparte con A'
+);
+select set_config(
+  'test.tlg_occ_draft',
+  (
+    public.telegram_put_occurrence_draft(6006, 6006, current_setting('test.tlg_occ')::uuid) ->> 'draft_id'
+  ),
+  true
+);
+select set_config(
+  'test.tlg_occ_commit',
+  public.telegram_commit_draft(6006, current_setting('test.tlg_occ_draft')::uuid)::text,
+  true
+);
+select pg_temp.tlg_expect(
+  (current_setting('test.tlg_occ_commit')::jsonb ->> 'ok')::boolean,
+  'C marca como pagado el cobro del hogar'
+);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  (select status = 'paid' from public.recurring_occurrences where id = current_setting('test.tlg_occ')::uuid),
+  'el vencimiento queda pagado'
+);
+select pg_temp.tlg_expect(
+  (
+    select count(*) = 1 and bool_and(household_id = current_setting('test.tlg_h')::uuid)
+    from public.transactions
+    where description = 'Internet' and deleted_at is null
+  ),
+  'el pago queda en el hogar, no solo a nombre de C'
+);
+
+-- /deshacer de C revierte el vencimiento a vencida y borra la transacción.
+select pg_temp.tlg_service();
+select pg_temp.tlg_expect(
+  (public.telegram_undo(6006) ->> 'ok')::boolean,
+  'C deshace el pago que acaba de hacer'
+);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  (select status from public.recurring_occurrences where id = current_setting('test.tlg_occ')::uuid) = 'overdue',
+  'el vencimiento vuelve a vencida'
+);
+select pg_temp.tlg_expect(
+  (
+    select deleted_at is not null from public.transactions
+    where description = 'Internet' and household_id = current_setting('test.tlg_h')::uuid
+  ),
+  'la transacción del pago deshecho queda en borrado suave'
+);
+
+delete from public.recurring_items where id = current_setting('test.tlg_item')::uuid;
+delete from public.accounts where id = '00000000-0000-4000-c026-0000000000d9';
+delete from auth.users where id = '00000000-0000-4000-c026-00000000000d';
 
 select pg_temp.tlg_postgres();
 select set_config('request.jwt.claims', '', true);
@@ -563,7 +757,7 @@ where user_id in (
   '00000000-0000-4000-c026-00000000000a',
   '00000000-0000-4000-c026-00000000000b',
   '00000000-0000-4000-c026-00000000000c'
-) or telegram_user_id in (1001, 2002, 3003, 9001, 9002);
+) or telegram_user_id in (1001, 2002, 3003, 4004, 6006, 9001, 9002);
 delete from public.households
 where created_by = '00000000-0000-4000-c026-00000000000a';
 delete from auth.users

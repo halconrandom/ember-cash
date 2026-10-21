@@ -537,7 +537,21 @@
     "undoNone": "No hay un movimiento reciente del bot para deshacer.",
     "expense": "Gasto",
     "income": "Ingreso",
-    "summary": "{kind}\n{amount}\n{category}\n{description}\n{account}\n{date}\n\n{confirm}"
+    "summary": "{kind}\n{amount}\n{category}\n{description}\n{account}\n{date}\n\n{confirm}",
+    "help": "Comandos:\n/gasto monto, moneda y descripción — registra un gasto. Ej: /gasto 25000 mercado\n/ingreso monto, moneda y descripción — registra un ingreso. Ej: /ingreso 1200000 salario\n/sub monto, moneda, nombre, frecuencia (mensual, anual o semanal) y día — crea una suscripción. Ej: /sub 44900 cop Netflix mensual 15\n/pagar — lista tus cobros vencidos o de hoy para marcarlos como pagados.\n/deshacer — borra lo último que guardó el bot (10 minutos).\n\nTambién puedes escribir el movimiento en texto libre, como \"gasté 25000 mercado\".",
+    "freqWeekly": "Semanal",
+    "freqMonthly": "Mensual",
+    "freqYearly": "Anual",
+    "subSummary": "Suscripción\n{name}\n{amount}\n{frequency}\nPróximo cobro: {nextCharge}\n\n{confirm}",
+    "subInvalid": "No entendí la suscripción. Prueba con: /sub 44900 cop Netflix mensual 15.",
+    "subNameRequired": "Escribe un nombre para la suscripción.",
+    "subInvalidDay": "Ese día tiene que ser entre 1 y 31.",
+    "subDayOnlyMonthly": "El día solo aplica con mensual. Prueba sin el día, o cambia la frecuencia a mensual.",
+    "payPrompt": "Elige un cobro para marcarlo como pagado:",
+    "paySummary": "{name}\n{amount}\nVence: {date}\n\n{confirm}",
+    "noDue": "No tienes cobros pendientes.",
+    "payNotFound": "Ese cobro ya no está disponible.",
+    "cannotUndo": "Eso ya no se puede deshacer de forma segura."
   },
   "account": {
     "exportNotice": "Antes de eliminar tu cuenta, descarga tus datos en CSV. Después no podrás recuperarlos.",

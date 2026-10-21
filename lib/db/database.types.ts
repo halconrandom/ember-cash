@@ -878,51 +878,60 @@ export type Database = {
       };
       telegram_drafts: {
         Row: {
-          account_id: string;
+          account_id: string | null;
           amount_minor: number;
           category_key: string;
           chat_id: number;
           created_at: string;
+          created_id: string | null;
           currency: string;
           description: string;
+          draft_kind: string;
           expires_at: string;
           id: string;
           kind: string;
           occurred_on: string;
+          payload: Json | null;
           saved_at: string | null;
           telegram_user_id: number;
           transaction_id: string | null;
           user_id: string;
         };
         Insert: {
-          account_id: string;
+          account_id?: string | null;
           amount_minor: number;
           category_key: string;
           chat_id: number;
           created_at?: string;
+          created_id?: string | null;
           currency: string;
           description: string;
+          draft_kind?: string;
           expires_at: string;
           id?: string;
           kind: string;
           occurred_on: string;
+          payload?: Json | null;
           saved_at?: string | null;
           telegram_user_id: number;
           transaction_id?: string | null;
           user_id: string;
         };
         Update: {
-          account_id?: string;
+          account_id?: string | null;
           amount_minor?: number;
           category_key?: string;
           chat_id?: number;
           created_at?: string;
+          created_id?: string | null;
           currency?: string;
           description?: string;
+          draft_kind?: string;
           expires_at?: string;
           id?: string;
           kind?: string;
           occurred_on?: string;
+          payload?: Json | null;
           saved_at?: string | null;
           telegram_user_id?: number;
           transaction_id?: string | null;
@@ -1255,6 +1264,10 @@ export type Database = {
         Returns: Json;
       };
       telegram_context: { Args: { p_telegram_user_id: number }; Returns: Json };
+      telegram_due_occurrences: {
+        Args: { p_telegram_user_id: number };
+        Returns: Json;
+      };
       telegram_link_with_code: {
         Args: { p_chat_id: number; p_code: string; p_telegram_user_id: number };
         Returns: Json;
@@ -1268,6 +1281,26 @@ export type Database = {
           p_currency: string;
           p_description: string;
           p_kind: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
+      telegram_put_occurrence_draft: {
+        Args: {
+          p_chat_id: number;
+          p_occurrence_id: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
+      telegram_put_subscription_draft: {
+        Args: {
+          p_amount_minor: number;
+          p_chat_id: number;
+          p_currency: string;
+          p_day_of_month: number | null;
+          p_frequency: string;
+          p_name: string;
           p_telegram_user_id: number;
         };
         Returns: Json;
