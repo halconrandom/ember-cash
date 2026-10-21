@@ -59,7 +59,8 @@ export function telegramGateway(supabase: Admin): TelegramGateway {
         p_currency: input.currency,
         p_category_key: input.categoryKey,
         p_description: input.description,
-        p_account_id: null,
+        // supabase gen types no marca args SQL nulables; la función acepta null.
+        p_account_id: null as unknown as string,
       });
       if (error) return { ok: false, error: "failed" };
       return readDraft(data);
@@ -72,7 +73,8 @@ export function telegramGateway(supabase: Admin): TelegramGateway {
         p_amount_minor: Number(input.amountMinor),
         p_currency: input.currency,
         p_frequency: input.frequency,
-        p_day_of_month: input.dayOfMonth,
+        // Nulable en SQL (solo aplica a frecuencia mensual).
+        p_day_of_month: input.dayOfMonth as number,
       });
       if (error) return { ok: false, error: "failed" };
       return readSubscriptionDraft(data);
