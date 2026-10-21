@@ -12,20 +12,33 @@
  */
 import { logTelegramEvent } from "./audit";
 import {
+  parseDebtCommand,
+  parseGoalAmountReply,
+  parsePlainAmount,
   parseSubscriptionCommand,
   parseTelegramMessage,
+  type DebtParseError,
+  type GoalAmountError,
+  type PlainAmountError,
   type SubscriptionParseError,
   type TelegramParseError,
 } from "./parse";
 import { categoryLabel, fill, formatDay, telegramCopy } from "./text";
+import { CURRENCY_EXPONENT } from "@/lib/db/types";
 import { formatMoney } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 
 import type {
   ActionResult,
+  AnswerDebtPaymentResult,
+  AnswerGoalContributionResult,
+  BeginDebtPaymentResult,
+  BeginGoalContributionResult,
   ContextResult,
+  DebtDraftResult,
   DraftResult,
   OccurrenceDraftResult,
+  PendingStepResult,
   SubscriptionDraftResult,
   TelegramGateway,
   TelegramSender,
@@ -51,7 +64,7 @@ type LinkedContext = Extract<ContextResult, { ok: true; linked: true }>;
 
 const CODE = /^[a-f0-9]{64}$/;
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const CALLBACK = new RegExp(`^(save|cancel|pay):(${UUID})$`, "i");
+const CALLBACK = new RegExp(`^(save|cancel|pay|debtpay|goalctr):(${UUID})$`, "i");
 
 /** Comandos reconocidos, para que el log nunca lleve una palabra ajena. */
 const KNOWN_COMMANDS = new Set([
@@ -64,6 +77,9 @@ const KNOWN_COMMANDS = new Set([
   "ingreso",
   "sub",
   "pagar",
+  "deuda",
+  "abono",
+  "ahorro",
 ]);
 
 function commandLabel(name: string | undefined): string {
@@ -252,6 +268,31 @@ export async function handleTelegramUpdate(
       logTelegramEvent(updateId, "pagar", result);
       return;
     }
+    if (parsedCommand?.name === "deuda") {
+      const result = await handleDeuda(incoming, context, parsedCommand.rest, gateway, sender);
+      logTelegramEvent(updateId, "deuda", result);
+      return;
+    }
+    if (parsedCommand?.name === "abono") {
+      const result = await handleAbono(incoming, context, gateway, sender);
+      logTelegramEvent(updateId, "abono", result);
+      return;
+    }
+    if (parsedCommand?.name === "ahorro") {
+      const result = await handleAhorro(incoming, context, gateway, sender);
+      logTelegramEvent(updateId, "ahorro", result);
+      return;
+    }
+    if (!parsedCommand) {
+      // Texto libre: antes de adivinar un gasto, ¿hay un /abono o /ahorro
+      // esperando el monto? Solo uno puede estar pendiente por chat.
+      const pending = await gateway.pendingStep(incoming.telegramUserId);
+      if (pending.ok && pending.pending) {
+        const result = await handleAnswerAmount(incoming, context, pending, gateway, sender);
+        logTelegramEvent(updateId, pending.draftKind === "debt_payment" ? "abono" : "ahorro", result);
+        return;
+      }
+    }
     const result = await propose(incoming, context, gateway, sender);
     logTelegramEvent(updateId, "text", result);
     return;
@@ -288,6 +329,34 @@ export async function handleTelegramUpdate(
       ],
     );
     logTelegramEvent(updateId, "pay", "ok");
+    return;
+  }
+  if (action === "debtpay") {
+    const begin = await gateway.beginDebtPayment(incoming.telegramUserId, incoming.chatId, id);
+    if (!begin.ok) {
+      await sender.edit(incoming.chatId, incoming.messageId, beginDebtPaymentText(begin, copy));
+      logTelegramEvent(updateId, "debtpay", begin.error);
+      return;
+    }
+    await sender.edit(incoming.chatId, incoming.messageId, fill(copy.pickedDebt, { name: begin.name }));
+    await sender.send(incoming.chatId, fill(copy.abonoPrompt, { name: begin.name }), undefined, {
+      forceReply: true,
+    });
+    logTelegramEvent(updateId, "debtpay", "ok");
+    return;
+  }
+  if (action === "goalctr") {
+    const begin = await gateway.beginGoalContribution(incoming.telegramUserId, incoming.chatId, id);
+    if (!begin.ok) {
+      await sender.edit(incoming.chatId, incoming.messageId, beginGoalContributionText(begin, copy));
+      logTelegramEvent(updateId, "goalctr", begin.error);
+      return;
+    }
+    await sender.edit(incoming.chatId, incoming.messageId, fill(copy.pickedGoal, { name: begin.name }));
+    await sender.send(incoming.chatId, fill(copy.ahorroPrompt, { name: begin.name }), undefined, {
+      forceReply: true,
+    });
+    logTelegramEvent(updateId, "goalctr", "ok");
     return;
   }
   if (action === "save") {
@@ -510,6 +579,178 @@ async function handlePagar(
   return "listed";
 }
 
+/** /deuda <monto> [moneda] <con quién o qué> [debo|me deben]. Un solo paso. */
+async function handleDeuda(
+  incoming: MessageUpdate,
+  context: LinkedContext,
+  rest: string,
+  gateway: TelegramGateway,
+  sender: TelegramSender,
+): Promise<string> {
+  const copy = telegramCopy(context.locale);
+  const parsed = parseDebtCommand(rest, {
+    enabled: context.enabled,
+    defaultCurrency: context.defaultCurrency,
+  });
+  if (!parsed.ok) {
+    await sender.send(incoming.chatId, debtParseText(parsed.error, copy));
+    return parsed.error;
+  }
+  if (parsed.value.direction === "owed_to_me") {
+    await sender.send(incoming.chatId, copy.debtOwedToMeUnsupported);
+    return "owed_to_me_unsupported";
+  }
+  const draft = await gateway.putDebtDraft({
+    telegramUserId: incoming.telegramUserId,
+    chatId: incoming.chatId,
+    name: parsed.value.name,
+    amountMinor: parsed.value.amountMinor,
+    currency: parsed.value.currency,
+  });
+  if (!draft.ok) {
+    await sender.send(incoming.chatId, debtDraftText(draft, copy));
+    return draft.error;
+  }
+  const amount = formatMoney(money(draft.amountMinor, draft.currency), context.locale);
+  await sender.send(
+    incoming.chatId,
+    fill(copy.debtSummary, { name: draft.name, amount, confirm: copy.confirm }),
+    [
+      { label: copy.save, data: `save:${draft.draftId}` },
+      { label: copy.cancel, data: `cancel:${draft.draftId}` },
+    ],
+  );
+  return "ok";
+}
+
+/** /abono: hasta 5 deudas abiertas, un botón por fila. */
+async function handleAbono(
+  incoming: MessageUpdate,
+  context: LinkedContext,
+  gateway: TelegramGateway,
+  sender: TelegramSender,
+): Promise<string> {
+  const copy = telegramCopy(context.locale);
+  const result = await gateway.listDebts(incoming.telegramUserId);
+  if (!result.ok) {
+    await sender.send(incoming.chatId, copy.noDebts);
+    return "failed";
+  }
+  if (result.items.length === 0) {
+    await sender.send(incoming.chatId, copy.noDebts);
+    return "no_debts";
+  }
+  const buttons = result.items.map((item) => ({
+    label: `${item.name} · ${formatMoney(money(item.balanceMinor, item.currency), context.locale)}`,
+    data: `debtpay:${item.debtId}`,
+  }));
+  await sender.send(incoming.chatId, copy.debtPrompt, buttons);
+  return "listed";
+}
+
+/** /ahorro: hasta 5 metas activas, un botón por fila. */
+async function handleAhorro(
+  incoming: MessageUpdate,
+  context: LinkedContext,
+  gateway: TelegramGateway,
+  sender: TelegramSender,
+): Promise<string> {
+  const copy = telegramCopy(context.locale);
+  const result = await gateway.listGoals(incoming.telegramUserId);
+  if (!result.ok) {
+    await sender.send(incoming.chatId, copy.noGoals);
+    return "failed";
+  }
+  if (result.items.length === 0) {
+    await sender.send(incoming.chatId, copy.noGoals);
+    return "no_goals";
+  }
+  const buttons = result.items.map((item) => ({
+    label: `${item.name} · ${formatMoney(money(item.savedMinor, item.currency), context.locale)} / ${formatMoney(money(item.targetMinor, item.currency), context.locale)}`,
+    data: `goalctr:${item.goalId}`,
+  }));
+  await sender.send(incoming.chatId, copy.goalPrompt, buttons);
+  return "listed";
+}
+
+/**
+ * Contesta "¿Cuánto...?" de /abono o /ahorro. Solo texto llano (sin "/"):
+ * el dispatcher ya comprobó que hay un paso pendiente antes de llamar aquí.
+ */
+async function handleAnswerAmount(
+  incoming: MessageUpdate,
+  context: LinkedContext,
+  pending: Extract<PendingStepResult, { ok: true; pending: true }>,
+  gateway: TelegramGateway,
+  sender: TelegramSender,
+): Promise<string> {
+  const copy = telegramCopy(context.locale);
+
+  if (pending.draftKind === "debt_payment") {
+    const parsed = parsePlainAmount(incoming.text, CURRENCY_EXPONENT[pending.currency]);
+    if (!parsed.ok) {
+      await sender.send(incoming.chatId, plainAmountText(parsed.error, copy));
+      return parsed.error;
+    }
+    const answer = await gateway.answerDebtPayment(
+      incoming.telegramUserId,
+      pending.draftId,
+      parsed.value,
+    );
+    if (!answer.ok) {
+      await sender.send(incoming.chatId, abonoAnswerText(answer, copy));
+      return answer.error;
+    }
+    const amount = formatMoney(money(answer.amountMinor, answer.currency), context.locale);
+    const balanceAfter = formatMoney(money(answer.balanceAfter, answer.currency), context.locale);
+    await sender.send(
+      incoming.chatId,
+      fill(copy.abonoSummary, { name: answer.name, amount, balanceAfter, confirm: copy.confirm }),
+      [
+        { label: copy.save, data: `save:${answer.draftId}` },
+        { label: copy.cancel, data: `cancel:${answer.draftId}` },
+      ],
+    );
+    return "ok";
+  }
+
+  const parsed = parseGoalAmountReply(incoming.text, {
+    enabled: context.enabled,
+    defaultCurrency: pending.currency,
+  });
+  if (!parsed.ok) {
+    await sender.send(incoming.chatId, goalAmountText(parsed.error, copy));
+    return parsed.error;
+  }
+  const answer = await gateway.answerGoalContribution(
+    incoming.telegramUserId,
+    pending.draftId,
+    parsed.value.amountMinor,
+    parsed.value.currency,
+    pending.currency,
+  );
+  if (!answer.ok) {
+    await sender.send(incoming.chatId, ahorroAnswerText(answer, copy));
+    return answer.error;
+  }
+  const amount = formatMoney(money(answer.amountMinor, answer.currency), context.locale);
+  const approx =
+    answer.enteredAmountMinor && answer.enteredCurrency
+      ? fill(copy.ahorroApprox, {
+          entered: formatMoney(money(answer.enteredAmountMinor, answer.enteredCurrency), context.locale),
+        })
+      : "";
+  await sender.send(
+    incoming.chatId,
+    fill(copy.ahorroSummary, { name: answer.name, amount, approx, confirm: copy.confirm }),
+    [
+      { label: copy.save, data: `save:${answer.draftId}` },
+      { label: copy.cancel, data: `cancel:${answer.draftId}` },
+    ],
+  );
+  return "ok";
+}
+
 function freqLabel(
   frequency: "weekly" | "monthly" | "yearly",
   copy: ReturnType<typeof telegramCopy>,
@@ -549,6 +790,85 @@ function subDraftText(
   if (result.error === "day_only_monthly") return copy.subDayOnlyMonthly;
   if (result.error === "not_linked") return copy.linkHelp;
   if (result.error === "invalid") return copy.subInvalid;
+  return copy.failed;
+}
+
+function debtParseText(error: DebtParseError, copy: ReturnType<typeof telegramCopy>): string {
+  if (error === "too_many_decimals") return copy.tooManyDecimals;
+  if (error === "currency_disabled") return copy.currencyDisabled;
+  if (error === "too_large") return copy.tooLarge;
+  if (error === "not_positive") return copy.notPositive;
+  if (error === "name_required") return copy.debtNameRequired;
+  return copy.debtInvalid;
+}
+
+function debtDraftText(
+  result: Extract<DebtDraftResult, { ok: false }>,
+  copy: ReturnType<typeof telegramCopy>,
+): string {
+  if (result.error === "currency_disabled") return copy.currencyDisabled;
+  if (result.error === "not_linked") return copy.linkHelp;
+  if (result.error === "invalid") return copy.debtInvalid;
+  return copy.failed;
+}
+
+function beginDebtPaymentText(
+  result: Extract<BeginDebtPaymentResult, { ok: false }>,
+  copy: ReturnType<typeof telegramCopy>,
+): string {
+  if (result.error === "not_found") return copy.debtNotFound;
+  if (result.error === "settled") return copy.debtSettled;
+  if (result.error === "not_linked") return copy.linkHelp;
+  return copy.failed;
+}
+
+function plainAmountText(error: PlainAmountError, copy: ReturnType<typeof telegramCopy>): string {
+  if (error === "too_many_decimals") return copy.tooManyDecimals;
+  if (error === "too_large") return copy.tooLarge;
+  if (error === "not_positive") return copy.notPositive;
+  return copy.plainAmountInvalid;
+}
+
+function abonoAnswerText(
+  result: Extract<AnswerDebtPaymentResult, { ok: false }>,
+  copy: ReturnType<typeof telegramCopy>,
+): string {
+  if (result.error === "exceeds_balance") return copy.exceedsBalance;
+  if (result.error === "expired") return copy.draftExpired;
+  if (result.error === "already_saved") return copy.alreadySaved;
+  if (result.error === "not_found") return copy.debtNotFound;
+  if (result.error === "not_linked") return copy.linkHelp;
+  if (result.error === "invalid") return copy.plainAmountInvalid;
+  return copy.failed;
+}
+
+function beginGoalContributionText(
+  result: Extract<BeginGoalContributionResult, { ok: false }>,
+  copy: ReturnType<typeof telegramCopy>,
+): string {
+  if (result.error === "not_found") return copy.goalNotFound;
+  if (result.error === "not_linked") return copy.linkHelp;
+  return copy.failed;
+}
+
+function goalAmountText(error: GoalAmountError, copy: ReturnType<typeof telegramCopy>): string {
+  if (error === "too_many_decimals") return copy.tooManyDecimals;
+  if (error === "currency_disabled") return copy.currencyDisabled;
+  if (error === "too_large") return copy.tooLarge;
+  if (error === "not_positive") return copy.notPositive;
+  return copy.plainAmountInvalid;
+}
+
+function ahorroAnswerText(
+  result: Extract<AnswerGoalContributionResult, { ok: false }>,
+  copy: ReturnType<typeof telegramCopy>,
+): string {
+  if (result.error === "rate_unavailable") return copy.rateUnavailable;
+  if (result.error === "expired") return copy.draftExpired;
+  if (result.error === "already_saved") return copy.alreadySaved;
+  if (result.error === "not_found") return copy.goalNotFound;
+  if (result.error === "not_linked") return copy.linkHelp;
+  if (result.error === "invalid") return copy.plainAmountInvalid;
   return copy.failed;
 }
 

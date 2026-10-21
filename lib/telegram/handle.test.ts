@@ -5,7 +5,12 @@ import es from "@/messages/es.json";
 
 import { handleTelegramUpdate } from "./handle";
 import type {
+  AnswerDebtPaymentResult,
+  AnswerGoalContributionResult,
+  BeginDebtPaymentResult,
+  BeginGoalContributionResult,
   ContextResult,
+  DebtDraftResult,
   DraftResult,
   OccurrenceDraftResult,
   SubscriptionDraftResult,
@@ -15,6 +20,8 @@ import type {
 
 const DRAFT_ID = "00000000-0000-4000-8000-0000000000d1";
 const OCC_ID = "00000000-0000-4000-8000-0000000000e1";
+const DEBT_ID = "00000000-0000-4000-8000-0000000000f1";
+const GOAL_ID = "00000000-0000-4000-8000-0000000000f2";
 
 const LINKED: ContextResult = {
   ok: true,
@@ -72,6 +79,48 @@ const OCC_DRAFT: OccurrenceDraftResult = {
   dueOn: "2026-10-20",
 };
 
+const DEBT_DRAFT: DebtDraftResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Juan",
+  amountMinor: 500000n,
+  currency: "COP",
+};
+
+const BEGIN_DEBT_PAYMENT: BeginDebtPaymentResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Juan",
+  currency: "COP",
+  balanceMinor: 500000n,
+};
+
+const ANSWER_DEBT_PAYMENT: AnswerDebtPaymentResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Juan",
+  currency: "COP",
+  amountMinor: 100000n,
+  balanceAfter: 400000n,
+};
+
+const BEGIN_GOAL_CONTRIBUTION: BeginGoalContributionResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Viaje",
+  currency: "USD",
+};
+
+const ANSWER_GOAL_CONTRIBUTION: AnswerGoalContributionResult = {
+  ok: true,
+  draftId: DRAFT_ID,
+  name: "Viaje",
+  currency: "USD",
+  amountMinor: 5000n,
+  enteredAmountMinor: null,
+  enteredCurrency: null,
+};
+
 function gateway(partial: Partial<TelegramGateway> = {}): TelegramGateway {
   return {
     consumeLimit: vi.fn(async () => ({ ok: true as const, allowed: true })),
@@ -81,6 +130,14 @@ function gateway(partial: Partial<TelegramGateway> = {}): TelegramGateway {
     putSubscriptionDraft: vi.fn(async () => SUB_DRAFT),
     putOccurrenceDraft: vi.fn(async () => OCC_DRAFT),
     dueOccurrences: vi.fn(async () => ({ ok: true as const, items: [] })),
+    putDebtDraft: vi.fn(async () => DEBT_DRAFT),
+    listDebts: vi.fn(async () => ({ ok: true as const, items: [] })),
+    beginDebtPayment: vi.fn(async () => BEGIN_DEBT_PAYMENT),
+    answerDebtPayment: vi.fn(async () => ANSWER_DEBT_PAYMENT),
+    listGoals: vi.fn(async () => ({ ok: true as const, items: [] })),
+    beginGoalContribution: vi.fn(async () => BEGIN_GOAL_CONTRIBUTION),
+    answerGoalContribution: vi.fn(async () => ANSWER_GOAL_CONTRIBUTION),
+    pendingStep: vi.fn(async () => ({ ok: true as const, pending: false as const })),
     commit: vi.fn(async () => ({ ok: true as const })),
     cancel: vi.fn(async () => ({ ok: true as const })),
     undo: vi.fn(async () => ({ ok: true as const })),
@@ -298,6 +355,182 @@ describe("handleTelegramUpdate", () => {
     );
     expect(db.consumeLimit).not.toHaveBeenCalled();
     expect(out.send).not.toHaveBeenCalled();
+  });
+
+  describe("/deuda, /abono, /ahorro (fase T4)", () => {
+    it("/deuda propone la deuda con Guardar y Cancelar", async () => {
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/deuda 500000 Juan"), db, out);
+      expect(db.putDebtDraft).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Juan", amountMinor: 500000n, currency: "COP" }),
+      );
+      expect(out.send).toHaveBeenCalledWith(1001, expect.stringContaining("Juan"), [
+        { label: "Guardar", data: `save:${DRAFT_ID}` },
+        { label: "Cancelar", data: `cancel:${DRAFT_ID}` },
+      ]);
+    });
+
+    it('"me deben" no crea nada todavía', async () => {
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/deuda 500000 Juan me deben"), db, out);
+      expect(db.putDebtDraft).not.toHaveBeenCalled();
+      expect(out.send).toHaveBeenCalledWith(1001, es.telegram.debtOwedToMeUnsupported);
+    });
+
+    it("/abono sin deudas abiertas lo dice", async () => {
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/abono"), db, out);
+      expect(out.send).toHaveBeenCalledWith(1001, es.telegram.noDebts);
+    });
+
+    it("/abono lista las deudas abiertas, una por fila", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        listDebts: vi.fn(async () => ({
+          ok: true as const,
+          items: [{ debtId: DEBT_ID, name: "Juan", balanceMinor: 500000n, currency: "COP" as const }],
+        })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(message("/abono"), db, out);
+      expect(out.send).toHaveBeenCalledWith(1001, es.telegram.debtPrompt, [
+        { label: expect.stringContaining("Juan"), data: `debtpay:${DEBT_ID}` },
+      ]);
+    });
+
+    it("elegir una deuda pide el monto con force_reply", async () => {
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(callback(`debtpay:${DEBT_ID}`), db, out);
+      expect(db.beginDebtPayment).toHaveBeenCalledWith(1001, 1001, DEBT_ID);
+      expect(out.edit).toHaveBeenCalledWith(1001, 7, "Elegiste: Juan");
+      expect(out.send).toHaveBeenCalledWith(
+        1001,
+        expect.stringContaining("Juan"),
+        undefined,
+        { forceReply: true },
+      );
+    });
+
+    it("abonar más que el saldo pendiente no avanza a confirmar", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        pendingStep: vi.fn(async () => ({
+          ok: true as const,
+          pending: true as const,
+          draftKind: "debt_payment" as const,
+          draftId: DRAFT_ID,
+          name: "Juan",
+          currency: "COP" as const,
+        })),
+        answerDebtPayment: vi.fn(async () => ({
+          ok: false as const,
+          error: "exceeds_balance" as const,
+        })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(message("900000"), db, out);
+      expect(db.answerDebtPayment).toHaveBeenCalledWith(1001, DRAFT_ID, 900000n);
+      expect(out.send).toHaveBeenCalledWith(1001, es.telegram.exceedsBalance);
+      expect(db.commit).not.toHaveBeenCalled();
+    });
+
+    it("contestar el monto de un abono válido propone confirmar", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        pendingStep: vi.fn(async () => ({
+          ok: true as const,
+          pending: true as const,
+          draftKind: "debt_payment" as const,
+          draftId: DRAFT_ID,
+          name: "Juan",
+          currency: "COP" as const,
+        })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(message("100000"), db, out);
+      expect(db.answerDebtPayment).toHaveBeenCalledWith(1001, DRAFT_ID, 100000n);
+      const text = String(out.send.mock.calls[0]?.[1]);
+      expect(text).toContain("Juan");
+      expect(out.send).toHaveBeenCalledWith(1001, text, [
+        { label: "Guardar", data: `save:${DRAFT_ID}` },
+        { label: "Cancelar", data: `cancel:${DRAFT_ID}` },
+      ]);
+    });
+
+    it("una deuda ajena (no encontrada) no deja escoger monto", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        beginDebtPayment: vi.fn(async () => ({ ok: false as const, error: "not_found" as const })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(callback(`debtpay:${DEBT_ID}`), db, out);
+      expect(out.edit).toHaveBeenCalledWith(1001, 7, es.telegram.debtNotFound);
+      expect(out.send).not.toHaveBeenCalled();
+    });
+
+    it("el paso pendiente vencido no deja el monto por una respuesta tardía", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        pendingStep: vi.fn(async () => ({ ok: true as const, pending: false as const })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(message("100000"), db, out);
+      // Sin paso pendiente (vencido o inexistente), "100000" se trata como
+      // texto libre: lo intercepta propose(), no el flujo de /abono.
+      expect(db.answerDebtPayment).not.toHaveBeenCalled();
+      expect(db.putDraft).toHaveBeenCalled();
+    });
+
+    it("/ahorro sin metas activas lo dice", async () => {
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/ahorro"), db, out);
+      expect(out.send).toHaveBeenCalledWith(1001, es.telegram.noGoals);
+    });
+
+    it("una meta ajena (no encontrada) no deja escoger monto", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        beginGoalContribution: vi.fn(async () => ({ ok: false as const, error: "not_found" as const })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(callback(`goalctr:${GOAL_ID}`), db, out);
+      expect(out.edit).toHaveBeenCalledWith(1001, 7, es.telegram.goalNotFound);
+      expect(out.send).not.toHaveBeenCalled();
+    });
+
+    it("un aporte en otra moneda convierte y lo marca con ≈", async () => {
+      const db = gateway({
+        context: vi.fn(async () => LINKED),
+        pendingStep: vi.fn(async () => ({
+          ok: true as const,
+          pending: true as const,
+          draftKind: "goal_contribution" as const,
+          draftId: DRAFT_ID,
+          name: "Viaje",
+          currency: "USD" as const,
+        })),
+        answerGoalContribution: vi.fn(async () => ({
+          ok: true as const,
+          draftId: DRAFT_ID,
+          name: "Viaje",
+          currency: "USD" as const,
+          amountMinor: 1050n,
+          enteredAmountMinor: 40000n,
+          enteredCurrency: "COP" as const,
+        })),
+      });
+      const out = sender();
+      await handleTelegramUpdate(message("40000 cop"), db, out);
+      expect(db.answerGoalContribution).toHaveBeenCalledWith(1001, DRAFT_ID, 40000n, "COP", "USD");
+      const text = String(out.send.mock.calls[0]?.[1]);
+      expect(text).toContain("Viaje");
+      expect(text).toContain("40.000");
+    });
   });
 
   describe("auditoría", () => {

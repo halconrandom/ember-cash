@@ -879,8 +879,8 @@ export type Database = {
       telegram_drafts: {
         Row: {
           account_id: string | null;
-          amount_minor: number;
-          category_key: string;
+          amount_minor: number | null;
+          category_key: string | null;
           chat_id: number;
           created_at: string;
           created_id: string | null;
@@ -899,8 +899,8 @@ export type Database = {
         };
         Insert: {
           account_id?: string | null;
-          amount_minor: number;
-          category_key: string;
+          amount_minor?: number | null;
+          category_key?: string | null;
           chat_id: number;
           created_at?: string;
           created_id?: string | null;
@@ -919,8 +919,8 @@ export type Database = {
         };
         Update: {
           account_id?: string | null;
-          amount_minor?: number;
-          category_key?: string;
+          amount_minor?: number | null;
+          category_key?: string | null;
           chat_id?: number;
           created_at?: string;
           created_id?: string | null;
@@ -1258,6 +1258,40 @@ export type Database = {
         };
         Returns: string;
       };
+      telegram_answer_debt_payment: {
+        Args: {
+          p_amount_minor: number;
+          p_draft_id: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
+      telegram_answer_goal_contribution: {
+        Args: {
+          p_amount_minor: number;
+          p_draft_id: string;
+          p_entered_amount_minor: number;
+          p_entered_currency: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
+      telegram_begin_debt_payment: {
+        Args: {
+          p_chat_id: number;
+          p_debt_id: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
+      telegram_begin_goal_contribution: {
+        Args: {
+          p_chat_id: number;
+          p_goal_id: string;
+          p_telegram_user_id: number;
+        };
+        Returns: Json;
+      };
       telegram_cancel_draft: {
         Args: { p_draft_id: string; p_telegram_user_id: number };
         Returns: Json;
@@ -1267,6 +1301,15 @@ export type Database = {
         Returns: Json;
       };
       telegram_context: { Args: { p_telegram_user_id: number }; Returns: Json };
+      telegram_create_debt: {
+        Args: {
+          p_amount_minor: number;
+          p_currency: string;
+          p_name: string;
+          p_owner: string;
+        };
+        Returns: string;
+      };
       telegram_create_subscription: {
         Args: {
           p_amount_minor: number;
@@ -1284,6 +1327,28 @@ export type Database = {
       };
       telegram_link_with_code: {
         Args: { p_chat_id: number; p_code: string; p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_list_debts: {
+        Args: { p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_list_goals: {
+        Args: { p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_pending_step: {
+        Args: { p_telegram_user_id: number };
+        Returns: Json;
+      };
+      telegram_put_debt_draft: {
+        Args: {
+          p_amount_minor: number;
+          p_chat_id: number;
+          p_currency: string;
+          p_name: string;
+          p_telegram_user_id: number;
+        };
         Returns: Json;
       };
       telegram_put_draft: {

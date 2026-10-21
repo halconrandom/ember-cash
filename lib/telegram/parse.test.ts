@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import type { CurrencyCode } from "@/lib/db/types";
 
-import { parseSubscriptionCommand, parseTelegramMessage } from "./parse";
+import {
+  parseDebtCommand,
+  parseGoalAmountReply,
+  parsePlainAmount,
+  parseSubscriptionCommand,
+  parseTelegramMessage,
+} from "./parse";
 
 const ENABLED = ["COP", "USD", "EUR"] as const satisfies readonly CurrencyCode[];
 
@@ -171,5 +177,76 @@ describe("parseSubscriptionCommand", () => {
 
   it("rechaza una moneda que no está activa", () => {
     expect(sub("10 ars Netflix")).toEqual({ ok: false, error: "currency_disabled" });
+  });
+});
+
+function debt(text: string, currency: CurrencyCode = "COP") {
+  return parseDebtCommand(text, { enabled: ENABLED, defaultCurrency: currency });
+}
+
+describe("parseDebtCommand", () => {
+  it("lee monto, moneda y con quién o qué; por defecto es 'debo'", () => {
+    expect(debt("500000 cop Juan")).toEqual({
+      ok: true,
+      value: { name: "Juan", amountMinor: 500000n, currency: "COP", direction: "owed_by_me" },
+    });
+    expect(debt("50 usd el carro de Ana")).toMatchObject({
+      ok: true,
+      value: { name: "el carro de Ana", currency: "USD", direction: "owed_by_me" },
+    });
+  });
+
+  it("reconoce 'debo' explícito y 'me deben' sin meterlos en el nombre", () => {
+    expect(debt("500000 Juan debo")).toEqual({
+      ok: true,
+      value: { name: "Juan", amountMinor: 500000n, currency: "COP", direction: "owed_by_me" },
+    });
+    expect(debt("500000 Juan me deben")).toEqual({
+      ok: true,
+      value: { name: "Juan", amountMinor: 500000n, currency: "COP", direction: "owed_to_me" },
+    });
+  });
+
+  it("rechaza sin monto, sin nombre o una moneda que no está activa", () => {
+    expect(debt("Juan debo")).toEqual({ ok: false, error: "no_amount" });
+    expect(debt("500000 debo")).toEqual({ ok: false, error: "name_required" });
+    expect(debt("10 ars Juan")).toEqual({ ok: false, error: "currency_disabled" });
+  });
+});
+
+describe("parsePlainAmount", () => {
+  it("lee un solo número, sin moneda", () => {
+    expect(parsePlainAmount("100000", 0)).toEqual({ ok: true, value: 100000n });
+    expect(parsePlainAmount("  1.200,50  ", 2)).toEqual({ ok: true, value: 120050n });
+  });
+
+  it("rechaza texto vacío, más de un token o algo que no es un monto", () => {
+    expect(parsePlainAmount("", 0)).toEqual({ ok: false, error: "empty" });
+    expect(parsePlainAmount("100000 cop", 0)).toEqual({ ok: false, error: "invalid" });
+    expect(parsePlainAmount("mucho", 0)).toEqual({ ok: false, error: "invalid" });
+    expect(parsePlainAmount("0", 0)).toEqual({ ok: false, error: "not_positive" });
+  });
+});
+
+function goalReply(text: string, currency: CurrencyCode = "USD") {
+  return parseGoalAmountReply(text, { enabled: ENABLED, defaultCurrency: currency });
+}
+
+describe("parseGoalAmountReply", () => {
+  it("sin moneda usa la de la meta (defaultCurrency)", () => {
+    expect(goalReply("50")).toEqual({ ok: true, value: { amountMinor: 5000n, currency: "USD" } });
+  });
+
+  it("con otra moneda la devuelve, para que quien llama convierta", () => {
+    expect(goalReply("40000 cop")).toEqual({
+      ok: true,
+      value: { amountMinor: 40000n, currency: "COP" },
+    });
+  });
+
+  it("rechaza sin monto o una moneda que no está activa", () => {
+    expect(goalReply("")).toEqual({ ok: false, error: "empty" });
+    expect(goalReply("hola")).toEqual({ ok: false, error: "no_amount" });
+    expect(goalReply("10 ars")).toEqual({ ok: false, error: "currency_disabled" });
   });
 });

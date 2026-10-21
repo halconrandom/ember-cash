@@ -2,6 +2,17 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.28.0] - 2026-10-20
+
+### Fase T4: comandos del bot de Telegram (2/2)
+
+- `/deuda <monto> [moneda] <con quién o qué> [debo|me deben]` crea una deuda personal como el formulario de Deudas (`telegram_create_debt`, SQL), sin plan de pago (apr 0, mínimo 0, sin día de cobro: la app no pide esos datos por Telegram). "me deben" se reconoce pero no crea nada todavía — el formulario de Deudas solo modela lo que la persona debe.
+- `/abono` lista hasta 5 deudas abiertas (personales); al elegir una, pide el monto con `force_reply` ("¿Cuánto abonaste?"), valida que no pase el saldo pendiente (recalculado en el momento, no el de cuando se eligió la deuda) y, al confirmar, registra el pago igual que `recordPayment` — capital puro, sin interés, con la transacción vinculada si hay una cuenta disponible, y salda el vencimiento del mes si la deuda tiene uno (como `markDebtOccurrencePaid`).
+- `/ahorro` lista hasta 5 metas activas (personales y de cualquier hogar); el monto también se pide con `force_reply`. Si la persona escribe otra moneda, el gateway la convierte con la tasa de hoy (`lib/money/convert.ts`, misma lógica que el resto de la app) antes de guardar el aporte en la moneda de la meta, y el resumen muestra lo que se escribió junto al monto convertido.
+- `telegram_drafts.amount_minor` y `category_key` pasan a ser opcionales: elegir una deuda o una meta deja un borrador "esperando el monto" (payload `step: 'await_amount'`), con los mismos 15 minutos de vencimiento que cualquier otro borrador; `telegram_pending_step` le dice al webhook si una respuesta en texto llano es ese monto antes de tratarla como un gasto libre.
+- `/deshacer` cubre también la deuda (se borra entera si nadie pagó nada todavía) y el abono (revierte el vencimiento y borra la transacción vinculada, igual que un pago de vencimiento).
+- `/ayuda` y el menú de comandos (`setMyCommands`) incluyen `/deuda`, `/abono` y `/ahorro`.
+
 ## [0.27.0] - 2026-10-20
 
 ### Fase T3: comandos del bot de Telegram (1/2)

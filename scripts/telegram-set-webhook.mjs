@@ -66,13 +66,16 @@ if (!payload || payload.ok !== true) {
 
 console.log(`Webhook registrado en ${WEBHOOK_URL}.`);
 
-// Comandos del menú (fase T3), en español (predeterminado) e inglés.
+// Comandos del menú (fases T3/T4), en español (predeterminado) e inglés.
 const COMMANDS_ES = [
   { command: "ayuda", description: "Lista los comandos" },
   { command: "gasto", description: "Registra un gasto: /gasto 25000 mercado" },
   { command: "ingreso", description: "Registra un ingreso: /ingreso 1200000 salario" },
   { command: "sub", description: "Crea una suscripción: /sub 44900 cop Netflix mensual 15" },
   { command: "pagar", description: "Lista tus cobros vencidos o de hoy" },
+  { command: "deuda", description: "Registra una deuda: /deuda 500000 Juan" },
+  { command: "abono", description: "Elige una deuda abierta y paga un abono" },
+  { command: "ahorro", description: "Elige una meta activa y registra un aporte" },
   { command: "deshacer", description: "Borra lo último que guardó el bot" },
 ];
 
@@ -82,6 +85,9 @@ const COMMANDS_EN = [
   { command: "ingreso", description: "Record an income: /ingreso 1200000 salary" },
   { command: "sub", description: "Create a subscription: /sub 44900 cop Netflix monthly 15" },
   { command: "pagar", description: "List your overdue or due-today charges" },
+  { command: "deuda", description: "Record a debt: /deuda 500000 Juan" },
+  { command: "abono", description: "Pick an open debt and pay towards it" },
+  { command: "ahorro", description: "Pick an active goal and log a contribution" },
   { command: "deshacer", description: "Undo the last thing the bot saved" },
 ];
 

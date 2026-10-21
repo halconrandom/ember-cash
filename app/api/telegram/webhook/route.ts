@@ -56,7 +56,8 @@ export async function POST(request: Request) {
   const token = env.TELEGRAM_BOT_TOKEN;
   try {
     await handleTelegramUpdate(update, telegramGateway(createAdminClient()), {
-      send: (chatId, text, buttons) => telegramSend(token, chatId, text, buttons),
+      send: (chatId, text, buttons, options) =>
+        telegramSend(token, chatId, text, buttons, options),
       answer: (callbackId) => telegramAnswer(token, callbackId),
       edit: (chatId, messageId, text, buttons) =>
         telegramEdit(token, chatId, messageId, text, buttons),

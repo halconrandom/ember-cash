@@ -52,17 +52,27 @@ function keyboardOf(buttons: OutboundButton[]) {
   return { inline_keyboard: buttons.map((button) => [{ text: button.label, callback_data: button.data }]) };
 }
 
-/** Envía un mensaje. Los botones son texto nuestro, no lo que escribió la persona. */
+/**
+ * Envía un mensaje. Los botones son texto nuestro, no lo que escribió la
+ * persona. `forceReply` es para "¿Cuánto abonaste/aportaste?" (/abono,
+ * /ahorro): no se combina con botones, Telegram solo admite un
+ * reply_markup por mensaje.
+ */
 export async function telegramSend(
   token: string,
   chatId: number,
   text: string,
   buttons?: OutboundButton[],
+  options?: { forceReply?: boolean },
 ): Promise<void> {
   await call(token, "sendMessage", {
     chat_id: chatId,
     text,
-    ...(buttons ? { reply_markup: keyboardOf(buttons) } : {}),
+    ...(buttons
+      ? { reply_markup: keyboardOf(buttons) }
+      : options?.forceReply
+        ? { reply_markup: { force_reply: true } }
+        : {}),
   });
 }
 

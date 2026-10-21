@@ -438,3 +438,147 @@ export function parseSubscriptionCommand(
     },
   };
 }
+
+export type DebtDirection = "owed_by_me" | "owed_to_me";
+
+export type DebtParseError =
+  | "empty"
+  | "no_amount"
+  | "invalid"
+  | "too_many_decimals"
+  | "too_large"
+  | "not_positive"
+  | "currency_disabled"
+  | "name_required";
+
+export type DebtParsed = {
+  name: string;
+  amountMinor: bigint;
+  currency: CurrencyCode;
+  direction: DebtDirection;
+};
+
+export type DebtParseResult = { ok: true; value: DebtParsed } | { ok: false; error: DebtParseError };
+
+/**
+ * /deuda <monto> [moneda] <con quién o qué> [debo|me deben]. "me deben" se
+ * reconoce (no se trata como ruido en el nombre) pero no crea nada: el
+ * formulario de Deudas solo modela lo que la persona debe (fase T4, por
+ * ahora).
+ */
+export function parseDebtCommand(
+  text: string,
+  options: { enabled: readonly CurrencyCode[]; defaultCurrency: CurrencyCode },
+): DebtParseResult {
+  const trimmed = text.trim();
+  if (trimmed === "") return { ok: false, error: "empty" };
+  if (trimmed.length > MAX_INPUT) return { ok: false, error: "invalid" };
+
+  let tokens = trimmed.split(/\s+/).map(cleanToken).filter((token) => token !== "");
+
+  let direction: DebtDirection = "owed_by_me";
+  const last = fold(tokens[tokens.length - 1] ?? "");
+  const last2 = fold(tokens[tokens.length - 2] ?? "");
+  if (last === "debo") {
+    direction = "owed_by_me";
+    tokens = tokens.slice(0, -1);
+  } else if (last2 === "me" && last === "deben") {
+    direction = "owed_to_me";
+    tokens = tokens.slice(0, -2);
+  }
+
+  let currency: CurrencyCode | null = null;
+  let amountText: string | null = null;
+  const nameTokens: string[] = [];
+
+  for (const token of tokens) {
+    const peeled = peel(token);
+    let matched = false;
+    if (peeled.currency) {
+      if (!currency) currency = peeled.currency;
+      matched = true;
+    }
+    if (peeled.amount) {
+      if (!amountText) amountText = peeled.amount;
+      matched = true;
+    }
+    if (!matched) nameTokens.push(token);
+  }
+
+  if (!amountText) return { ok: false, error: "no_amount" };
+
+  const chosen = currency ?? options.defaultCurrency;
+  if (!isCurrency(chosen) || !options.enabled.includes(chosen)) {
+    return { ok: false, error: "currency_disabled" };
+  }
+
+  const amount = parseAmount(amountText, CURRENCY_EXPONENT[chosen]);
+  if (!amount.ok) return amount;
+
+  const name = nameTokens.join(" ").trim().slice(0, 80);
+  if (name === "") return { ok: false, error: "name_required" };
+
+  return { ok: true, value: { name, amountMinor: amount.minor, currency: chosen, direction } };
+}
+
+export type PlainAmountError = "empty" | "invalid" | "too_many_decimals" | "too_large" | "not_positive";
+export type PlainAmountResult =
+  { ok: true; value: bigint } | { ok: false; error: PlainAmountError };
+
+/** Un solo número, sin moneda: la respuesta de "¿Cuánto abonaste?" (/abono). */
+export function parsePlainAmount(text: string, exponent: number): PlainAmountResult {
+  const trimmed = text.trim();
+  if (trimmed === "") return { ok: false, error: "empty" };
+  const tokens = trimmed.split(/\s+/).map(cleanToken).filter((token) => token !== "");
+  if (tokens.length !== 1) return { ok: false, error: "invalid" };
+  const token = tokens[0] ?? "";
+  if (!isAmountText(token)) return { ok: false, error: "invalid" };
+  const amount = parseAmount(token, exponent);
+  if (!amount.ok) return amount;
+  return { ok: true, value: amount.minor };
+}
+
+export type GoalAmountError =
+  | "empty"
+  | "no_amount"
+  | "invalid"
+  | "too_many_decimals"
+  | "too_large"
+  | "not_positive"
+  | "currency_disabled";
+
+export type GoalAmountResult =
+  | { ok: true; value: { amountMinor: bigint; currency: CurrencyCode } }
+  | { ok: false; error: GoalAmountError };
+
+/**
+ * La respuesta de "¿Cuánto aportaste?" (/ahorro): monto y, si la persona
+ * escribió otra moneda, esa moneda (la convierte quien llama, con la tasa
+ * de lib/money/convert.ts — este parser solo entiende el texto).
+ */
+export function parseGoalAmountReply(
+  text: string,
+  options: { enabled: readonly CurrencyCode[]; defaultCurrency: CurrencyCode },
+): GoalAmountResult {
+  const trimmed = text.trim();
+  if (trimmed === "") return { ok: false, error: "empty" };
+  if (trimmed.length > MAX_INPUT) return { ok: false, error: "invalid" };
+  const tokens = trimmed.split(/\s+/).map(cleanToken).filter((token) => token !== "");
+
+  let currency: CurrencyCode | null = null;
+  let amountText: string | null = null;
+  for (const token of tokens) {
+    const peeled = peel(token);
+    if (peeled.currency && !currency) currency = peeled.currency;
+    if (peeled.amount && !amountText) amountText = peeled.amount;
+  }
+  if (!amountText) return { ok: false, error: "no_amount" };
+
+  const chosen = currency ?? options.defaultCurrency;
+  if (!isCurrency(chosen) || !options.enabled.includes(chosen)) {
+    return { ok: false, error: "currency_disabled" };
+  }
+  const amount = parseAmount(amountText, CURRENCY_EXPONENT[chosen]);
+  if (!amount.ok) return amount;
+  return { ok: true, value: { amountMinor: amount.minor, currency: chosen } };
+}
