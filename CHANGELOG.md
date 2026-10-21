@@ -13,6 +13,7 @@ Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog]
 - `/deshacer` cubre también la suscripción o el pago recién creados (10 min): borra la suscripción si nadie pagó nada todavía, y revierte el vencimiento a su estado anterior si fue un pago. Si no es seguro, lo dice y no hace nada.
 - Mismo límite de 30 mensajes cada 10 minutos de T1. Un `telegram_user_id` no ve ni paga cobros de un hogar ajeno (`telegram_due_occurrences`, `telegram_put_occurrence_draft`).
 - Menú de comandos (`setMyCommands`, es y en) en `scripts/telegram-set-webhook.mjs`.
+- Privacidad: `purge_old_telegram_data` (mismo cron que `purge_old_rate_limits`, en `/api/cron/purge-deleted`) borra los borradores vencidos y los códigos de vínculo usados o vencidos; un borrador recién guardado se conserva hasta que pasa la ventana de /deshacer aunque su `expires_at` ya haya vencido. Borrar la cuenta (0017) sigue sin tocar el vínculo, los códigos ni los borradores de Telegram de forma directa: se van en cascada cuando el servidor borra `auth.users`, como el resto de lo personal (probado en `supabase/tests/telegram.sql`). Cada update del bot deja una línea de auditoría (`logTelegramEvent`) con el `update_id`, el comando y el resultado — nunca el texto, el payload ni una imagen.
 
 ## [0.26.3] - 2026-10-20
 

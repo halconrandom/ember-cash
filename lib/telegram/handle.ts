@@ -3,10 +3,14 @@
  * un borrador (transacción, suscripción o pago de un vencimiento) o
  * confirmarlo. No muestra saldos ni datos de otras personas. El dinero se
  * guarda solo al pulsar Guardar, con la misma RPC de la app en cada caso.
+ *
+ * Cada update deja una línea de auditoría (logTelegramEvent) con el
+ * update_id, el comando resuelto y el resultado — nunca el texto, el
+ * payload ni una imagen. `command` sale siempre de un vocabulario cerrado
+ * (ver commandLabel): un "/comando" que el bot no reconoce se registra como
+ * "text" (se trata como texto libre), no con lo que haya escrito la persona.
  */
-import { formatMoney } from "@/lib/money/format";
-import { money } from "@/lib/money/money";
-
+import { logTelegramEvent } from "./audit";
 import {
   parseSubscriptionCommand,
   parseTelegramMessage,
@@ -14,6 +18,9 @@ import {
   type TelegramParseError,
 } from "./parse";
 import { categoryLabel, fill, formatDay, telegramCopy } from "./text";
+import { formatMoney } from "@/lib/money/format";
+import { money } from "@/lib/money/money";
+
 import type {
   ActionResult,
   ContextResult,
@@ -46,9 +53,35 @@ const CODE = /^[a-f0-9]{64}$/;
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const CALLBACK = new RegExp(`^(save|cancel|pay):(${UUID})$`, "i");
 
+/** Comandos reconocidos, para que el log nunca lleve una palabra ajena. */
+const KNOWN_COMMANDS = new Set([
+  "start",
+  "ayuda",
+  "help",
+  "deshacer",
+  "undo",
+  "gasto",
+  "ingreso",
+  "sub",
+  "pagar",
+]);
+
+function commandLabel(name: string | undefined): string {
+  if (!name) return "text";
+  if (name === "help") return "ayuda";
+  if (name === "undo") return "deshacer";
+  return KNOWN_COMMANDS.has(name) ? name : "text";
+}
+
 function safeId(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) return null;
   return value;
+}
+
+/** El id numérico que Telegram pone en todo update, solo para la auditoría. */
+function updateIdOf(update: unknown): number | null {
+  if (!update || typeof update !== "object") return null;
+  return safeId((update as { update_id?: unknown }).update_id);
 }
 
 function isPrivate(chat: unknown, userId: number): boolean {
@@ -121,33 +154,44 @@ export async function handleTelegramUpdate(
   gateway: TelegramGateway,
   sender: TelegramSender,
 ): Promise<void> {
+  const updateId = updateIdOf(update);
   const incoming = readUpdate(update);
-  if (!incoming) return;
+  if (!incoming) {
+    logTelegramEvent(updateId, "unrecognized", "ignored");
+    return;
+  }
 
   if (incoming.type === "callback") {
     // El botón deja de girar aunque después el cupo o la base fallen.
     await sender.answer(incoming.callbackId);
   }
 
+  const command =
+    incoming.type === "message" ? commandLabel(commandOf(incoming.text)?.name) : "callback";
+
   const limit = await gateway.consumeLimit(incoming.telegramUserId);
   const es = telegramCopy("es");
   if (!limit.ok) {
     await sender.send(incoming.chatId, es.failed);
+    logTelegramEvent(updateId, command, "limit_failed");
     return;
   }
   if (!limit.allowed) {
     await sender.send(incoming.chatId, es.rateLimited);
+    logTelegramEvent(updateId, command, "rate_limited");
     return;
   }
 
   if (incoming.type === "message") {
-    const command = commandOf(incoming.text);
-    if (command?.name === "start") {
-      await handleStart(incoming, command.rest, gateway, sender);
+    const parsedCommand = commandOf(incoming.text);
+    if (parsedCommand?.name === "start") {
+      const result = await handleStart(incoming, parsedCommand.rest, gateway, sender);
+      logTelegramEvent(updateId, "start", result);
       return;
     }
-    if (command?.name === "ayuda" || command?.name === "help") {
+    if (parsedCommand?.name === "ayuda" || parsedCommand?.name === "help") {
       await handleHelp(incoming, gateway, sender);
+      logTelegramEvent(updateId, "ayuda", "ok");
       return;
     }
   }
@@ -155,45 +199,68 @@ export async function handleTelegramUpdate(
   const context = await gateway.context(incoming.telegramUserId);
   if (!context.ok) {
     await sender.send(incoming.chatId, es.failed);
+    logTelegramEvent(updateId, command, "context_failed");
     return;
   }
   if (!context.linked) {
     await sender.send(incoming.chatId, es.linkHelp);
+    logTelegramEvent(updateId, command, "not_linked");
     return;
   }
 
   const copy = telegramCopy(context.locale);
 
   if (incoming.type === "message") {
-    const command = commandOf(incoming.text);
-    if (command?.name === "deshacer" || command?.name === "undo") {
+    const parsedCommand = commandOf(incoming.text);
+    if (parsedCommand?.name === "deshacer" || parsedCommand?.name === "undo") {
       const result = await gateway.undo(incoming.telegramUserId);
       await sender.send(incoming.chatId, undoText(result, copy, es));
+      logTelegramEvent(updateId, "deshacer", result.ok ? "ok" : result.error);
       return;
     }
-    if (command?.name === "gasto") {
-      await handleAmountCommand(incoming, context, "expense", command.rest, gateway, sender);
+    if (parsedCommand?.name === "gasto") {
+      const result = await handleAmountCommand(
+        incoming,
+        context,
+        "expense",
+        parsedCommand.rest,
+        gateway,
+        sender,
+      );
+      logTelegramEvent(updateId, "gasto", result);
       return;
     }
-    if (command?.name === "ingreso") {
-      await handleAmountCommand(incoming, context, "income", command.rest, gateway, sender);
+    if (parsedCommand?.name === "ingreso") {
+      const result = await handleAmountCommand(
+        incoming,
+        context,
+        "income",
+        parsedCommand.rest,
+        gateway,
+        sender,
+      );
+      logTelegramEvent(updateId, "ingreso", result);
       return;
     }
-    if (command?.name === "sub") {
-      await handleSub(incoming, context, command.rest, gateway, sender);
+    if (parsedCommand?.name === "sub") {
+      const result = await handleSub(incoming, context, parsedCommand.rest, gateway, sender);
+      logTelegramEvent(updateId, "sub", result);
       return;
     }
-    if (command?.name === "pagar") {
-      await handlePagar(incoming, context, gateway, sender);
+    if (parsedCommand?.name === "pagar") {
+      const result = await handlePagar(incoming, context, gateway, sender);
+      logTelegramEvent(updateId, "pagar", result);
       return;
     }
-    await propose(incoming, context, gateway, sender);
+    const result = await propose(incoming, context, gateway, sender);
+    logTelegramEvent(updateId, "text", result);
     return;
   }
 
   const match = CALLBACK.exec(incoming.data);
   if (!match) {
     await sender.send(incoming.chatId, copy.failed);
+    logTelegramEvent(updateId, "callback", "invalid_callback");
     return;
   }
   const action = match[1]?.toLowerCase();
@@ -202,6 +269,7 @@ export async function handleTelegramUpdate(
     const draft = await gateway.putOccurrenceDraft(incoming.telegramUserId, incoming.chatId, id);
     if (!draft.ok) {
       await sender.edit(incoming.chatId, incoming.messageId, occurrenceDraftText(draft, copy));
+      logTelegramEvent(updateId, "pay", draft.error);
       return;
     }
     const amount = formatMoney(money(draft.amountMinor, draft.currency), context.locale);
@@ -219,15 +287,18 @@ export async function handleTelegramUpdate(
         { label: copy.cancel, data: `cancel:${draft.draftId}` },
       ],
     );
+    logTelegramEvent(updateId, "pay", "ok");
     return;
   }
   if (action === "save") {
     const result = await gateway.commit(incoming.telegramUserId, id);
     await sender.edit(incoming.chatId, incoming.messageId, commitText(result, copy));
+    logTelegramEvent(updateId, "save", result.ok ? (result.already ? "already" : "ok") : result.error);
     return;
   }
   const result = await gateway.cancel(incoming.telegramUserId, id);
   await sender.edit(incoming.chatId, incoming.messageId, cancelText(result, copy));
+  logTelegramEvent(updateId, "cancel", result.ok ? "ok" : result.error);
 }
 
 async function handleStart(
@@ -235,7 +306,7 @@ async function handleStart(
   code: string,
   gateway: TelegramGateway,
   sender: TelegramSender,
-): Promise<void> {
+): Promise<string> {
   const es = telegramCopy("es");
   if (code === "") {
     const context = await gateway.context(incoming.telegramUserId);
@@ -244,17 +315,18 @@ async function handleStart(
       incoming.chatId,
       context.ok && context.linked ? copy.alreadyLinked : es.linkHelp,
     );
-    return;
+    return context.ok && context.linked ? "already_linked" : "prompted";
   }
   const lower = code.toLowerCase();
   if (!CODE.test(lower)) {
     await sender.send(incoming.chatId, es.codeInvalid);
-    return;
+    return "code_malformed";
   }
   const result = await gateway.link(incoming.telegramUserId, incoming.chatId, lower);
   const context = result.ok ? await gateway.context(incoming.telegramUserId) : null;
   const copy = context && context.ok && context.linked ? telegramCopy(context.locale) : es;
   await sender.send(incoming.chatId, linkText(result, copy, es));
+  return result.ok ? "linked" : result.error;
 }
 
 async function handleHelp(
@@ -273,11 +345,11 @@ async function propose(
   context: LinkedContext,
   gateway: TelegramGateway,
   sender: TelegramSender,
-): Promise<void> {
+): Promise<string> {
   const copy = telegramCopy(context.locale);
   if (!context.hasAccount) {
     await sender.send(incoming.chatId, copy.noAccount);
-    return;
+    return "no_account";
   }
   const parsed = parseTelegramMessage(incoming.text, {
     enabled: context.enabled,
@@ -285,7 +357,7 @@ async function propose(
   });
   if (!parsed.ok) {
     await sender.send(incoming.chatId, parseText(parsed.error, copy));
-    return;
+    return parsed.error;
   }
   const draft = await gateway.putDraft({
     telegramUserId: incoming.telegramUserId,
@@ -296,7 +368,7 @@ async function propose(
     categoryKey: parsed.value.categoryKey,
     description: parsed.value.description,
   });
-  await sendTransactionDraft(incoming, draft, context, copy, sender);
+  return sendTransactionDraft(incoming, draft, context, copy, sender);
 }
 
 /** /gasto e /ingreso: mismo parser, sin adivinar el tipo. */
@@ -307,11 +379,11 @@ async function handleAmountCommand(
   rest: string,
   gateway: TelegramGateway,
   sender: TelegramSender,
-): Promise<void> {
+): Promise<string> {
   const copy = telegramCopy(context.locale);
   if (!context.hasAccount) {
     await sender.send(incoming.chatId, copy.noAccount);
-    return;
+    return "no_account";
   }
   const parsed = parseTelegramMessage(
     rest,
@@ -320,7 +392,7 @@ async function handleAmountCommand(
   );
   if (!parsed.ok) {
     await sender.send(incoming.chatId, parseText(parsed.error, copy));
-    return;
+    return parsed.error;
   }
   const draft = await gateway.putDraft({
     telegramUserId: incoming.telegramUserId,
@@ -331,7 +403,7 @@ async function handleAmountCommand(
     categoryKey: parsed.value.categoryKey,
     description: parsed.value.description,
   });
-  await sendTransactionDraft(incoming, draft, context, copy, sender);
+  return sendTransactionDraft(incoming, draft, context, copy, sender);
 }
 
 async function sendTransactionDraft(
@@ -340,10 +412,10 @@ async function sendTransactionDraft(
   context: LinkedContext,
   copy: ReturnType<typeof telegramCopy>,
   sender: TelegramSender,
-): Promise<void> {
+): Promise<string> {
   if (!draft.ok) {
     await sender.send(incoming.chatId, draftText(draft, copy));
-    return;
+    return draft.error;
   }
   const amount = formatMoney(money(draft.amountMinor, draft.currency), context.locale);
   await sender.send(
@@ -362,6 +434,7 @@ async function sendTransactionDraft(
       { label: copy.cancel, data: `cancel:${draft.draftId}` },
     ],
   );
+  return "ok";
 }
 
 /** /sub <monto> [moneda] <nombre> [mensual|anual|semanal] [día]. */
@@ -371,7 +444,7 @@ async function handleSub(
   rest: string,
   gateway: TelegramGateway,
   sender: TelegramSender,
-): Promise<void> {
+): Promise<string> {
   const copy = telegramCopy(context.locale);
   const parsed = parseSubscriptionCommand(rest, {
     enabled: context.enabled,
@@ -379,7 +452,7 @@ async function handleSub(
   });
   if (!parsed.ok) {
     await sender.send(incoming.chatId, subParseText(parsed.error, copy));
-    return;
+    return parsed.error;
   }
   const draft = await gateway.putSubscriptionDraft({
     telegramUserId: incoming.telegramUserId,
@@ -392,7 +465,7 @@ async function handleSub(
   });
   if (!draft.ok) {
     await sender.send(incoming.chatId, subDraftText(draft, copy));
-    return;
+    return draft.error;
   }
   const amount = formatMoney(money(draft.amountMinor, draft.currency), context.locale);
   await sender.send(
@@ -409,6 +482,7 @@ async function handleSub(
       { label: copy.cancel, data: `cancel:${draft.draftId}` },
     ],
   );
+  return "ok";
 }
 
 /** /pagar: hasta 5 vencimientos, un botón por fila. */
@@ -417,18 +491,23 @@ async function handlePagar(
   context: LinkedContext,
   gateway: TelegramGateway,
   sender: TelegramSender,
-): Promise<void> {
+): Promise<string> {
   const copy = telegramCopy(context.locale);
   const result = await gateway.dueOccurrences(incoming.telegramUserId);
-  if (!result.ok || result.items.length === 0) {
+  if (!result.ok) {
     await sender.send(incoming.chatId, copy.noDue);
-    return;
+    return "failed";
+  }
+  if (result.items.length === 0) {
+    await sender.send(incoming.chatId, copy.noDue);
+    return "no_due";
   }
   const buttons = result.items.map((item) => ({
     label: `${item.name} · ${formatMoney(money(item.amountMinor, item.currency), context.locale)} · ${formatDay(item.dueOn, context.locale)}`,
     data: `pay:${item.occurrenceId}`,
   }));
   await sender.send(incoming.chatId, copy.payPrompt, buttons);
+  return "listed";
 }
 
 function freqLabel(

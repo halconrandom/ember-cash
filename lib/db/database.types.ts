@@ -1234,6 +1234,7 @@ export type Database = {
         Returns: string;
       };
       purge_old_rate_limits: { Args: never; Returns: number };
+      purge_old_telegram_data: { Args: never; Returns: number };
       remove_household_member: {
         Args: { hid: string; uid: string };
         Returns: undefined;

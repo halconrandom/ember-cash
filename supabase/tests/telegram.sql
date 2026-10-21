@@ -718,10 +718,114 @@ select pg_temp.tlg_expect(
 );
 
 delete from public.recurring_items where id = current_setting('test.tlg_item')::uuid;
-delete from public.accounts where id = '00000000-0000-4000-c026-0000000000d9';
+
+-- -----------------------------------------------------------------------------
+-- purge_old_telegram_data: igual que purge_old_rate_limits, solo service_role.
+-- Un borrador sin guardar se borra al vencer; uno recién guardado no, aunque
+-- su expires_at ya haya pasado (la ventana de /deshacer manda). Un código
+-- usado o vencido se borra siempre.
+-- -----------------------------------------------------------------------------
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  not has_function_privilege('authenticated', 'public.purge_old_telegram_data()', 'execute')
+    and has_function_privilege('service_role', 'public.purge_old_telegram_data()', 'execute'),
+  'purge_old_telegram_data es solo de service_role'
+);
+
+insert into public.telegram_drafts (
+  id, telegram_user_id, chat_id, user_id, draft_kind, kind, amount_minor, currency,
+  category_key, description, account_id, occurred_on, expires_at
+) values (
+  '00000000-0000-4000-c026-0000000000d2', 7007, 7007, '00000000-0000-4000-c026-00000000000d',
+  'transaction', 'expense', 1000, 'COP', 'food', 'Vencido',
+  '00000000-0000-4000-c026-0000000000a1',
+  (pg_catalog.now() at time zone 'America/Bogota')::date,
+  pg_catalog.now() - interval '1 minute'
+);
+insert into public.telegram_drafts (
+  id, telegram_user_id, chat_id, user_id, draft_kind, kind, amount_minor, currency,
+  category_key, description, account_id, occurred_on, expires_at, created_id, saved_at
+) values (
+  '00000000-0000-4000-c026-0000000000d3', 7007, 7007, '00000000-0000-4000-c026-00000000000d',
+  'subscription', 'expense', 1000, 'COP', 'food', 'Recien guardado',
+  '00000000-0000-4000-c026-0000000000a1',
+  (pg_catalog.now() at time zone 'America/Bogota')::date,
+  pg_catalog.now() - interval '1 minute',
+  -- created_id no lleva FK (a diferencia de transaction_id): cualquier uuid
+  -- sirve para probar que la purga no mira si existe, solo saved_at.
+  '00000000-0000-4000-c026-0000000000d3',
+  pg_catalog.now()
+);
+insert into public.telegram_link_codes (code, user_id, expires_at, used_at) values
+  (encode(sha256(convert_to('purge-used', 'UTF8')), 'hex'), '00000000-0000-4000-c026-00000000000d',
+    pg_catalog.now() + interval '10 minutes', pg_catalog.now()),
+  (encode(sha256(convert_to('purge-expired', 'UTF8')), 'hex'), '00000000-0000-4000-c026-00000000000d',
+    pg_catalog.now() - interval '1 minute', null),
+  (encode(sha256(convert_to('purge-fresh', 'UTF8')), 'hex'), '00000000-0000-4000-c026-00000000000d',
+    pg_catalog.now() + interval '10 minutes', null);
+
+select pg_temp.tlg_service();
+select set_config('test.tlg_purged', public.purge_old_telegram_data()::text, true);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  current_setting('test.tlg_purged')::integer >= 3,
+  'la purga borra al menos el borrador vencido y los dos códigos usados/vencidos'
+);
+select pg_temp.tlg_expect(
+  not exists (select 1 from public.telegram_drafts where id = '00000000-0000-4000-c026-0000000000d2'),
+  'el borrador vencido y sin guardar se purga'
+);
+select pg_temp.tlg_expect(
+  exists (select 1 from public.telegram_drafts where id = '00000000-0000-4000-c026-0000000000d3'),
+  'un borrador recién guardado no se purga aunque su expires_at ya pasó (la ventana de deshacer manda)'
+);
+select pg_temp.tlg_expect(
+  (
+    select count(*) = 1 from public.telegram_link_codes
+    where user_id = '00000000-0000-4000-c026-00000000000d'
+  ),
+  'solo queda el código sin usar y sin vencer'
+);
+delete from public.telegram_drafts where telegram_user_id = 7007;
+delete from public.telegram_link_codes where user_id = '00000000-0000-4000-c026-00000000000d';
+
+-- -----------------------------------------------------------------------------
+-- Borrar la cuenta (0017/0026): al borrar auth.users, lo del bot se va en
+-- cascada. delete_account_data no toca estas tablas directamente, igual que
+-- no toca transacciones ni perfil: las deja para el DELETE de auth.users que
+-- hace el servidor después (admin.auth.admin.deleteUser).
+-- -----------------------------------------------------------------------------
+select pg_temp.tlg_login('00000000-0000-4000-c026-00000000000d');
+select set_config('test.tlg_code_d', public.create_telegram_link_code(), true);
+select pg_temp.tlg_service();
+select public.telegram_link_with_code(8008, 8008, current_setting('test.tlg_code_d'));
+select set_config(
+  'test.tlg_draft_d',
+  public.telegram_put_draft(8008, 8008, 'expense', 2000, 'COP', 'food', 'D', null)::text,
+  true
+);
+select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  (select count(*) from public.telegram_links where user_id = '00000000-0000-4000-c026-00000000000d') = 1
+    and (select count(*) from public.telegram_link_codes where user_id = '00000000-0000-4000-c026-00000000000d') >= 1
+    and (select count(*) from public.telegram_drafts where user_id = '00000000-0000-4000-c026-00000000000d') = 1,
+  'D queda con vínculo, código y borrador antes de borrar la cuenta'
+);
+
 delete from auth.users where id = '00000000-0000-4000-c026-00000000000d';
 
-select pg_temp.tlg_postgres();
+select pg_temp.tlg_expect(
+  (select count(*) from public.telegram_links where user_id = '00000000-0000-4000-c026-00000000000d') = 0,
+  'borrar auth.users se lleva el vínculo de Telegram en cascada'
+);
+select pg_temp.tlg_expect(
+  (select count(*) from public.telegram_link_codes where user_id = '00000000-0000-4000-c026-00000000000d') = 0,
+  'borrar auth.users se lleva los códigos de Telegram en cascada'
+);
+select pg_temp.tlg_expect(
+  (select count(*) from public.telegram_drafts where user_id = '00000000-0000-4000-c026-00000000000d') = 0,
+  'borrar auth.users se lleva los borradores de Telegram en cascada'
+);
 select set_config('request.jwt.claims', '', true);
 select set_config('request.jwt.claim.sub', '', true);
 
@@ -757,7 +861,7 @@ where user_id in (
   '00000000-0000-4000-c026-00000000000a',
   '00000000-0000-4000-c026-00000000000b',
   '00000000-0000-4000-c026-00000000000c'
-) or telegram_user_id in (1001, 2002, 3003, 4004, 6006, 9001, 9002);
+) or telegram_user_id in (1001, 2002, 3003, 4004, 6006, 7007, 8008, 9001, 9002);
 delete from public.households
 where created_by = '00000000-0000-4000-c026-00000000000a';
 delete from auth.users

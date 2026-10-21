@@ -37,12 +37,13 @@ const DRAFT: DraftResult = {
   occurredOn: "2026-10-20",
 };
 
-function message(text: string, id = 1001) {
-  return { message: { text, from: { id }, chat: { id, type: "private" } } };
+function message(text: string, id = 1001, updateId = 5001) {
+  return { update_id: updateId, message: { text, from: { id }, chat: { id, type: "private" } } };
 }
 
-function callback(data: string, id = 1001) {
+function callback(data: string, id = 1001, updateId = 5002) {
   return {
+    update_id: updateId,
     callback_query: {
       id: "cb1",
       data,
@@ -297,5 +298,65 @@ describe("handleTelegramUpdate", () => {
     );
     expect(db.consumeLimit).not.toHaveBeenCalled();
     expect(out.send).not.toHaveBeenCalled();
+  });
+
+  describe("auditoría", () => {
+    it("registra update_id, comando y resultado, nunca el texto del mensaje", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/gasto 25000 mercado", 1001, 9009), db, out);
+      expect(spy).toHaveBeenCalledOnce();
+      const [, payload] = spy.mock.calls[0] ?? [];
+      const logged = JSON.parse(String(payload));
+      expect(logged).toEqual({ update_id: 9009, command: "gasto", result: "ok" });
+      expect(String(payload)).not.toContain("mercado");
+      expect(String(payload)).not.toContain("25000");
+      spy.mockRestore();
+    });
+
+    it("un comando sin reconocer se audita como texto libre, no con lo que escribió la persona", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/atacante_secreto algo", 1001, 9010), db, out);
+      const [, payload] = spy.mock.calls.at(-1) ?? [];
+      const logged = JSON.parse(String(payload));
+      expect(logged.command).toBe("text");
+      expect(String(payload)).not.toContain("atacante_secreto");
+      spy.mockRestore();
+    });
+
+    it("audita /sub y la confirmación de guardar con su propio update_id", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      const db = gateway({ context: vi.fn(async () => LINKED) });
+      const out = sender();
+      await handleTelegramUpdate(message("/sub 44900 cop Netflix", 1001, 9011), db, out);
+      await handleTelegramUpdate(callback(`save:${DRAFT_ID}`, 1001, 9012), db, out);
+      expect(JSON.parse(String(spy.mock.calls[0]?.[1]))).toEqual({
+        update_id: 9011,
+        command: "sub",
+        result: "ok",
+      });
+      expect(JSON.parse(String(spy.mock.calls[1]?.[1]))).toEqual({
+        update_id: 9012,
+        command: "save",
+        result: "ok",
+      });
+      spy.mockRestore();
+    });
+
+    it("sin vínculo el log dice not_linked, sin pedir contexto por cada comando", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      const db = gateway();
+      const out = sender();
+      await handleTelegramUpdate(message("gasté 25000 mercado", 1001, 9013), db, out);
+      expect(JSON.parse(String(spy.mock.calls[0]?.[1]))).toEqual({
+        update_id: 9013,
+        command: "text",
+        result: "not_linked",
+      });
+      spy.mockRestore();
+    });
   });
 });

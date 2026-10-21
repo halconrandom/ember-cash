@@ -3,7 +3,10 @@
  * Cron diario (vercel.json), protegido con CRON_SECRET. Borra de forma
  * definitiva las transacciones y deudas marcadas como borradas hace más de un
  * día (por ejemplo, si el usuario cerró la pestaña antes de que venciera el
- * toast). También borra filas de rate_limits de más de un día.
+ * toast). También borra filas de rate_limits de más de un día, y lo efímero
+ * del bot de Telegram: borradores vencidos (o guardados hace más de 10
+ * minutos, pasada la ventana de /deshacer) y códigos de vínculo usados o
+ * vencidos (purge_old_telegram_data).
  */
 import { timingSafeEqual } from "node:crypto";
 
@@ -39,8 +42,13 @@ export async function GET(request: Request) {
     logServerError("cron.purge-deleted", limits.error);
     return Response.json({ ok: false, error: "failed" }, { status: 500 });
   }
+  const telegram = await admin.rpc("purge_old_telegram_data");
+  if (telegram.error) {
+    logServerError("cron.purge-deleted", telegram.error);
+    return Response.json({ ok: false, error: "failed" }, { status: 500 });
+  }
   return Response.json({
     ok: true,
-    purged: (tx.count ?? 0) + (debts.count ?? 0) + (limits.data ?? 0),
+    purged: (tx.count ?? 0) + (debts.count ?? 0) + (limits.data ?? 0) + (telegram.data ?? 0),
   });
 }

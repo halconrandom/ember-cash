@@ -995,3 +995,48 @@ begin
   return jsonb_build_object('ok', true);
 end;
 $$;
+
+-- -----------------------------------------------------------------------------
+-- purge_old_telegram_data: lo mismo que purge_old_rate_limits, pero para lo
+-- efímero del bot. Un borrador sin guardar se borra cuando vence
+-- (expires_at); uno ya guardado no se toca hasta que pasan los 10 minutos
+-- de /deshacer (saved_at), aunque su expires_at ya haya pasado — si no, un
+-- borrador confirmado justo antes de vencer podría desaparecer mientras su
+-- ventana de deshacer todavía está abierta. Un código de un solo uso se
+-- borra en cuanto se usa o vence: no hace falta guardarlo más.
+-- Lo llama el mismo cron diario que purge_old_rate_limits
+-- (app/api/cron/purge-deleted/route.ts), con la service role.
+-- -----------------------------------------------------------------------------
+create function public.purge_old_telegram_data()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_deleted integer := 0;
+  v_count integer;
+begin
+  delete from public.telegram_drafts
+  where (
+      transaction_id is null and created_id is null
+      and expires_at <= pg_catalog.now()
+    )
+    or (
+      (transaction_id is not null or created_id is not null)
+      and saved_at <= pg_catalog.now() - interval '10 minutes'
+    );
+  get diagnostics v_count = row_count;
+  v_deleted := v_deleted + v_count;
+
+  delete from public.telegram_link_codes
+  where used_at is not null or expires_at <= pg_catalog.now();
+  get diagnostics v_count = row_count;
+  v_deleted := v_deleted + v_count;
+
+  return v_deleted;
+end;
+$$;
+
+revoke all on function public.purge_old_telegram_data() from public, anon, authenticated;
+grant execute on function public.purge_old_telegram_data() to service_role;
