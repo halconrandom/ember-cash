@@ -2,9 +2,9 @@
  * Deuda enlazada a una tarjeta de crédito (0031). Una tarjeta personal con
  * deuda > 0 tiene a lo sumo una deuda con account_id; se crea o se reabre
  * al guardar la tarjeta en Ajustes y se cierra (closed_at) cuando la deuda
- * de la tarjeta llega a 0. original_principal_minor se mantiene en
- * saldo + pagado (debtBalances), para que el bot y cualquier consulta SQL
- * que use original − pagos vea el mismo saldo que la cuenta.
+ * de la tarjeta llega a 0. original_principal_minor es el principal contra
+ * el que se mide el avance (lo puede fijar la persona al editar la deuda);
+ * nunca queda por debajo de saldo + pagos registrados (debtBalances).
  */
 import "server-only";
 
@@ -77,7 +77,11 @@ export async function syncCardDebt(
       due_day: account.payment_day,
       currency: account.currency,
       // Con deuda 0, el principal se deja (> 0 por constraint) y se cierra.
-      ...(open ? { original_principal_minor: cardDebt + paid } : {}),
+      ...(open
+        ? {
+            original_principal_minor: Math.max(debt.original_principal_minor, cardDebt + paid),
+          }
+        : {}),
       closed_at: open ? null : (debt.closed_at ?? new Date().toISOString()),
     })
     .eq("id", debt.id);

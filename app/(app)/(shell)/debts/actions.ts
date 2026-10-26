@@ -69,13 +69,24 @@ export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
   if (d.id) {
     const { data: linked } = await supabase
       .from("debts")
-      .select("account_id, currency")
+      .select("account_id, currency, debt_payments(principal_minor)")
       .eq("id", d.id)
       .maybeSingle();
     if (linked?.account_id) {
+      // El principal es contra el que se mide el avance; no puede quedar por
+      // debajo de los pagos registrados. syncCardDebt lo sube a saldo + pagos
+      // si hace falta (original efectivo, lib/debts/card-math.ts).
+      const recorded = (linked.debt_payments ?? []).reduce((s, p) => s + p.principal_minor, 0);
+      if (principalMinor < recorded) {
+        return { ok: false, fieldErrors: { principal: "principalBelowPaid" } };
+      }
       const { error } = await supabase
         .from("debts")
-        .update({ ...values, currency: linked.currency })
+        .update({
+          ...values,
+          currency: linked.currency,
+          original_principal_minor: principalMinor,
+        })
         .eq("id", d.id);
       if (error) return { ok: false, error: limitOr(error, "failed") };
       await supabase.from("accounts").update({ payment_day: d.dueDay }).eq("id", linked.account_id);

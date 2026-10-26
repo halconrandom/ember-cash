@@ -58,7 +58,16 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   const [currency, setCurrency] = useState<CurrencyCode>(
     editing?.original.currency ?? readLastCurrency("debts") ?? displayCurrency,
   );
-  const [principal, setPrincipal] = useState(editing ? f.amount(editing.original) : "");
+  // Tarjeta enlazada sin avance todavía (original = saldo): sugiere el cupo
+  // si es mayor que el saldo, sin imponerlo.
+  const suggested =
+    editing?.accountId &&
+    editing.cardLimit &&
+    editing.original.amountMinor === editing.balance.amountMinor &&
+    editing.cardLimit.amountMinor > editing.balance.amountMinor
+      ? editing.cardLimit
+      : editing?.original;
+  const [principal, setPrincipal] = useState(suggested ? f.amount(suggested) : "");
   const [apr, setApr] = useState(
     editing ? f.number(editing.aprBps / 100, editing.aprBps % 100 === 0 ? 0 : 2) : "",
   );
@@ -69,7 +78,10 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   const [balance, setBalance] = useState(
     editing && editing.openingPaid.amountMinor > 0n ? f.amount(editing.balance) : "",
   );
-  const realPaidMinor = editing ? editing.paid.amountMinor - editing.openingPaid.amountMinor : 0n;
+  // En una tarjeta enlazada "pagado" es original − saldo de la cuenta: el
+  // piso del principal (pagos registrados) lo comprueba el servidor.
+  const realPaidMinor =
+    editing && !editing.accountId ? editing.paid.amountMinor - editing.openingPaid.amountMinor : 0n;
   const [paidThisMonth, setPaidThisMonth] = useState(false);
   const [includeInPlan, setIncludeInPlan] = useState(!(editing?.excludeFromPlan ?? false));
   const [dueDay, setDueDay] = useState(editing?.dueDay ? String(editing.dueDay) : "");
@@ -79,7 +91,8 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   const [twoStep, setTwoStep] = useState(false);
 
   // Con pagos registrados, la moneda queda fija. Una tarjeta enlazada (0031)
-  // trae principal y moneda de la cuenta: no se editan aquí.
+  // trae saldo y moneda de la cuenta; el principal (contra el que se mide el
+  // avance) sí se edita.
   const linked = Boolean(editing?.accountId);
   const currencyLocked = linked || Boolean(editing && editing.paid.amountMinor > 0n);
   const close = () =>
@@ -226,7 +239,7 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
           formKey="debts"
           error={err("principal")}
           disabled={currencyLocked}
-          amountDisabled={linked}
+          amountEditable={linked}
         />
         {linked && <p className="text-callout text-ink-3 -mt-3">{t("modal.linkedHint")}</p>}
 

@@ -1198,7 +1198,7 @@
       "balanceHint": "If you were already paying this debt, enter what you owe today. What you already paid is saved as an opening payment, with no movement in your accounts.",
       "includeInPlan": "Include in payoff plan",
       "includeInPlanHint": "Turn it off for long debts you don’t want to prioritize, like a mortgage. It stays in your list and totals.",
-      "linkedHint": "The balance and currency come from the card in Settings.",
+      "linkedHint": "How much you started paying off on this card; progress is measured against this amount. The balance and currency come from the card in Settings.",
       "paidThisMonth": "Balance already includes this month’s payment",
       "paidThisMonthHint": "This month’s payment is marked as settled, with no movement in your accounts. The next one is due next month.",
       "minPayment": "Monthly minimum payment",

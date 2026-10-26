@@ -11,11 +11,30 @@ describe("debtBalances", () => {
     });
   });
 
-  it("tarjeta Banco de Bogotá: el saldo es la deuda de la tarjeta, una sola vez", () => {
+  it("tarjeta Banco de Bogotá con principal fijado: 4.700.000 y saldo 4.214.351", () => {
+    const r = debtBalances({ originalMinor: 4_700_000n, paidMinor: 0n, cardDebtMinor: 4_214_351n });
+    expect(r).toEqual({
+      originalMinor: 4_700_000n,
+      paidMinor: 485_649n,
+      balanceMinor: 4_214_351n,
+    });
+    expect(Number((r.paidMinor * 100n) / r.originalMinor)).toBe(10);
+  });
+
+  it("sin principal fijado: original = saldo + pagos registrados", () => {
     // Saldo 4.167.943; luego un pago de 500.000 (transferencia a la tarjeta).
     expect(
       debtBalances({ originalMinor: 9n, paidMinor: 500_000n, cardDebtMinor: 3_667_943n }),
     ).toEqual({ originalMinor: 4_167_943n, paidMinor: 500_000n, balanceMinor: 3_667_943n });
+  });
+
+  it("compras que superan el principal fijado: el original sube, pagado no es negativo", () => {
+    expect(
+      debtBalances({ originalMinor: 4_700_000n, paidMinor: 100_000n, cardDebtMinor: 4_800_000n }),
+    ).toEqual({ originalMinor: 4_900_000n, paidMinor: 100_000n, balanceMinor: 4_800_000n });
+    expect(
+      debtBalances({ originalMinor: 4_700_000n, paidMinor: 0n, cardDebtMinor: 5_000_000n }),
+    ).toEqual({ originalMinor: 5_000_000n, paidMinor: 0n, balanceMinor: 5_000_000n });
   });
 
   it("compras nuevas en la tarjeta suben el saldo y el original, no el pagado", () => {
@@ -31,5 +50,9 @@ describe("debtBalances", () => {
       paidMinor: 10n,
       balanceMinor: 0n,
     });
+    // Con principal fijado y tarjeta en 0: 100 % pagado.
+    expect(
+      debtBalances({ originalMinor: 4_700_000n, paidMinor: 0n, cardDebtMinor: 0n }).paidMinor,
+    ).toBe(4_700_000n);
   });
 });

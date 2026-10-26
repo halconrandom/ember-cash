@@ -1198,7 +1198,7 @@
       "balanceHint": "Si ya venías pagando esta deuda, escribe cuánto debes hoy. Lo ya pagado queda como pago inicial, sin movimiento en tus cuentas.",
       "includeInPlan": "Incluir en el plan de pago",
       "includeInPlanHint": "Desactívalo para deudas largas que no quieres priorizar, como la hipoteca. Sigue en tu lista y en los totales.",
-      "linkedHint": "El saldo y la moneda vienen de la tarjeta en Ajustes.",
+      "linkedHint": "Con cuánto empezaste a pagar esta tarjeta; el avance se mide contra este monto. El saldo y la moneda vienen de la tarjeta en Ajustes.",
       "paidThisMonth": "El saldo ya incluye el pago de este mes",
       "paidThisMonthHint": "El cobro de este mes queda saldado, sin movimiento en tus cuentas. El próximo vence el mes que viene.",
       "minPayment": "Pago mínimo mensual",

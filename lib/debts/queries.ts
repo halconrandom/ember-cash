@@ -43,6 +43,8 @@ export type DebtSummary = {
    * original = saldo + pagado. Principal y moneda vienen de la cuenta.
    */
   accountId: string | null;
+  /** Cupo de la tarjeta enlazada, para precargar el principal al editar. */
+  cardLimit: Money | null;
 };
 
 type Row = {
@@ -60,6 +62,7 @@ type Row = {
   debt_payments: { principal_minor: number; is_opening: boolean; paid_on: string }[];
   recurring_items: { kind: string; recurring_occurrences: { due_on: string; status: string }[] }[];
   account_id: string | null;
+  accounts: { credit_limit_minor: number | null } | null;
 };
 
 function toSummary(r: Row, cardDebts: Record<string, bigint>): DebtSummary {
@@ -68,7 +71,9 @@ function toSummary(r: Row, cardDebts: Record<string, bigint>): DebtSummary {
   const openingMinor = r.debt_payments
     .filter((p) => p.is_opening)
     .reduce((s, p) => s + BigInt(p.principal_minor), 0n);
-  const { originalMinor, balanceMinor } = debtBalances({
+  // Una sola fuente del "pagado de original" (card-math): en una tarjeta,
+  // pagado = original efectivo − saldo de la cuenta.
+  const balances = debtBalances({
     originalMinor: BigInt(r.original_principal_minor),
     paidMinor,
     cardDebtMinor: r.account_id ? (cardDebts[r.account_id] ?? 0n) : null,
@@ -78,10 +83,10 @@ function toSummary(r: Row, cardDebts: Record<string, bigint>): DebtSummary {
     name: r.name,
     subtitle: r.subtitle,
     iconKey: (r.icon_key ?? "credit-card") as DebtIcon,
-    original: money(originalMinor, currency),
-    paid: money(paidMinor, currency),
+    original: money(balances.originalMinor, currency),
+    paid: money(balances.paidMinor, currency),
     openingPaid: money(openingMinor, currency),
-    balance: money(balanceMinor, currency),
+    balance: money(balances.balanceMinor, currency),
     aprBps: r.apr_bps,
     aprKind: r.apr_kind as AprKind,
     minPayment: money(r.min_payment_minor, currency),
@@ -98,11 +103,15 @@ function toSummary(r: Row, cardDebts: Record<string, bigint>): DebtSummary {
       ]),
     ].sort(),
     accountId: r.account_id,
+    cardLimit:
+      r.account_id && r.accounts?.credit_limit_minor
+        ? money(r.accounts.credit_limit_minor, currency)
+        : null,
   };
 }
 
 const COLUMNS =
-  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, exclude_from_plan, account_id, debt_payments(principal_minor, is_opening, paid_on), recurring_items(kind, recurring_occurrences(due_on, status))";
+  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, exclude_from_plan, account_id, accounts!debts_account_id_fkey(credit_limit_minor), debt_payments(principal_minor, is_opening, paid_on), recurring_items(kind, recurring_occurrences(due_on, status))";
 
 export async function listDebts(): Promise<DebtSummary[]> {
   const supabase = await createClient();

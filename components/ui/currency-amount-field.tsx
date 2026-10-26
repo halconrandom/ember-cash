@@ -41,8 +41,8 @@ type Props = {
   error?: string | null;
   placeholder?: string;
   disabled?: boolean;
-  /** Bloquea también el monto (p. ej. el saldo de una tarjeta enlazada). */
-  amountDisabled?: boolean;
+  /** Con disabled, deja igual editable el monto (solo se bloquea la moneda). */
+  amountEditable?: boolean;
   autoFocus?: boolean;
   className?: string;
 };
@@ -58,7 +58,7 @@ export function CurrencyAmountField({
   error,
   placeholder = "0",
   disabled,
-  amountDisabled,
+  amountEditable,
   autoFocus,
   className,
 }: Props) {
@@ -105,7 +105,7 @@ export function CurrencyAmountField({
         className={cn(
           "rounded-control bg-surface2 has-[input:focus-visible]:outline-focus-ring flex h-12 items-stretch border has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-solid",
           error ? "border-negative border-[1.5px]" : "border-transparent",
-          disabled && "opacity-60",
+          disabled && !amountEditable && "opacity-60",
         )}
       >
         <CurrencyPicker
@@ -128,13 +128,12 @@ export function CurrencyAmountField({
           placeholder={placeholder}
           autoFocus={autoFocus}
           value={value}
-          disabled={disabled}
+          disabled={disabled && !amountEditable}
           onChange={(e) => {
             onValueChange(e.target.value);
             setLive("off");
           }}
           onBlur={() => setLive("polite")}
-          readOnly={amountDisabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           className="text-headline text-ink placeholder:text-ink-3 min-w-0 flex-1 bg-transparent px-4 tabular-nums outline-none"

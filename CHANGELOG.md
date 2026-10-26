@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.33.1] - 2026-10-26
+
+### Deudas de tarjeta: principal editable y avance real
+
+- En una deuda de tarjeta, el "Principal original" se puede editar (la moneda sigue bloqueada): es el monto contra el que se mide el avance, p. ej. el cupo o la deuda con la que se empezó. Si la deuda aún no tiene avance, el campo sugiere el cupo cuando es mayor que el saldo, sin imponerlo.
+- Cálculo único en `debtBalances` (`lib/debts/card-math.ts`), que usan /debts, la tarjeta Deudas del dashboard y el plan: original efectivo = max(principal guardado, saldo de la tarjeta + pagos registrados); pagado = original efectivo − saldo. El saldo sigue saliendo solo de la cuenta. Si las compras superan el principal, el original sube: el % nunca es negativo ni pasa de 100. Sin principal fijado, todo sigue igual.
+- `syncCardDebt` ya no reescribe el principal con saldo + pagado: solo lo sube cuando hace falta. El principal no puede quedar por debajo de los pagos registrados.
+- Caso Banco de Bogotá: principal 4.700.000, saldo 4.214.351 → pagado 485.649 (10 %).
+
 ## [0.33.0] - 2026-10-26
 
 ### Tarjetas de crédito como deudas
