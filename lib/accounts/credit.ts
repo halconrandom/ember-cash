@@ -5,6 +5,7 @@
  */
 import type { AccountType, CurrencyCode } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/config";
+import { parseAprBps } from "@/lib/debts/schema";
 import { parseMoney } from "@/lib/money/parse";
 
 export type CreditColumns = {
@@ -55,6 +56,8 @@ export const CREDIT_ERRORS = {
   limit: "onboarding.account.errors.limit",
   payDay: "onboarding.account.errors.payDay",
   balance: "onboarding.account.errors.balance",
+  apr: "debts.errors.aprInvalid",
+  minPayment: "debts.errors.amountInvalid",
 } as const;
 export type CreditField = keyof typeof CREDIT_ERRORS;
 
@@ -63,6 +66,10 @@ export type CreditForm = {
   paymentDay: number | null;
   /** Deuda de hoy en unidades menores (>= 0), o null si quedó vacío. */
   balanceMinor: number | null;
+  /** Tasa EA en puntos básicos para la deuda enlazada (0031), o null. */
+  aprBps: number | null;
+  /** Pago mínimo de la deuda enlazada, o null. */
+  minPaymentMinor: number | null;
 };
 
 /**
@@ -71,7 +78,7 @@ export type CreditForm = {
  * mismas reglas del wizard.
  */
 export function validateCreditForm(
-  input: { limit: string; payDay: string; balance: string },
+  input: { limit: string; payDay: string; balance: string; apr?: string; minPayment?: string },
   currency: CurrencyCode,
   locale: Locale,
 ): { ok: true; value: CreditForm } | { ok: false; fields: Partial<Record<CreditField, string>> } {
@@ -92,8 +99,22 @@ export function validateCreditForm(
     if (!parsed.ok) fields.balance = CREDIT_ERRORS.balance;
     else balanceMinor = Number(parsed.value.amountMinor);
   }
+  let aprBps: number | null = null;
+  if (input.apr?.trim()) {
+    aprBps = parseAprBps(input.apr);
+    if (aprBps === null) fields.apr = CREDIT_ERRORS.apr;
+  }
+  let minPaymentMinor: number | null = null;
+  if (input.minPayment?.trim()) {
+    const parsed = parseMoney(input.minPayment, currency, locale, { allowZero: true });
+    if (!parsed.ok) fields.minPayment = CREDIT_ERRORS.minPayment;
+    else minPaymentMinor = Number(parsed.value.amountMinor);
+  }
   if (Object.keys(fields).length > 0) return { ok: false, fields };
-  return { ok: true, value: { creditLimitMinor, paymentDay, balanceMinor } };
+  return {
+    ok: true,
+    value: { creditLimitMinor, paymentDay, balanceMinor, aprBps, minPaymentMinor },
+  };
 }
 
 /**

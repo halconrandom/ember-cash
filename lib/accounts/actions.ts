@@ -20,6 +20,9 @@ import { isLocale } from "@/lib/i18n/config";
 import { createClient } from "@/lib/supabase/server";
 import { todayIn } from "@/lib/transactions/dates";
 
+import { syncCardDebt } from "@/lib/debts/card";
+import { syncDebtRecurring } from "@/lib/recurring/debts";
+
 import { creditColumns, openingFor, validateCreditForm, type CreditField } from "./credit";
 
 export type AccountActionResult =
@@ -47,10 +50,40 @@ const createSchema = z.object({
   /** Día de pago (1 a 31). Solo se guarda en una tarjeta; si no, null. */
   paymentDay: z.number().int().min(1).max(31).nullable().optional(),
   /** Campos de tarjeta como los escribió la persona (Ajustes). */
-  credit: z.object({ limit: z.string(), payDay: z.string(), balance: z.string() }).optional(),
+  credit: z
+    .object({
+      limit: z.string(),
+      payDay: z.string(),
+      balance: z.string(),
+      apr: z.string().optional(),
+      minPayment: z.string().optional(),
+    })
+    .optional(),
 });
 
-const creditInputSchema = z.object({ limit: z.string(), payDay: z.string(), balance: z.string() });
+const creditInputSchema = z.object({
+  limit: z.string(),
+  payDay: z.string(),
+  balance: z.string(),
+  apr: z.string().optional(),
+  minPayment: z.string().optional(),
+});
+
+/**
+ * Tras guardar una tarjeta personal: crea, reabre o cierra su deuda enlazada
+ * (0031) con la tasa y el mínimo escritos, y su cobro mensual.
+ */
+async function linkCardDebt(
+  supabase: Client,
+  accountId: string,
+  terms: { aprBps: number | null; minPaymentMinor: number | null },
+) {
+  const [user, profile] = await Promise.all([requireUser(), getCurrentProfile()]);
+  const today = todayIn(profile.timezone);
+  await syncCardDebt(supabase, accountId, today, terms);
+  await syncDebtRecurring(supabase, { ownerId: user.id, today });
+  revalidatePath("/debts");
+}
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -170,6 +203,7 @@ export async function createAccount(input: unknown): Promise<AccountActionResult
       return { ok: false, error: opening === "rateLimited" ? "rateLimited" : "failed" };
     }
   }
+  if (form) await linkCardDebt(supabase, data.id, form);
   revalidatePath("/", "layout");
   return { ok: true, id: data.id };
 }
@@ -214,6 +248,7 @@ export async function updateCreditCard(id: string, input: unknown): Promise<Acco
     }
     if (opening !== "ok") return { ok: false, error: opening };
   }
+  await linkCardDebt(supabase, id, checked.value);
   revalidatePath("/", "layout");
   return { ok: true, id };
 }

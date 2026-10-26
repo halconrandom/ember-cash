@@ -14,14 +14,26 @@ describe("validateCreditForm", () => {
       validateCreditForm({ limit: "4.700.000", payDay: "21", balance: "4.167.943" }, "COP", "es"),
     ).toEqual({
       ok: true,
-      value: { creditLimitMinor: 4_700_000, paymentDay: 21, balanceMinor: 4_167_943 },
+      value: {
+        creditLimitMinor: 4_700_000,
+        paymentDay: 21,
+        balanceMinor: 4_167_943,
+        aprBps: null,
+        minPaymentMinor: null,
+      },
     });
   });
 
   it("todo vacío es válido (Ajustes permite completar después)", () => {
     expect(validateCreditForm({ limit: "", payDay: " ", balance: "" }, "COP", "es")).toEqual({
       ok: true,
-      value: { creditLimitMinor: null, paymentDay: null, balanceMinor: null },
+      value: {
+        creditLimitMinor: null,
+        paymentDay: null,
+        balanceMinor: null,
+        aprBps: null,
+        minPaymentMinor: null,
+      },
     });
   });
 
@@ -33,6 +45,26 @@ describe("validateCreditForm", () => {
         payDay: "onboarding.account.errors.payDay",
         balance: "onboarding.account.errors.balance",
       },
+    });
+  });
+
+  it("tasa EA y pago mínimo para la deuda de la tarjeta", () => {
+    expect(
+      validateCreditForm(
+        { limit: "", payDay: "", balance: "", apr: "25", minPayment: "250.000" },
+        "COP",
+        "es",
+      ),
+    ).toMatchObject({ ok: true, value: { aprBps: 2500, minPaymentMinor: 250_000 } });
+    expect(
+      validateCreditForm(
+        { limit: "", payDay: "", balance: "", apr: "abc", minPayment: "x" },
+        "COP",
+        "es",
+      ),
+    ).toEqual({
+      ok: false,
+      fields: { apr: "debts.errors.aprInvalid", minPayment: "debts.errors.amountInvalid" },
     });
   });
 

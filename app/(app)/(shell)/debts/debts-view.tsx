@@ -9,6 +9,7 @@
  * siguen en la lista y en los totales, pero no en la simulación, el Gantt,
  * la fecha libre ni el pago extra (lib/debts/plan.ts).
  */
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -392,6 +393,14 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
           <h3 className="text-headline text-ink">{debt.name}</h3>
           {debt.subtitle && <p className="text-callout text-ink-2">{debt.subtitle}</p>}
         </div>
+        {debt.accountId && (
+          <Link href="/settings" className="rounded-full">
+            <Badge tone="info" className="hover:underline">
+              <Icon name="credit-card" size={14} />
+              {t("cardChip")}
+            </Badge>
+          </Link>
+        )}
         {debt.excludeFromPlan && (
           <Badge tone="neutral" className="bg-surface text-ink-2">
             {t("outOfPlan")}
@@ -423,6 +432,10 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
           </Badge>
         )}
       </div>
+
+      {debt.accountId && debt.aprBps === 0 && (
+        <p className="text-callout text-ink-2 mt-2">{t("cardAddRate")}</p>
+      )}
 
       <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-[1.1fr_0.6fr_1.1fr_1.5fr]">
         <Stat label={t("remaining")}>

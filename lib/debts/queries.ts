@@ -10,6 +10,7 @@ import type { CurrencyCode } from "@/lib/db/types";
 import { money, type Money } from "@/lib/money/money";
 import { createClient } from "@/lib/supabase/server";
 
+import { debtBalances } from "./card-math";
 import type { AprKind } from "./payoff";
 import type { DebtIcon } from "./schema";
 
@@ -37,6 +38,11 @@ export type DebtSummary = {
    * el pago de este mes"). El pago inicial (is_opening) no cuenta.
    */
   paidMonths: string[];
+  /**
+   * Tarjeta enlazada (0031): el saldo es la deuda de la tarjeta y el
+   * original = saldo + pagado. Principal y moneda vienen de la cuenta.
+   */
+  accountId: string | null;
 };
 
 type Row = {
@@ -53,16 +59,20 @@ type Row = {
   exclude_from_plan: boolean;
   debt_payments: { principal_minor: number; is_opening: boolean; paid_on: string }[];
   recurring_items: { kind: string; recurring_occurrences: { due_on: string; status: string }[] }[];
+  account_id: string | null;
 };
 
-function toSummary(r: Row): DebtSummary {
+function toSummary(r: Row, cardDebts: Record<string, bigint>): DebtSummary {
   const currency = r.currency as CurrencyCode;
   const paidMinor = r.debt_payments.reduce((s, p) => s + BigInt(p.principal_minor), 0n);
   const openingMinor = r.debt_payments
     .filter((p) => p.is_opening)
     .reduce((s, p) => s + BigInt(p.principal_minor), 0n);
-  const originalMinor = BigInt(r.original_principal_minor);
-  const balanceMinor = originalMinor - paidMinor;
+  const { originalMinor, balanceMinor } = debtBalances({
+    originalMinor: BigInt(r.original_principal_minor),
+    paidMinor,
+    cardDebtMinor: r.account_id ? (cardDebts[r.account_id] ?? 0n) : null,
+  });
   return {
     id: r.id,
     name: r.name,
@@ -71,7 +81,7 @@ function toSummary(r: Row): DebtSummary {
     original: money(originalMinor, currency),
     paid: money(paidMinor, currency),
     openingPaid: money(openingMinor, currency),
-    balance: money(balanceMinor > 0n ? balanceMinor : 0n, currency),
+    balance: money(balanceMinor, currency),
     aprBps: r.apr_bps,
     aprKind: r.apr_kind as AprKind,
     minPayment: money(r.min_payment_minor, currency),
@@ -87,11 +97,12 @@ function toSummary(r: Row): DebtSummary {
           .map((o) => o.due_on.slice(0, 7)),
       ]),
     ].sort(),
+    accountId: r.account_id,
   };
 }
 
 const COLUMNS =
-  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, exclude_from_plan, debt_payments(principal_minor, is_opening, paid_on), recurring_items(kind, recurring_occurrences(due_on, status))";
+  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, exclude_from_plan, account_id, debt_payments(principal_minor, is_opening, paid_on), recurring_items(kind, recurring_occurrences(due_on, status))";
 
 export async function listDebts(): Promise<DebtSummary[]> {
   const supabase = await createClient();
@@ -102,5 +113,18 @@ export async function listDebts(): Promise<DebtSummary[]> {
     .is("closed_at", null)
     .order("name");
   if (error) throw new Error(`No se pudieron leer las deudas: ${error.message}`);
-  return (data as unknown as Row[]).map(toSummary);
+  const rows = data as unknown as Row[];
+  // Deuda de hoy de cada tarjeta enlazada (fuente única del saldo).
+  const cardDebts: Record<string, bigint> = {};
+  await Promise.all(
+    rows
+      .filter((r) => r.account_id)
+      .map(async (r) => {
+        const { data: debt } = await supabase.rpc("account_balance", {
+          p_account_id: r.account_id!,
+        });
+        cardDebts[r.account_id!] = BigInt(debt ?? 0);
+      }),
+  );
+  return rows.map((r) => toSummary(r, cardDebts));
 }

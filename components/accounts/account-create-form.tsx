@@ -22,7 +22,7 @@ import { readLastCurrency, writeLastCurrency } from "@/lib/money/last-currency";
 
 import { CreditFields, type CreditValues } from "./credit-fields";
 
-const EMPTY_CREDIT: CreditValues = { limit: "", payDay: "", balance: "" };
+const EMPTY_CREDIT: CreditValues = { limit: "", payDay: "", balance: "", apr: "", minPayment: "" };
 
 export function AccountCreateForm({
   defaultCurrency,

@@ -10,7 +10,14 @@ import { useTranslations } from "next-intl";
 import { Field } from "@/components/ui/field";
 import type { CreditField } from "@/lib/accounts/credit";
 
-export type CreditValues = { limit: string; payDay: string; balance: string };
+export type CreditValues = {
+  limit: string;
+  payDay: string;
+  balance: string;
+  /** Tasa EA y pago mínimo de la deuda enlazada en Deudas (0031). */
+  apr: string;
+  minPayment: string;
+};
 
 export function CreditFields({
   values,
@@ -54,6 +61,25 @@ export function CreditFields({
         onChange={set("balance")}
         error={err("balance")}
         hint={t("accounts.cardBalanceHint")}
+      />
+      <Field
+        label={t("accounts.cardApr")}
+        inputMode="decimal"
+        autoComplete="off"
+        placeholder={t("accounts.optional")}
+        value={values.apr}
+        onChange={set("apr")}
+        error={err("apr")}
+      />
+      <Field
+        label={t("accounts.cardMinPayment")}
+        inputMode="decimal"
+        autoComplete="off"
+        placeholder={t("accounts.optional")}
+        value={values.minPayment}
+        onChange={set("minPayment")}
+        error={err("minPayment")}
+        hint={t("accounts.cardDebtHint")}
       />
     </div>
   );

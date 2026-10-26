@@ -21,6 +21,7 @@ import type { IconName } from "@/components/ui/icon-registry";
 import { getCurrentProfile } from "@/lib/auth/session";
 import type { CategoryKey, CurrencyCode, RecurringFrequency, RecurringKind } from "@/lib/db/types";
 import { debtDueState } from "@/lib/debts/dates";
+import { syncMyCardDebts } from "@/lib/debts/card";
 import { listDebts } from "@/lib/debts/queries";
 import { upcomingDebts, type UpcomingDebt } from "@/lib/debts/upcoming";
 import { listGoals, type GoalSummary } from "@/lib/goals/queries";
@@ -170,6 +171,7 @@ export type DebtsSummary = {
 
 /** Deudas abiertas: saldo, pagado, mínimos y el próximo vencimiento. */
 export async function getDebtsSummary(today: string): Promise<DebtsSummary> {
+  await syncMyCardDebts(today);
   const debts = (await listDebts()).filter((d) => d.balance.amountMinor > 0n);
   const dues = debts
     .filter((d) => d.dueDay !== null)

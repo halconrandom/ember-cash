@@ -41,6 +41,8 @@ type Props = {
   error?: string | null;
   placeholder?: string;
   disabled?: boolean;
+  /** Bloquea también el monto (p. ej. el saldo de una tarjeta enlazada). */
+  amountDisabled?: boolean;
   autoFocus?: boolean;
   className?: string;
 };
@@ -56,6 +58,7 @@ export function CurrencyAmountField({
   error,
   placeholder = "0",
   disabled,
+  amountDisabled,
   autoFocus,
   className,
 }: Props) {
@@ -131,6 +134,7 @@ export function CurrencyAmountField({
             setLive("off");
           }}
           onBlur={() => setLive("polite")}
+          readOnly={amountDisabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           className="text-headline text-ink placeholder:text-ink-3 min-w-0 flex-1 bg-transparent px-4 tabular-nums outline-none"

@@ -56,3 +56,24 @@ export async function getCardDebts(accounts: AccountSummary[]): Promise<Record<s
   );
   return Object.fromEntries(entries);
 }
+
+export type CardLink = { aprBps: number; minPaymentMinor: number; open: boolean };
+
+/** Deuda enlazada de cada tarjeta (0031): tasa, mínimo y si está en Deudas. */
+export async function getCardLinks(accounts: AccountSummary[]): Promise<Record<string, CardLink>> {
+  const ids = accounts.filter((a) => a.type === "credit_card").map((a) => a.id);
+  if (ids.length === 0) return {};
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("debts")
+    .select("account_id, apr_bps, min_payment_minor, closed_at, deleted_at")
+    .in("account_id", ids);
+  return Object.fromEntries(
+    (data ?? [])
+      .filter((d) => d.account_id && !d.deleted_at)
+      .map((d) => [
+        d.account_id!,
+        { aprBps: d.apr_bps, minPaymentMinor: d.min_payment_minor, open: !d.closed_at },
+      ]),
+  );
+}

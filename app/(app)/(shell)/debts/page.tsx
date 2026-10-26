@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAccounts } from "@/lib/accounts/queries";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { syncMyCardDebts } from "@/lib/debts/card";
 import { listDebts } from "@/lib/debts/queries";
 import { PERSONAL_SCOPE } from "@/lib/scope/constants";
 import { todayIn } from "@/lib/transactions/dates";
@@ -54,12 +55,11 @@ function DebtsSkeleton() {
 }
 
 async function DebtsContent({ searchParams }: { searchParams: SearchParams }) {
-  const [params, profile, debts] = await Promise.all([
-    searchParams,
-    getCurrentProfile(),
-    listDebts(),
-  ]);
+  const [params, profile] = await Promise.all([searchParams, getCurrentProfile()]);
   const today = todayIn(profile.timezone);
+  // Tarjetas enlazadas (0031): abrir, cerrar o resincronizar antes de leer.
+  await syncMyCardDebts(today);
+  const debts = await listDebts();
   const debtParam = typeof params.debt === "string" ? params.debt : null;
   const editing =
     debtParam && debtParam !== "new" ? (debts.find((d) => d.id === debtParam) ?? null) : null;
@@ -67,8 +67,14 @@ async function DebtsContent({ searchParams }: { searchParams: SearchParams }) {
     typeof params.pay === "string" && z.uuid().safeParse(params.pay).success ? params.pay : null;
   const paying = payId ? (debts.find((d) => d.id === payId) ?? null) : null;
   // Las deudas son personales: la transacción vinculada sale de una cuenta personal.
+  // Una tarjeta enlazada se paga con una transferencia desde otra cuenta que
+  // no sea tarjeta; las demás deudas, desde cualquier cuenta de su moneda.
   const accounts = paying
-    ? (await getAccounts(PERSONAL_SCOPE)).filter((a) => a.currency === paying.balance.currency)
+    ? (await getAccounts(PERSONAL_SCOPE)).filter(
+        (a) =>
+          a.currency === paying.balance.currency &&
+          (!paying.accountId || (a.id !== paying.accountId && a.type !== "credit_card")),
+      )
     : [];
 
   return (

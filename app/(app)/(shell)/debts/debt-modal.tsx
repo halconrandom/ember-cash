@@ -78,8 +78,10 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   const [saved, setSaved] = useState(false);
   const [twoStep, setTwoStep] = useState(false);
 
-  // Con pagos registrados, la moneda queda fija.
-  const currencyLocked = Boolean(editing && editing.paid.amountMinor > 0n);
+  // Con pagos registrados, la moneda queda fija. Una tarjeta enlazada (0031)
+  // trae principal y moneda de la cuenta: no se editan aquí.
+  const linked = Boolean(editing?.accountId);
+  const currencyLocked = linked || Boolean(editing && editing.paid.amountMinor > 0n);
   const close = () =>
     router.replace(`${pathname}${withFilters(params, { debt: null })}`, { scroll: false });
   const err = (k: DebtField) => (errors[k] ? t(`errors.${errors[k]}`) : null);
@@ -224,18 +226,22 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
           formKey="debts"
           error={err("principal")}
           disabled={currencyLocked}
+          amountDisabled={linked}
         />
+        {linked && <p className="text-callout text-ink-3 -mt-3">{t("modal.linkedHint")}</p>}
 
-        <Field
-          label={t("modal.balance")}
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder={t("modal.balancePlaceholder")}
-          value={balance}
-          onChange={(e) => (setBalance(e.target.value), clear("balance"))}
-          error={err("balance")}
-          hint={t("modal.balanceHint")}
-        />
+        {!linked && (
+          <Field
+            label={t("modal.balance")}
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder={t("modal.balancePlaceholder")}
+            value={balance}
+            onChange={(e) => (setBalance(e.target.value), clear("balance"))}
+            error={err("balance")}
+            hint={t("modal.balanceHint")}
+          />
+        )}
 
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
           <Field

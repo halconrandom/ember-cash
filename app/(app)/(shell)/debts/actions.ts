@@ -26,6 +26,7 @@ import {
 import { isLocale } from "@/lib/i18n/config";
 import { markDebtOccurrencePaid, syncDebtRecurring } from "@/lib/recurring/debts";
 import { ensureOccurrences } from "@/lib/recurring/ensure";
+import { syncCardDebt } from "@/lib/debts/card";
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds, todayIn } from "@/lib/transactions/dates";
 
@@ -62,6 +63,30 @@ export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
     exclude_from_plan: !d.includeInPlan,
   };
   const supabase = await createClient();
+  // Deuda enlazada a una tarjeta (0031): principal y moneda vienen de la
+  // cuenta; aquí solo cambian nombre, ícono, tasa, mínimo, día y plan. El
+  // día de pago se guarda también en la tarjeta (es el mismo cobro).
+  if (d.id) {
+    const { data: linked } = await supabase
+      .from("debts")
+      .select("account_id, currency")
+      .eq("id", d.id)
+      .maybeSingle();
+    if (linked?.account_id) {
+      const { error } = await supabase
+        .from("debts")
+        .update({ ...values, currency: linked.currency })
+        .eq("id", d.id);
+      if (error) return { ok: false, error: limitOr(error, "failed") };
+      await supabase.from("accounts").update({ payment_day: d.dueDay }).eq("id", linked.account_id);
+      await syncCardDebt(supabase, linked.account_id, today);
+      await syncDebtRecurring(supabase, { ownerId: user.id, today });
+      revalidatePath("/debts");
+      revalidatePath("/calendar");
+      revalidatePath("/settings");
+      return { ok: true, id: d.id };
+    }
+  }
   // Al editar, el principal lo fija set_debt_opening junto con el pago
   // inicial (así bajar el principal y el pago inicial a la vez no choca con
   // debts_guard_principal).
@@ -173,10 +198,54 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
 
   const { data: debt } = await supabase
     .from("debts")
-    .select("name, currency")
+    .select("name, currency, account_id")
     .eq("id", p.debtId)
     .maybeSingle();
   if (!debt || debt.currency !== p.amount.currency) return { ok: false, error: "failed" };
+
+  // Tarjeta enlazada (0031): el pago es una transferencia de otra cuenta a la
+  // tarjeta. Baja la deuda de la tarjeta y no es gasto ni ingreso (las
+  // compras de la tarjeta ya son los gastos). Todo el monto es capital: el
+  // interés que cobre el banco entra como movimiento de la tarjeta.
+  if (debt.account_id) {
+    if (!p.accountId || p.accountId === debt.account_id) {
+      return { ok: false, fieldErrors: { accountId: "accountRequired" } };
+    }
+    const { data: tx, error: txError } = await supabase
+      .from("transactions")
+      .insert({
+        account_id: p.accountId,
+        transfer_to_account_id: debt.account_id,
+        kind: "transfer",
+        description: debt.name,
+        amount_minor: Number(p.amount.amountMinor),
+        currency: p.amount.currency,
+        occurred_on: p.paidOn,
+        debt_id: p.debtId,
+      })
+      .select("id")
+      .single();
+    if (txError) return { ok: false, error: limitOr(txError, "failed") };
+    const { error: payError } = await supabase.from("debt_payments").insert({
+      debt_id: p.debtId,
+      paid_on: p.paidOn,
+      amount_minor: Number(p.amount.amountMinor),
+      interest_minor: 0,
+      principal_minor: Number(p.amount.amountMinor),
+      transaction_id: tx.id,
+    });
+    if (payError) {
+      await supabase.from("transactions").delete().eq("id", tx.id);
+      return { ok: false, error: limitOr(payError, "failed") };
+    }
+    await settleMonth(supabase, user.id, p.debtId, p.paidOn, tx.id);
+    await syncCardDebt(supabase, debt.account_id, today);
+    revalidatePath("/debts");
+    revalidatePath("/transactions");
+    revalidatePath("/calendar");
+    revalidatePath("/settings");
+    return { ok: true };
+  }
 
   // Transacción vinculada (opcional): gasto personal con debt_id.
   let transactionId: string | null = null;

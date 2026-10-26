@@ -2,6 +2,19 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.33.0] - 2026-10-26
+
+### Tarjetas de crédito como deudas
+
+- `0031_card_debts.sql`: `debts.account_id` enlaza una deuda con una tarjeta personal del mismo dueño (índice único: una deuda por tarjeta; trigger `debts_guard_account`). La fuente única del saldo es la cuenta: el saldo de la deuda es la deuda de la tarjeta (`account_balance`), "pagado" son los pagos registrados en Deudas y el original = saldo + pagado (`lib/debts/card-math.ts`). Las compras nuevas en la tarjeta suben el saldo de la deuda sin tocar lo pagado.
+- Ajustes → "Cupo y saldo" pide también Tasa de interés EA y Pago mínimo (opcionales, mismas reglas que Deudas). Al guardar una tarjeta personal con saldo > 0 se crea o reabre su deuda (`syncCardDebt`, idempotente); con saldo 0 se cierra (`closed_at`) y se reabre sola si vuelve a haber saldo. Deudas y el dashboard resincronizan antes de leer. La cuenta muestra "En Deudas".
+- Backfill: las tarjetas personales activas con deuda > 0 reciben su deuda con tasa 0 y mínimo 0 (no se inventan tasas) y el día de pago de la tarjeta; la tarjeta de la deuda dice "Agrega la tasa y el pago mínimo…".
+- "Registrar pago" en una deuda de tarjeta crea una transferencia de otra cuenta (no tarjeta, misma moneda) a la tarjeta: baja la deuda de la cuenta y no cuenta como gasto (las compras de la tarjeta ya son los gastos). Todo el monto es capital. El trigger `debt_payments_card_guard` rechaza cualquier pago de una deuda de tarjeta que no sea esa transferencia.
+- Editar la deuda de una tarjeta: saldo y moneda bloqueados (vienen de la cuenta); tasa, mínimo, día de pago (se guarda también en la tarjeta) e "Incluir en el plan" sí. Chip "Tarjeta" con enlace a Ajustes.
+- Sin doble conteo: ninguna pantalla suma saldos de cuentas (el dashboard suma ingresos y gastos del mes, donde ni el saldo inicial ni la transferencia entran), así que el saldo de la tarjeta se cuenta una vez, como deuda, en el total de Deudas, el dashboard, mínimos, interés del mes y el plan.
+- Telegram: `/abono` ya no lista las deudas de tarjeta (`telegram_list_debts`); se pagan desde la app.
+- Tests: `lib/debts/card-math.test.ts`, `lib/accounts/credit.test.ts` y `supabase/tests/card_debts.sql`.
+
 ## [0.32.0] - 2026-10-26
 
 ### Ajustes: tarjetas de crédito con cupo, día de pago y saldo actual

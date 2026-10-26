@@ -215,6 +215,7 @@ export type Database = {
       };
       debts: {
         Row: {
+          account_id: string | null;
           apr_bps: number;
           apr_kind: string;
           closed_at: string | null;
@@ -232,6 +233,7 @@ export type Database = {
           subtitle: string | null;
         };
         Insert: {
+          account_id?: string | null;
           apr_bps: number;
           apr_kind: string;
           closed_at?: string | null;
@@ -249,6 +251,7 @@ export type Database = {
           subtitle?: string | null;
         };
         Update: {
+          account_id?: string | null;
           apr_bps?: number;
           apr_kind?: string;
           closed_at?: string | null;
@@ -266,6 +269,13 @@ export type Database = {
           subtitle?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "debts_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "debts_currency_fkey";
             columns: ["currency"];

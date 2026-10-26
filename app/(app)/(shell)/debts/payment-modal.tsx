@@ -3,7 +3,9 @@
 /**
  * Modal para registrar un pago: monto, interés (estimado con la tasa del mes
  * sobre el saldo actual, editable) y capital = monto − interés. Opcionalmente
- * crea la transacción vinculada en una cuenta de la misma moneda.
+ * crea la transacción vinculada en una cuenta de la misma moneda. Si la
+ * deuda es una tarjeta enlazada (0031), el pago es una transferencia
+ * obligatoria desde otra cuenta a la tarjeta, todo capital (sin interés).
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -50,7 +52,8 @@ export function PaymentModal({ debt, accounts, today }: Props) {
   const [amount, setAmount] = useState(debt ? f.amount(debt.minPayment) : "");
   const [interest, setInterest] = useState(estimate ? f.amount(estimate) : "");
   const [paidOn, setPaidOn] = useState(today);
-  const [createTx, setCreateTx] = useState(false);
+  const card = Boolean(debt?.accountId);
+  const [createTx, setCreateTx] = useState(card);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [errors, setErrors] = useState<Partial<Record<PaymentField, PaymentErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export function PaymentModal({ debt, accounts, today }: Props) {
   const err = (k: PaymentField) => (errors[k] ? t(`errors.${errors[k]}`) : null);
 
   const a = parseMoney(amount, currency, locale);
-  const i = parseMoney(interest || "0", currency, locale, { allowZero: true });
+  const i = parseMoney(card ? "0" : interest || "0", currency, locale, { allowZero: true });
   const principal =
     a.ok && i.ok && i.value.amountMinor <= a.value.amountMinor
       ? money(a.value.amountMinor - i.value.amountMinor, currency)
@@ -74,9 +77,9 @@ export function PaymentModal({ debt, accounts, today }: Props) {
       debtId: debt.id,
       currency,
       amount,
-      interest,
       paidOn,
-      createTransaction: createTx,
+      interest: card ? "0" : interest,
+      createTransaction: card || createTx,
       accountId,
     };
     const check = validatePayment(input, locale, today);
@@ -144,42 +147,50 @@ export function PaymentModal({ debt, accounts, today }: Props) {
             error={err("paidOn")}
           />
         </div>
-        <div className="space-y-2">
-          <Field
-            label={`${t("payment.interest")} (${currency})`}
-            inputMode="decimal"
-            autoComplete="off"
-            value={interest}
-            onChange={(e) => (
-              setInterest(e.target.value),
-              setErrors((x) => ({ ...x, interest: undefined }))
-            )}
-            error={err("interest")}
-            hint={t("payment.interestHint", { amount: f.money(estimate) })}
-          />
-          {principal && (
-            <p className="text-callout text-ink font-semibold tabular-nums">
-              {t("payment.principal", { amount: f.money(principal) })}
-            </p>
-          )}
-        </div>
-
-        <label className="text-body text-ink flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={createTx}
-            onChange={(e) => setCreateTx(e.target.checked)}
-            className="size-5 accent-[var(--ember-fill)]"
-            disabled={accounts.length === 0}
-          />
-          {t("payment.createTransaction")}
-        </label>
-        {accounts.length === 0 ? (
-          <p className="text-callout text-ink-3">{t("payment.noAccounts")}</p>
+        {card ? (
+          <p className="text-callout text-ink-2">{t("payment.cardHint")}</p>
         ) : (
-          createTx && (
+          <div className="space-y-2">
+            <Field
+              label={`${t("payment.interest")} (${currency})`}
+              inputMode="decimal"
+              autoComplete="off"
+              value={interest}
+              onChange={(e) => (
+                setInterest(e.target.value),
+                setErrors((x) => ({ ...x, interest: undefined }))
+              )}
+              error={err("interest")}
+              hint={t("payment.interestHint", { amount: f.money(estimate) })}
+            />
+            {principal && (
+              <p className="text-callout text-ink font-semibold tabular-nums">
+                {t("payment.principal", { amount: f.money(principal) })}
+              </p>
+            )}
+          </div>
+        )}
+
+        {!card && (
+          <label className="text-body text-ink flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={createTx}
+              onChange={(e) => setCreateTx(e.target.checked)}
+              className="size-5 accent-[var(--ember-fill)]"
+              disabled={accounts.length === 0}
+            />
+            {t("payment.createTransaction")}
+          </label>
+        )}
+        {accounts.length === 0 ? (
+          <p className="text-callout text-ink-3">
+            {card ? t("payment.noSourceAccounts") : t("payment.noAccounts")}
+          </p>
+        ) : (
+          (card || createTx) && (
             <SelectField
-              label={t("payment.account")}
+              label={card ? t("payment.fromAccount") : t("payment.account")}
               icon="bank"
               value={accountId}
               onChange={setAccountId}

@@ -18,7 +18,7 @@ import { CreditFields, type CreditValues } from "@/components/accounts/credit-fi
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { renameAccount, setAccountArchived, updateCreditCard } from "@/lib/accounts/actions";
 import { creditAvailability, type CreditField } from "@/lib/accounts/credit";
-import type { AccountSummary } from "@/lib/accounts/queries";
+import type { AccountSummary, CardLink } from "@/lib/accounts/queries";
 import { ACCOUNT_TYPE_ICON } from "@/lib/categories";
 import type { CurrencyCode } from "@/lib/db/types";
 import { useFormat } from "@/lib/i18n/use-format";
@@ -27,11 +27,14 @@ import { money } from "@/lib/money/money";
 export function AccountsManager({
   accounts,
   cardDebts = {},
+  cardLinks = {},
   defaultCurrency,
 }: {
   accounts: AccountSummary[];
   /** Deuda de hoy por tarjeta (account_balance). */
   cardDebts?: Record<string, number>;
+  /** Deuda enlazada en Deudas (0031), por tarjeta. */
+  cardLinks?: Record<string, CardLink>;
   defaultCurrency: CurrencyCode;
 }) {
   const t = useTranslations("accounts");
@@ -45,7 +48,12 @@ export function AccountsManager({
       ) : (
         <ul className="divide-divider divide-y">
           {active.map((a) => (
-            <AccountItem key={a.id} account={a} debtMinor={cardDebts[a.id] ?? 0} />
+            <AccountItem
+              key={a.id}
+              account={a}
+              debtMinor={cardDebts[a.id] ?? 0}
+              link={cardLinks[a.id]}
+            />
           ))}
         </ul>
       )}
@@ -54,7 +62,12 @@ export function AccountsManager({
           <p className="text-caption text-ink-2 uppercase">{t("archivedSection")}</p>
           <ul className="divide-divider divide-y">
             {archived.map((a) => (
-              <AccountItem key={a.id} account={a} debtMinor={cardDebts[a.id] ?? 0} />
+              <AccountItem
+                key={a.id}
+                account={a}
+                debtMinor={cardDebts[a.id] ?? 0}
+                link={cardLinks[a.id]}
+              />
             ))}
           </ul>
         </div>
@@ -66,7 +79,15 @@ export function AccountsManager({
   );
 }
 
-function AccountItem({ account, debtMinor }: { account: AccountSummary; debtMinor: number }) {
+function AccountItem({
+  account,
+  debtMinor,
+  link,
+}: {
+  account: AccountSummary;
+  debtMinor: number;
+  link?: CardLink;
+}) {
   const t = useTranslations();
   const f = useFormat();
   const [editing, setEditing] = useState(false);
@@ -78,6 +99,10 @@ function AccountItem({ account, debtMinor }: { account: AccountSummary; debtMino
       : "",
     payDay: account.payment_day ? String(account.payment_day) : "",
     balance: f.amount(money(debtMinor, account.currency)),
+    apr: link?.aprBps ? f.number(link.aprBps / 100, link.aprBps % 100 === 0 ? 0 : 2) : "",
+    minPayment: link?.minPaymentMinor
+      ? f.amount(money(link.minPaymentMinor, account.currency))
+      : "",
   });
   const [credit, setCredit] = useState<CreditValues>(cardValues);
   const [creditErrors, setCreditErrors] = useState<Partial<Record<CreditField, string>>>({});
@@ -182,6 +207,11 @@ function AccountItem({ account, debtMinor }: { account: AccountSummary; debtMino
               {isArchived && (
                 <Badge tone="neutral" size="sm">
                   {t("accounts.archived")}
+                </Badge>
+              )}
+              {link?.open && (
+                <Badge tone="ember" size="sm">
+                  {t("accounts.inDebts")}
                 </Badge>
               )}
             </p>
