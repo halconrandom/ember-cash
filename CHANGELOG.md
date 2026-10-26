@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.31.0] - 2026-10-26
+
+### Dashboard: tarjeta de Deudas con progreso y vencimientos
+
+- La tarjeta "Deudas" del inicio (la misma, sin tarjetas nuevas) muestra el saldo total, el % pagado global con "pagado de original" (incluye el pago inicial de 0029) y los mínimos, en la moneda elegida.
+- Debajo, hasta 3 deudas ordenadas por próximo vencimiento sin saldar, cada una con su barra de pagado, "pagado de original" y el estado del vencimiento con la misma lógica de /debts (`debtDueState`): "Pagado este mes" en verde, "Vence hoy" en ámbar, rojo solo de 1 a 10 días. La lista sale de `upcomingDebts` (`lib/debts/upcoming.ts`) e incluye las deudas fuera del plan.
+- Se quitó el chip "Próximo pago" del encabezado, que siempre salía en rojo aunque el pago ya estuviera hecho; en su lugar, "Ver todas" (toda la tarjeta enlaza a /debts).
+
 ## [0.30.0] - 2026-10-26
 
 ### Deudas: fuera del plan, eje legible y vencimientos ya pagados

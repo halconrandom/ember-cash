@@ -92,6 +92,7 @@ beforeEach(() => {
     paid: [],
     minimums: [],
     nextDue: null,
+    top: [],
   });
   queries.getSubscriptionsSummary.mockResolvedValue({ count: 0, monthly: [], icons: [] });
   refresh.mockClear();

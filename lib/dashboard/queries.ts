@@ -22,6 +22,7 @@ import { getCurrentProfile } from "@/lib/auth/session";
 import type { CategoryKey, CurrencyCode, RecurringFrequency, RecurringKind } from "@/lib/db/types";
 import { debtDueState } from "@/lib/debts/dates";
 import { listDebts } from "@/lib/debts/queries";
+import { upcomingDebts, type UpcomingDebt } from "@/lib/debts/upcoming";
 import { listGoals, type GoalSummary } from "@/lib/goals/queries";
 import { add, money, type Money } from "@/lib/money/money";
 import { syncDebtRecurring } from "@/lib/recurring/debts";
@@ -163,6 +164,8 @@ export type DebtsSummary = {
   paid: Money[];
   minimums: Money[];
   nextDue: string | null;
+  /** Hasta 3 deudas por próximo vencimiento, con progreso y estado. */
+  top: UpcomingDebt[];
 };
 
 /** Deudas abiertas: saldo, pagado, mínimos y el próximo vencimiento. */
@@ -179,6 +182,7 @@ export async function getDebtsSummary(today: string): Promise<DebtsSummary> {
     paid: byCurrency(debts.map((d) => d.paid)),
     minimums: byCurrency(debts.map((d) => d.minPayment)),
     nextDue: dues[0] ?? null,
+    top: upcomingDebts(debts, today),
   };
 }
 

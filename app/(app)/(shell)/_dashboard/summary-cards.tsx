@@ -21,6 +21,7 @@ import type {
   SubscriptionsSummary,
   UpcomingPayment,
 } from "@/lib/dashboard/queries";
+import type { UpcomingDebt } from "@/lib/debts/upcoming";
 import { goalPercent } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
 import { useFirstView } from "@/lib/motion/first-view";
@@ -197,10 +198,8 @@ export function DebtsCard({ summary }: { summary: DebtsSummary }) {
       <Header
         title={t("debts")}
         extra={
-          summary.nextDue && (
-            <Badge tone="negative" size="sm">
-              {t("nextDue", { date: f.date(summary.nextDue) })}
-            </Badge>
+          summary.count > 0 && (
+            <span className="text-callout text-ember-text font-medium">{t("debtsViewAll")}</span>
           )
         }
       />
@@ -221,12 +220,78 @@ export function DebtsCard({ summary }: { summary: DebtsSummary }) {
             barClassName="bg-debt-bar"
           />
           <p className="text-callout text-ink-2 tabular-nums">
-            {t("debtsPaid", { percent })} · {t("minimums", { amount: f.money(minimums.total) })}
+            {t("debtsPaid", { percent })} ·{" "}
+            {t("debtsPaidPair", { paid: f.money(paid.total), total: f.money(original.total) })}
+            {" · "}
+            {t("minimums", { amount: f.money(minimums.total) })}
           </p>
           {balance.partial && <p className="text-footnote text-ink-3">{t("partial")}</p>}
+          {summary.top.length > 0 && (
+            <ul className="border-divider space-y-3 border-t pt-4">
+              {summary.top.map((d) => (
+                <DebtLine key={d.id} debt={d} />
+              ))}
+            </ul>
+          )}
         </>
       )}
     </DashboardCard>
+  );
+}
+
+/**
+ * Una deuda en la tarjeta: nombre, estado del próximo vencimiento (misma
+ * lógica que /debts: debtDueState), barra de pagado y "pagado de original"
+ * en la moneda elegida (o en la suya si falta la tasa).
+ */
+function DebtLine({ debt }: { debt: UpcomingDebt }) {
+  const t = useTranslations("dashboard");
+  const f = useFormat();
+  const { rates, status, displayCurrency } = useRate();
+  const usable = status === "error" ? [] : rates;
+  const shown = (m: Money) => {
+    if (m.currency === displayCurrency) return m;
+    const rate = latestRateFor(usable, m.currency, displayCurrency);
+    return rate ? convert(m, displayCurrency, rate) : m;
+  };
+  const s = debt.dueState;
+  return (
+    <li className="space-y-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-body text-ink flex min-w-0 items-center gap-2 font-semibold">
+          <Icon name={debt.iconKey} size={16} className="text-ember-text shrink-0" />
+          <span className="truncate">{debt.name}</span>
+        </span>
+        <span className="flex flex-wrap gap-1.5">
+          {s?.paidThisCycle && (
+            <Badge tone="positive" size="sm">
+              {t("debtPaidThisMonth")}
+            </Badge>
+          )}
+          {s && (
+            <Badge
+              tone={s.tone === "today" ? "warning" : s.tone === "soon" ? "negative" : "neutral"}
+              size="sm"
+            >
+              {s.tone === "today" ? t("debtDueToday") : t("debtDue", { date: f.date(s.due) })}
+            </Badge>
+          )}
+        </span>
+      </div>
+      <ProgressBar
+        percent={debt.percent}
+        label={t("debtsPaid", { percent: debt.percent })}
+        barClassName="bg-debt-bar"
+        className="h-1.5"
+      />
+      <p className="text-footnote text-ink-2 tabular-nums">
+        {t("debtsPaid", { percent: debt.percent })} ·{" "}
+        {t("debtsPaidPair", {
+          paid: f.money(shown(debt.paid)),
+          total: f.money(shown(debt.original)),
+        })}
+      </p>
+    </li>
   );
 }
 
