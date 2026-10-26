@@ -13,7 +13,7 @@ import { Suspense } from "react";
 import { LegalFooter } from "@/components/legal/legal-footer";
 import { Card, CardTitle } from "@/components/ui/card";
 import { SkeletonList } from "@/components/ui/skeleton";
-import { getAccounts } from "@/lib/accounts/queries";
+import { getAccounts, getCardDebts } from "@/lib/accounts/queries";
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
 import { getScope } from "@/lib/scope/server";
 
@@ -165,9 +165,11 @@ async function DeleteAccountSectionAsync() {
 async function AccountsSection() {
   const [scope, profile] = await Promise.all([getScope(), getCurrentProfile()]);
   const accounts = await getAccounts(scope, { includeArchived: true });
+  const cardDebts = await getCardDebts(accounts);
   return (
     <AccountsManager
       accounts={accounts}
+      cardDebts={cardDebts}
       defaultCurrency={profile.display_currency === "USD" ? "USD" : "COP"}
     />
   );

@@ -983,10 +983,20 @@
     "archived": "Archivada",
     "archivedSection": "Archivadas",
     "renameLabel": "Nuevo nombre de {name}",
+    "optional": "Opcional",
+    "payDayPlaceholder": "1 a 31 (opcional)",
+    "cardBalance": "Saldo actual",
+    "cardBalanceHint": "Lo que debes hoy. Se guarda como saldo inicial: no cuenta como gasto.",
+    "editCard": "Cupo y saldo",
+    "payDayShort": "paga el {day}",
+    "available": "Disponible {available} de {limit}",
+    "usedPercent": "{percent} % del cupo usado",
+    "noLimit": "Sin cupo registrado",
     "errors": {
       "nameRequired": "Escribe un nombre",
       "nameTooLong": "El nombre puede tener hasta 80 caracteres",
       "invalid": "Revisa los datos",
+      "balanceBelowMovements": "Tus movimientos de la tarjeta ya suman más que ese saldo. Escribe un saldo mayor o revisa los movimientos.",
       "failed": "No se pudo guardar. Intenta de nuevo."
     }
   },

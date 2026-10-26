@@ -10,6 +10,7 @@ import type { GoalInput } from "@/lib/goals/schema";
 import { validateGoal } from "@/lib/goals/schema";
 import type { Locale } from "@/lib/i18n/config";
 import { latestRateFor, type Rate } from "@/lib/money/convert";
+import { CREDIT_ERRORS, parseCreditLimit, parsePaymentDay } from "@/lib/accounts/credit";
 import { parseMoney } from "@/lib/money/parse";
 import type { RecurringInput } from "@/lib/recurring/schema";
 import { shiftMonth } from "@/lib/transactions/dates";
@@ -121,12 +122,7 @@ function isCurrency(value: string): value is CurrencyCode {
   return (CURRENCY_CODES as readonly string[]).includes(value);
 }
 
-function parseDay(input: string): number | null {
-  const text = input.trim();
-  if (!/^\d{1,2}$/.test(text)) return null;
-  const day = Number(text);
-  return day >= 1 && day <= 31 ? day : null;
-}
+const parseDay = parsePaymentDay;
 
 export type AccountDraft = {
   dbType: AccountType;
@@ -174,11 +170,10 @@ export function validateAccountForm(
   let creditLimitMinor: number | null = null;
   let paymentDay: number | null = null;
   if (type.key === "credit") {
-    const limit = parseMoney(input.limit, input.currency, locale);
-    if (!limit.ok) fields.limit = "onboarding.account.errors.limit";
-    else creditLimitMinor = Number(limit.value.amountMinor);
+    creditLimitMinor = parseCreditLimit(input.limit, input.currency, locale);
+    if (creditLimitMinor === null) fields.limit = CREDIT_ERRORS.limit;
     const day = parseDay(input.payDay);
-    if (day === null) fields.payDay = "onboarding.account.errors.payDay";
+    if (day === null) fields.payDay = CREDIT_ERRORS.payDay;
     else paymentDay = day;
   }
 

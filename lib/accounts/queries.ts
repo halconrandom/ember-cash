@@ -13,7 +13,8 @@ import { createClient } from "@/lib/supabase/server";
 export type AccountSummary = Pick<
   Account,
   "id" | "name" | "type" | "currency" | "archived_at" | "household_id"
->;
+> &
+  Partial<Pick<Account, "credit_limit_minor" | "payment_day">>;
 
 export async function getAccounts(
   scope: Scope,
@@ -22,7 +23,7 @@ export async function getAccounts(
   const supabase = await createClient();
   let query = supabase
     .from("accounts")
-    .select("id, name, type, currency, archived_at, household_id")
+    .select("id, name, type, currency, archived_at, household_id, credit_limit_minor, payment_day")
     .order("name");
   query =
     scope.kind === "personal"
@@ -36,4 +37,22 @@ export async function getAccounts(
     type: a.type as AccountType,
     currency: a.currency as CurrencyCode,
   }));
+}
+
+/**
+ * Deuda de hoy de cada tarjeta (account_balance, 0024: en credit_card
+ * positivo = lo que se debe, saldo inicial incluido). Ajustes la usa para el
+ * cupo disponible. Una consulta por tarjeta: son pocas.
+ */
+export async function getCardDebts(accounts: AccountSummary[]): Promise<Record<string, number>> {
+  const cards = accounts.filter((a) => a.type === "credit_card");
+  if (cards.length === 0) return {};
+  const supabase = await createClient();
+  const entries = await Promise.all(
+    cards.map(async (a) => {
+      const { data } = await supabase.rpc("account_balance", { p_account_id: a.id });
+      return [a.id, Number(data ?? 0)] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
 }

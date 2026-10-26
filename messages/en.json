@@ -983,10 +983,20 @@
     "archived": "Archived",
     "archivedSection": "Archived",
     "renameLabel": "New name for {name}",
+    "optional": "Optional",
+    "payDayPlaceholder": "1 to 31 (optional)",
+    "cardBalance": "Current balance",
+    "cardBalanceHint": "What you owe today. It’s saved as an opening balance, not as an expense.",
+    "editCard": "Limit and balance",
+    "payDayShort": "due on the {day}",
+    "available": "{available} available of {limit}",
+    "usedPercent": "{percent}% of limit used",
+    "noLimit": "No credit limit set",
     "errors": {
       "nameRequired": "Enter a name",
       "nameTooLong": "The name can be up to 80 characters",
       "invalid": "Check the data",
+      "balanceBelowMovements": "Your card transactions already add up to more than that balance. Enter a higher balance or review the transactions.",
       "failed": "Couldn't save. Try again."
     }
   },

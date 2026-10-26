@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.32.0] - 2026-10-26
+
+### Ajustes: tarjetas de crédito con cupo, día de pago y saldo actual
+
+- Verificado: 0023 (`accounts.credit_limit_minor`, `payment_day`) sí está aplicada en el proyecto real (`supabase migration list --linked` y los tipos generados del esquema remoto). Sin migración nueva.
+- Crear una cuenta tipo Tarjeta de crédito en Ajustes pide también Cupo total, Día de pago (1 a 31) y Saldo actual (lo que se debe hoy), todos opcionales. Las reglas son las del wizard: `parseCreditLimit` y `parsePaymentDay` salen de `lib/accounts/credit.ts` y el wizard (`lib/onboarding/logic.ts`) las usa; `validateCreditForm` arma el formulario de Ajustes con los mismos mensajes.
+- Cada tarjeta tiene "Cupo y saldo" para editar los tres campos, también archivada. El saldo actual se guarda como el saldo inicial `kind = 'opening'` de 0024 (no es gasto ni ingreso): `syncCardOpening` mantiene un único opening vivo, calculado como saldo escrito − el resto de movimientos (`openingFor`). Como 0024 no deja cambiar el monto de un opening, el viejo se marca `deleted_at` y se crea otro; repetir el mismo saldo no cambia nada. Si los movimientos ya suman más que el saldo escrito, se avisa en lugar de crear un opening negativo.
+- La tarjeta en Ajustes muestra "Disponible X de Y" (cupo − deuda de hoy, `account_balance`) con barra de uso, y el día de pago.
+- Tests: `lib/accounts/credit.test.ts` y `supabase/tests/card_opening_replace.sql`.
+
 ## [0.31.0] - 2026-10-26
 
 ### Dashboard: tarjeta de Deudas con progreso y vencimientos
