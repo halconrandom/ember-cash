@@ -48,7 +48,54 @@ describe("validateDebt", () => {
         aprKind: "EA",
         minPayment: money(320_000n, "COP"),
         dueDay: 22,
+        balance: null,
       },
+    });
+  });
+
+  describe("saldo actual (pago inicial)", () => {
+    it("vacío o ausente = sin pago inicial", () => {
+      // `debt` no trae balance: igual que un cliente anterior.
+      expect(validateDebt(debt, "es")).toMatchObject({ ok: true, value: { balance: null } });
+      expect(validateDebt({ ...debt, balance: "  " }, "es")).toMatchObject({
+        ok: true,
+        value: { balance: null },
+      });
+    });
+
+    it("acepta un saldo menor o igual al principal, y 0", () => {
+      expect(validateDebt({ ...debt, balance: "2.849.990" }, "es")).toMatchObject({
+        ok: true,
+        value: { balance: money(2_849_990n, "COP") },
+      });
+      expect(validateDebt({ ...debt, balance: "4.900.000" }, "es")).toMatchObject({ ok: true });
+      expect(validateDebt({ ...debt, balance: "0" }, "es")).toMatchObject({
+        ok: true,
+        value: { balance: money(0n, "COP") },
+      });
+    });
+
+    it("rechaza un saldo mayor que el principal o inválido", () => {
+      expect(validateDebt({ ...debt, balance: "4.900.001" }, "es")).toEqual({
+        ok: false,
+        errors: { balance: "balanceTooHigh" },
+      });
+      expect(validateDebt({ ...debt, balance: "-5" }, "es")).toMatchObject({ ok: false });
+    });
+
+    it("al editar descuenta los pagos reales", () => {
+      // Principal 4.900.000 con 1.000.000 en pagos reales: saldo máximo 3.900.000.
+      expect(validateDebt({ ...debt, balance: "3.900.000" }, "es", 1_000_000n)).toMatchObject({
+        ok: true,
+      });
+      expect(validateDebt({ ...debt, balance: "3.900.001" }, "es", 1_000_000n)).toEqual({
+        ok: false,
+        errors: { balance: "balanceTooHigh" },
+      });
+      expect(validateDebt({ ...debt, principal: "900.000" }, "es", 1_000_000n)).toEqual({
+        ok: false,
+        errors: { principal: "principalBelowPaid" },
+      });
     });
   });
 
@@ -72,10 +119,7 @@ describe("validateDebt", () => {
 
   it("acepta una deuda en EUR (fase E2.1)", () => {
     expect(
-      validateDebt(
-        { ...debt, currency: "EUR", principal: "4.900,00", minPayment: "320,00" },
-        "es",
-      ),
+      validateDebt({ ...debt, currency: "EUR", principal: "4.900,00", minPayment: "320,00" }, "es"),
     ).toMatchObject({
       ok: true,
       value: {

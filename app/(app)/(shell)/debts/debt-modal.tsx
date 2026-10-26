@@ -3,7 +3,8 @@
 /**
  * Modal para crear o editar una deuda: nombre, detalle, ícono, moneda,
  * principal original, tasa anual y su tipo (EA o nominal), pago mínimo y día
- * de pago. Al editar se puede borrar: es irreversible, así que usa "mantener
+ * de pago, y el saldo actual opcional (lo ya pagado queda como pago
+ * inicial, sin transacción; ver 0029_debt_opening_payment.sql). Al editar se puede borrar: es irreversible, así que usa "mantener
  * 2 s" (puntero o Enter/Espacio) o, como alternativa, la confirmación en dos
  * pasos; después hay 6 s para deshacer (deleted_at) antes del borrado final.
  */
@@ -63,6 +64,12 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
   );
   const [aprKind, setAprKind] = useState<AprKind>(editing?.aprKind ?? "EA");
   const [minPayment, setMinPayment] = useState(editing ? f.amount(editing.minPayment) : "");
+  // Saldo actual: solo se muestra lleno si la deuda ya tiene pago inicial.
+  // Vacío = sin pago inicial (al editar, lo borra si existía).
+  const [balance, setBalance] = useState(
+    editing && editing.openingPaid.amountMinor > 0n ? f.amount(editing.balance) : "",
+  );
+  const realPaidMinor = editing ? editing.paid.amountMinor - editing.openingPaid.amountMinor : 0n;
   const [dueDay, setDueDay] = useState(editing?.dueDay ? String(editing.dueDay) : "");
   const [errors, setErrors] = useState<Partial<Record<DebtField, DebtErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -88,8 +95,9 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
       aprKind,
       minPayment,
       dueDay,
+      balance,
     };
-    const check = validateDebt(input, locale);
+    const check = validateDebt(input, locale, realPaidMinor);
     if (!check.ok) {
       setErrors(check.errors);
       return;
@@ -212,6 +220,17 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
           formKey="debts"
           error={err("principal")}
           disabled={currencyLocked}
+        />
+
+        <Field
+          label={t("modal.balance")}
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder={t("modal.balancePlaceholder")}
+          value={balance}
+          onChange={(e) => (setBalance(e.target.value), clear("balance"))}
+          error={err("balance")}
+          hint={t("modal.balanceHint")}
         />
 
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">

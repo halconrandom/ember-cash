@@ -2,7 +2,7 @@
  * Consultas de deudas (servidor). Las deudas son siempre personales (la tabla
  * no tiene household_id), así que no dependen del scope. Excluye las
  * cerradas y las borradas. El saldo es el principal original menos el
- * capital pagado.
+ * capital pagado (incluido el pago inicial, is_opening).
  */
 import "server-only";
 
@@ -21,6 +21,8 @@ export type DebtSummary = {
   original: Money;
   /** Capital pagado (suma de principal_minor de los pagos). */
   paid: Money;
+  /** Parte de paid que es el pago inicial (is_opening, 0029). */
+  openingPaid: Money;
   /** Saldo = original − pagado (nunca negativo). */
   balance: Money;
   aprBps: number;
@@ -40,12 +42,15 @@ type Row = {
   apr_kind: string;
   min_payment_minor: number;
   due_day: number | null;
-  debt_payments: { principal_minor: number }[];
+  debt_payments: { principal_minor: number; is_opening: boolean }[];
 };
 
 function toSummary(r: Row): DebtSummary {
   const currency = r.currency as CurrencyCode;
   const paidMinor = r.debt_payments.reduce((s, p) => s + BigInt(p.principal_minor), 0n);
+  const openingMinor = r.debt_payments
+    .filter((p) => p.is_opening)
+    .reduce((s, p) => s + BigInt(p.principal_minor), 0n);
   const originalMinor = BigInt(r.original_principal_minor);
   const balanceMinor = originalMinor - paidMinor;
   return {
@@ -55,6 +60,7 @@ function toSummary(r: Row): DebtSummary {
     iconKey: (r.icon_key ?? "credit-card") as DebtIcon,
     original: money(originalMinor, currency),
     paid: money(paidMinor, currency),
+    openingPaid: money(openingMinor, currency),
     balance: money(balanceMinor > 0n ? balanceMinor : 0n, currency),
     aprBps: r.apr_bps,
     aprKind: r.apr_kind as AprKind,
@@ -64,7 +70,7 @@ function toSummary(r: Row): DebtSummary {
 }
 
 const COLUMNS =
-  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, debt_payments(principal_minor)";
+  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, debt_payments(principal_minor, is_opening)";
 
 export async function listDebts(): Promise<DebtSummary[]> {
   const supabase = await createClient();

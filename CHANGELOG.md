@@ -2,6 +2,17 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.29.0] - 2026-10-25
+
+### Deudas: saldo actual y pago inicial
+
+- El modal de deuda (crear y editar) tiene un campo opcional **Saldo actual**: para una deuda que ya se venía pagando, se escribe el principal original y cuánto se debe hoy. La diferencia (principal − pagos reales − saldo actual) se guarda como un **pago inicial**: capital puro (interés 0), con la fecha de apertura de la deuda (`started_on`). Así el % pagado y "original / pagado" salen bien desde el primer día.
+- El pago inicial no crea transacción vinculada ni salda vencimientos: no es un gasto ni toca el balance de ningún mes ni de ninguna cuenta (mismo criterio que el saldo inicial de cuentas, 0024).
+- `0029_debt_opening_payment.sql`: `debt_payments.is_opening` (a lo sumo uno por deuda, índice único parcial; sin transacción ni interés por constraint) y `set_debt_opening` (security invoker), que fija el principal y el pago inicial en un solo paso. Editar varias veces reemplaza ese único pago; los pagos reales no se tocan.
+- Al editar, "Saldo actual" es el saldo de hoy contando el pago inicial y los pagos reales; sale lleno solo si la deuda ya tiene pago inicial. Vacío = sin pago inicial (si había uno, se quita). El saldo no puede pasar de principal − pagos reales ni ser negativo, y el principal no puede quedar por debajo de lo ya pagado (validación compartida en `validateDebt` y, en la base, `set_debt_opening` y el trigger `debts_guard_principal`).
+- El saldo sigue saliendo de la suma de `principal_minor`, así que el payoff, los próximos cobros y el bot de Telegram (`/abono`, `telegram_list_debts`) ven el saldo correcto sin cambios.
+- Tests: `lib/debts/schema.test.ts` (saldo actual) y `supabase/tests/debt_opening.sql`.
+
 ## [0.28.0] - 2026-10-20
 
 ### Fase T4: comandos del bot de Telegram (2/2)

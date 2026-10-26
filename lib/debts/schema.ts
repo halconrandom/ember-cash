@@ -60,10 +60,12 @@ export const debtInputSchema = z.object({
   aprKind: z.enum(["EA", "nominal"]),
   minPayment: z.string(),
   dueDay: z.string(),
+  /** Saldo actual (opcional). Vacío = sin pago inicial. */
+  balance: z.string().default(""),
 });
-export type DebtInput = z.infer<typeof debtInputSchema>;
+export type DebtInput = z.input<typeof debtInputSchema>;
 export type DebtField =
-  "name" | "subtitle" | "iconKey" | "principal" | "apr" | "minPayment" | "dueDay";
+  "name" | "subtitle" | "iconKey" | "principal" | "apr" | "minPayment" | "dueDay" | "balance";
 export type DebtErrorKey =
   | AmountError
   | "nameRequired"
@@ -71,7 +73,9 @@ export type DebtErrorKey =
   | "subtitleTooLong"
   | "iconRequired"
   | "aprInvalid"
-  | "dueDayInvalid";
+  | "dueDayInvalid"
+  | "balanceTooHigh"
+  | "principalBelowPaid";
 
 export type ValidDebt = {
   id: string | null;
@@ -83,11 +87,22 @@ export type ValidDebt = {
   aprKind: AprKind;
   minPayment: Money;
   dueDay: number | null;
+  /**
+   * Saldo actual (pago inicial + pagos reales ya descontados), o null si no
+   * se escribió: sin pago inicial. Pago inicial = principal − pagos reales −
+   * saldo (ver 0029_debt_opening_payment.sql).
+   */
+  balance: Money | null;
 };
 
+/**
+ * realPaidMinor: capital de los pagos reales (sin el inicial) de la deuda que
+ * se edita; 0 al crear. El servidor vuelve a comprobarlo en set_debt_opening.
+ */
 export function validateDebt(
   raw: unknown,
   locale: Locale,
+  realPaidMinor: bigint = 0n,
 ):
   { ok: true; value: ValidDebt } | { ok: false; errors: Partial<Record<DebtField, DebtErrorKey>> } {
   const parsed = debtInputSchema.safeParse(raw);
@@ -108,6 +123,17 @@ export function validateDebt(
   if (!minPayment.ok) errors.minPayment = amountError(minPayment.error);
   const aprBps = parseAprBps(i.apr);
   if (aprBps === null) errors.apr = "aprInvalid";
+
+  let balance: Money | null = null;
+  if (i.balance.trim()) {
+    const b = parseMoney(i.balance, i.currency, locale, { allowZero: true });
+    if (!b.ok) errors.balance = amountError(b.error);
+    else if (principal.ok && b.value.amountMinor > principal.value.amountMinor - realPaidMinor)
+      errors.balance = "balanceTooHigh";
+    else balance = b.value;
+  }
+  if (principal.ok && !errors.balance && principal.value.amountMinor < realPaidMinor)
+    errors.principal = "principalBelowPaid";
 
   let dueDay: number | null = null;
   if (i.dueDay.trim()) {
@@ -130,6 +156,7 @@ export function validateDebt(
       aprKind: i.aprKind,
       minPayment: minPayment.value,
       dueDay,
+      balance,
     },
   };
 }

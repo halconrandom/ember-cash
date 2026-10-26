@@ -171,6 +171,7 @@ export type Database = {
           debt_id: string;
           id: string;
           interest_minor: number;
+          is_opening: boolean;
           paid_on: string;
           principal_minor: number;
           transaction_id: string | null;
@@ -180,6 +181,7 @@ export type Database = {
           debt_id: string;
           id?: string;
           interest_minor?: number;
+          is_opening?: boolean;
           paid_on: string;
           principal_minor?: number;
           transaction_id?: string | null;
@@ -189,6 +191,7 @@ export type Database = {
           debt_id?: string;
           id?: string;
           interest_minor?: number;
+          is_opening?: boolean;
           paid_on?: string;
           principal_minor?: number;
           transaction_id?: string | null;
@@ -1255,6 +1258,14 @@ export type Database = {
           p_occurred_on: string;
           p_paid_by: string;
           p_transfer_to_account_id: string;
+        };
+        Returns: string;
+      };
+      set_debt_opening: {
+        Args: {
+          p_balance_minor: number;
+          p_debt_id: string;
+          p_principal_minor: number;
         };
         Returns: string;
       };
