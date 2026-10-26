@@ -192,6 +192,26 @@ describe("validatePayment", () => {
   });
 });
 
+describe("pago de tarjeta como gasto (0032)", () => {
+  const base = {
+    debtId: "11111111-1111-4111-8111-111111111111",
+    currency: "COP" as const,
+    amount: "500.000",
+    interest: "0",
+    paidOn: "2026-10-17",
+    createTransaction: true,
+    accountId: "22222222-2222-4222-8222-222222222222",
+  };
+  it("cuenta como gasto por defecto y se puede apagar", () => {
+    expect(validatePayment(base, "es", "2026-10-17")).toMatchObject({
+      value: { countAsExpense: true },
+    });
+    expect(validatePayment({ ...base, countAsExpense: false }, "es", "2026-10-17")).toMatchObject({
+      value: { countAsExpense: false },
+    });
+  });
+});
+
 describe("próximo vencimiento", () => {
   it("este mes o el siguiente, ajustado al último día", () => {
     expect(nextDueDate(22, "2026-10-16")).toBe("2026-10-22");

@@ -24,6 +24,7 @@ export const CATEGORY_META: Record<CategoryKey, CategoryMeta> = {
   health: { icon: "heart", tone: "olive" },
   leisure: { icon: "ticket", tone: "pink" },
   other: { icon: "menu-dots", tone: "neutral" },
+  card_payment: { icon: "credit-card", tone: "negative" },
   salary: { icon: "arrow-small-down", tone: "positive" },
   other_income: { icon: "arrow-small-down", tone: "positive" },
 };
@@ -50,7 +51,10 @@ export const ACCOUNT_TYPES = [
 export function categoriesFor(
   kind: "expense" | "income",
 ): readonly (ExpenseCategoryKey | IncomeCategoryKey)[] {
-  return kind === "expense" ? EXPENSE_CATEGORY_KEYS : INCOME_CATEGORY_KEYS;
+  // card_payment es de sistema: solo la pone "Registrar pago" de una tarjeta.
+  return kind === "expense"
+    ? EXPENSE_CATEGORY_KEYS.filter((k) => k !== "card_payment")
+    : INCOME_CATEGORY_KEYS;
 }
 
 export function isCategoryOfKind(key: string, kind: "expense" | "income"): boolean {

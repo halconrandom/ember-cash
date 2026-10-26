@@ -26,6 +26,8 @@ export type TransactionRow = {
   paidBy: string | null;
   account: AccountRef | null;
   transferTo: AccountRef | null;
+  /** Pago de tarjeta que cuenta como gasto "Pago de tarjeta" (0032). */
+  countsAsExpense?: boolean;
   /**
    * Compartida con un reparto o pagador que ya salió del hogar: solo se
    * editan categoría y nota (0010). Solo lo llena getTransaction.
@@ -40,12 +42,12 @@ export type TransactionPage = {
   pageCount: number;
 };
 
-const COLUMNS =
-  "id, kind, category_key, description, note, amount_minor, currency, occurred_on, paid_by, household_id, " +
+export const COLUMNS =
+  "id, kind, category_key, description, note, amount_minor, currency, occurred_on, paid_by, household_id, counts_as_expense, " +
   "account:accounts!transactions_account_id_fkey(id, name, type), " +
   "transfer_to:accounts!transactions_transfer_to_account_id_fkey(id, name, type)";
 
-type DbRow = {
+export type DbRow = {
   id: string;
   kind: string;
   category_key: string | null;
@@ -55,11 +57,12 @@ type DbRow = {
   currency: string;
   occurred_on: string;
   paid_by: string | null;
+  counts_as_expense?: boolean | null;
   account: { id: string; name: string; type: string } | null;
   transfer_to: { id: string; name: string; type: string } | null;
 };
 
-function toRow(r: DbRow): TransactionRow {
+export function toRow(r: DbRow): TransactionRow {
   return {
     id: r.id,
     kind: r.kind as TransactionKind,
@@ -69,6 +72,7 @@ function toRow(r: DbRow): TransactionRow {
     amount: money(r.amount_minor, r.currency as CurrencyCode),
     occurredOn: r.occurred_on,
     paidBy: r.paid_by,
+    countsAsExpense: Boolean(r.counts_as_expense),
     account: r.account ? { ...r.account, type: r.account.type as AccountType } : null,
     transferTo: r.transfer_to
       ? { ...r.transfer_to, type: r.transfer_to.type as AccountType }
@@ -105,8 +109,13 @@ export async function listTransactions(
   if (from) query = query.gte("occurred_on", from);
   if (to) query = query.lte("occurred_on", to);
 
-  if (filters.type !== "all") query = query.eq("kind", filters.type);
+  // Un pago de tarjeta como gasto (0032) es una transferencia marcada: sale en
+  // Gastos, en Transferencias y en la categoría card_payment.
+  if (filters.type === "expense") query = query.or("kind.eq.expense,counts_as_expense.is.true");
+  else if (filters.type !== "all") query = query.eq("kind", filters.type);
   if (filters.category === "transfer") query = query.eq("kind", "transfer");
+  else if (filters.category === "card_payment")
+    query = query.or("category_key.eq.card_payment,counts_as_expense.is.true");
   else if (filters.category !== "all") query = query.eq("category_key", filters.category);
   if (filters.currency !== "all") query = query.eq("currency", filters.currency);
   if (filters.account !== "all") {

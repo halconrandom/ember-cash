@@ -20,6 +20,7 @@
     "calendar": "Calendar",
     "household": "Household",
     "settings": "Settings",
+    "accounts": "Account statements",
     "more": "More"
   },
   "pages": {
@@ -840,6 +841,7 @@
     "health": "Health",
     "leisure": "Leisure",
     "other": "Other",
+    "card_payment": "Card payment",
     "salary": "Salary",
     "other_income": "Other income",
     "transfer": "Transfer"
@@ -997,6 +999,22 @@
     "cardMinPayment": "Minimum payment",
     "cardDebtHint": "With a balance, the card shows up in Debts with this rate and minimum.",
     "inDebts": "In Debts",
+    "statement": {
+      "title": "Account statements",
+      "cardTitle": "Accounts",
+      "open": "View account statements",
+      "empty": "You don’t have active accounts yet.",
+      "debt": "Owed",
+      "availableOf": "{available} available of {limit}",
+      "noLimit": "No credit limit saved",
+      "apr": "Rate {rate}% APR",
+      "noTerms": "No payment day or rate saved",
+      "recent": "Recent activity",
+      "recentTransfers": "Recent transfers",
+      "noMovements": "No activity yet.",
+      "viewAll": "View all",
+      "viewDebt": "View its debt"
+    },
     "errors": {
       "nameRequired": "Enter a name",
       "nameTooLong": "The name can be up to 80 characters",
@@ -1226,6 +1244,8 @@
       "date": "Date",
       "createTransaction": "Also create the transaction",
       "cardHint": "It’s saved as a transfer from the account you choose to the card: it lowers the card balance and doesn’t count as an expense.",
+      "countAsExpense": "Count as this month’s expense",
+      "cardHintExpense": "It leaves the account you choose and lowers the card balance once. It counts as a \"Card payment\" expense this month.",
       "fromAccount": "Pay from",
       "noSourceAccounts": "Create an account in this currency in Settings to pay the card.",
       "account": "Account",

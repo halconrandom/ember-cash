@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.35.0] - 2026-10-26
+
+### Pago de tarjeta como gasto, Cuentas y Estado de cuentas
+
+- Registrar pago de una deuda de tarjeta: nuevo interruptor "Contar como gasto del mes" (activado por defecto). El pago sigue siendo una sola transferencia banco → tarjeta, así que el banco y la tarjeta bajan una vez cada uno. Marcada con `transactions.counts_as_expense` (migración 0032), `dashboard_totals` la suma como gasto de la nueva categoría de sistema "Pago de tarjeta" (`card_payment`): entra en Gastos del mes, Balance del mes, gastos por categoría y tendencia. Apagado, es la transferencia neutra de 0.33.0. Borrar el pago revierte ambas cuentas y el gasto. La categoría no se elige a mano. Telegram no cambia.
+- /transactions: el pago como gasto sale con la etiqueta "Pago de tarjeta", signo "-" y "Banco → Tarjeta". Aparece en las pestañas Gastos y Transferencias y en el filtro de categoría "Pago de tarjeta".
+- Dashboard: nueva tarjeta "Cuentas" con el saldo de cada cuenta personal activa (`account_balance`). Las tarjetas muestran la deuda y el disponible del cupo, no un saldo positivo. Abajo, las 3 últimas transferencias en estilo neutro. Nada de esto se suma a Deudas ni al Balance del mes. Arriba del dashboard, un botón "Estado de cuentas".
+- Nueva página /accounts (Estado de cuentas): una tarjeta por cuenta con tipo, moneda, saldo o deuda, cupo, disponible, día de pago y tasa (tarjetas), sus últimos 8 movimientos, "Ver todos" (/transactions?account=ID) y, en tarjetas con deuda, "Ver su deuda". Las archivadas van aparte, colapsadas.
+- Tests: SQL `card_payment_expense` (cada cuenta baja una vez, entra a Gastos y a la categoría, la transferencia neutra no entra, borrar revierte, aislamiento RLS) y unitarios de cifras de cuenta, movimientos por cuenta y el interruptor.
+
 ## [0.34.0] - 2026-10-26
 
 ### Transferencias visibles

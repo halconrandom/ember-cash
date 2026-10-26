@@ -1060,6 +1060,7 @@ export type Database = {
           account_id: string;
           amount_minor: number;
           category_key: string | null;
+          counts_as_expense: boolean;
           created_at: string;
           currency: string;
           debt_id: string | null;
@@ -1081,6 +1082,7 @@ export type Database = {
           account_id: string;
           amount_minor: number;
           category_key?: string | null;
+          counts_as_expense?: boolean;
           created_at?: string;
           currency: string;
           debt_id?: string | null;
@@ -1102,6 +1104,7 @@ export type Database = {
           account_id?: string;
           amount_minor?: number;
           category_key?: string | null;
+          counts_as_expense?: boolean;
           created_at?: string;
           currency?: string;
           debt_id?: string | null;

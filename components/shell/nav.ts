@@ -14,6 +14,7 @@ export type NavKey =
   | "calendar"
   | "household"
   | "settings"
+  | "accounts"
   | "more";
 
 export type NavEntry = {
@@ -46,7 +47,14 @@ export const TAB_ITEMS: readonly NavEntry[] = [
 ];
 
 /** Rutas que dejan activa la pestaña Más (m10). */
-const MORE_PREFIXES = ["/more", "/debts", "/subscriptions", "/household", "/settings"] as const;
+const MORE_PREFIXES = [
+  "/more",
+  "/accounts",
+  "/debts",
+  "/subscriptions",
+  "/household",
+  "/settings",
+] as const;
 
 /**
  * Por ruta: título (clave de nav.*), subtítulo fijo opcional (clave de
@@ -116,6 +124,7 @@ export const PAGE_TITLES: Record<string, PageConfig> = {
     action: { label: "household.addShared", param: "tx" },
   },
   "/settings": { title: "settings" },
+  "/accounts": { title: "accounts" },
   "/more": { title: "more", subtitle: "moreSubtitle" },
 };
 

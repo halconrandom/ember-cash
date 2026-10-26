@@ -42,6 +42,8 @@ export const EXPENSE_CATEGORY_KEYS = [
   "health",
   "leisure",
   "other",
+  // De sistema (0032): pagos de tarjeta que cuentan como gasto. No se elige a mano.
+  "card_payment",
 ] as const;
 /** Categorías de ingreso sembradas, en su orden (`sort`). */
 export const INCOME_CATEGORY_KEYS = ["salary", "other_income"] as const;

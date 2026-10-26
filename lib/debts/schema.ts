@@ -182,6 +182,8 @@ export const paymentInputSchema = z.object({
   paidOn: z.string(),
   createTransaction: z.boolean(),
   accountId: z.string(),
+  /** Deuda de tarjeta (0032): la transferencia cuenta como gasto card_payment. */
+  countAsExpense: z.boolean().optional(),
 });
 export type PaymentInput = z.infer<typeof paymentInputSchema>;
 export type PaymentField = "amount" | "interest" | "paidOn" | "accountId";
@@ -196,6 +198,7 @@ export type ValidPayment = {
   principal: Money;
   paidOn: string;
   accountId: string | null;
+  countAsExpense: boolean;
 };
 
 export function validatePayment(
@@ -236,6 +239,7 @@ export function validatePayment(
       },
       paidOn: i.paidOn,
       accountId: i.createTransaction ? i.accountId : null,
+      countAsExpense: i.countAsExpense ?? true,
     },
   };
 }

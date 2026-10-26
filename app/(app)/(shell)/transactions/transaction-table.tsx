@@ -173,14 +173,16 @@ function capitalize(s: string) {
 function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () => void }) {
   const t = useTranslations();
   const { displayCurrency } = useRate();
-  const meta =
-    row.kind === "transfer"
+  const meta = row.countsAsExpense
+    ? CATEGORY_META.card_payment
+    : row.kind === "transfer"
       ? TRANSFER_META
       : row.categoryKey
         ? CATEGORY_META[row.categoryKey]
         : TRANSFER_META;
-  const categoryLabel =
-    row.kind === "transfer"
+  const categoryLabel = row.countsAsExpense
+    ? t("categories.card_payment")
+    : row.kind === "transfer"
       ? t("categories.transfer")
       : row.categoryKey
         ? t(`categories.${row.categoryKey}`)
@@ -234,7 +236,13 @@ function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () =
       </span>
       <MoneyAmount
         value={row.amount}
-        sign={row.kind === "expense" ? "-" : row.kind === "income" ? "+" : undefined}
+        sign={
+          row.kind === "expense" || row.countsAsExpense
+            ? "-"
+            : row.kind === "income"
+              ? "+"
+              : undefined
+        }
         positive={row.kind === "income"}
         insideInteractive
         className="justify-self-end text-right"

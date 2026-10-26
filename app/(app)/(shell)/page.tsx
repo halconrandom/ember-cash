@@ -10,6 +10,8 @@
  * Todo respeta el scope y el mes elegido (?month); "Agregar" de la topbar
  * abre el modal de transacciones aquí mismo (?tx=new).
  */
+import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { getAccounts } from "@/lib/accounts/queries";
@@ -19,6 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CardSkeleton } from "./_dashboard/card-frame";
 import { DoneHintSlot, FirstStepsSlot, SkippedSlot } from "./_dashboard/onboarding-slots";
 import {
+  AccountsSlot,
   CategorySlot,
   context,
   DebtsSlot,
@@ -52,6 +55,9 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
         <Suspense fallback={null}>
           <FirstStepsSlot />
         </Suspense>
+        <Suspense fallback={null}>
+          <StatementLink />
+        </Suspense>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
           {(["balance", "income", "expenses"] as const).map((card) => (
             <div key={card} className={card === "balance" ? "col-span-2 lg:col-span-1" : undefined}>
@@ -78,6 +84,9 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
           </Suspense>
           <div className="space-y-6">
             <Suspense fallback={<CardSkeleton rows={2} />}>
+              <AccountsSlot />
+            </Suspense>
+            <Suspense fallback={<CardSkeleton rows={2} />}>
               <DebtsSlot />
             </Suspense>
             <Suspense fallback={<CardSkeleton rows={2} />}>
@@ -90,6 +99,21 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
         <AddTransaction searchParams={searchParams} />
       </Suspense>
     </>
+  );
+}
+
+/** Arriba del dashboard: abre el estado de cada cuenta (/accounts). */
+async function StatementLink() {
+  const t = await getTranslations("accounts.statement");
+  return (
+    <div className="flex justify-end">
+      <Link
+        href="/accounts"
+        className="text-callout text-ember-text rounded-control border-border hover:bg-surface2 inline-flex items-center gap-2 border px-3 py-1.5 font-medium"
+      >
+        {t("title")}
+      </Link>
+    </div>
   );
 }
 

@@ -215,8 +215,8 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
   if (!debt || debt.currency !== p.amount.currency) return { ok: false, error: "failed" };
 
   // Tarjeta enlazada (0031): el pago es una transferencia de otra cuenta a la
-  // tarjeta. Baja la deuda de la tarjeta y no es gasto ni ingreso (las
-  // compras de la tarjeta ya son los gastos). Todo el monto es capital: el
+  // tarjeta: baja una vez cada cuenta. Con countAsExpense (0032, por defecto)
+  // además cuenta como gasto "Pago de tarjeta" del mes; si no, es neutra. Todo el monto es capital: el
   // interés que cobre el banco entra como movimiento de la tarjeta.
   if (debt.account_id) {
     if (!p.accountId || p.accountId === debt.account_id) {
@@ -233,6 +233,7 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
         currency: p.amount.currency,
         occurred_on: p.paidOn,
         debt_id: p.debtId,
+        counts_as_expense: p.countAsExpense,
       })
       .select("id")
       .single();
@@ -255,6 +256,8 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
     revalidatePath("/transactions");
     revalidatePath("/calendar");
     revalidatePath("/settings");
+    revalidatePath("/accounts");
+    revalidatePath("/");
     return { ok: true };
   }
 

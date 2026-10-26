@@ -9,6 +9,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { TopbarSubtitle } from "@/components/shell/topbar-context";
+import { getAccountStatements } from "@/lib/accounts/statement";
 import { getCurrentProfile, requireUser } from "@/lib/auth/session";
 import { lastMonths } from "@/lib/dashboard/aggregate";
 import {
@@ -25,6 +26,7 @@ import { getScope } from "@/lib/scope/server";
 import { shiftMonth, todayIn } from "@/lib/transactions/dates";
 import { parseFilters } from "@/lib/transactions/filters";
 
+import { AccountsCard } from "./accounts-card";
 import { CardError } from "./card-error";
 import { CategoryCard } from "./category-card";
 import { StatCard } from "./stat-cards";
@@ -175,4 +177,14 @@ export async function SubscriptionsSlot() {
     return <CardError title={t("subscriptions")} />;
   }
   return <SubscriptionsCard summary={data} />;
+}
+
+/** Cuentas personales activas: saldos y últimas transferencias (resumen de /accounts). */
+export async function AccountsSlot() {
+  const data = await safe(() => getAccountStatements({ includeArchived: false, recent: 5 }));
+  if (data === FAILED) {
+    const t = await getTranslations("accounts.statement");
+    return <CardError title={t("cardTitle")} />;
+  }
+  return <AccountsCard accounts={data} />;
 }

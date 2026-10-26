@@ -54,6 +54,7 @@ export function PaymentModal({ debt, accounts, today }: Props) {
   const [paidOn, setPaidOn] = useState(today);
   const card = Boolean(debt?.accountId);
   const [createTx, setCreateTx] = useState(card);
+  const [asExpense, setAsExpense] = useState(true);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [errors, setErrors] = useState<Partial<Record<PaymentField, PaymentErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -81,6 +82,7 @@ export function PaymentModal({ debt, accounts, today }: Props) {
       interest: card ? "0" : interest,
       createTransaction: card || createTx,
       accountId,
+      countAsExpense: card ? asExpense : undefined,
     };
     const check = validatePayment(input, locale, today);
     if (!check.ok) {
@@ -148,7 +150,21 @@ export function PaymentModal({ debt, accounts, today }: Props) {
           />
         </div>
         {card ? (
-          <p className="text-callout text-ink-2">{t("payment.cardHint")}</p>
+          <div className="space-y-2">
+            <label className="text-body text-ink flex items-center gap-3">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={asExpense}
+                onChange={(e) => setAsExpense(e.target.checked)}
+                className="size-5 accent-[var(--ember-fill)]"
+              />
+              {t("payment.countAsExpense")}
+            </label>
+            <p className="text-callout text-ink-2">
+              {asExpense ? t("payment.cardHintExpense") : t("payment.cardHint")}
+            </p>
+          </div>
         ) : (
           <div className="space-y-2">
             <Field

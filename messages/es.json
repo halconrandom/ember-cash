@@ -20,6 +20,7 @@
     "calendar": "Calendario",
     "household": "Hogar",
     "settings": "Ajustes",
+    "accounts": "Estado de cuentas",
     "more": "Más"
   },
   "pages": {
@@ -840,6 +841,7 @@
     "health": "Salud",
     "leisure": "Ocio",
     "other": "Otros",
+    "card_payment": "Pago de tarjeta",
     "salary": "Salario",
     "other_income": "Otros ingresos",
     "transfer": "Transferencia"
@@ -997,6 +999,22 @@
     "cardMinPayment": "Pago mínimo",
     "cardDebtHint": "Con saldo, la tarjeta aparece en Deudas con esta tasa y este mínimo.",
     "inDebts": "En Deudas",
+    "statement": {
+      "title": "Estado de cuentas",
+      "cardTitle": "Cuentas",
+      "open": "Ver estado de cuentas",
+      "empty": "Aún no tienes cuentas activas.",
+      "debt": "Deuda",
+      "availableOf": "Disponible {available} de {limit}",
+      "noLimit": "Sin cupo registrado",
+      "apr": "Tasa {rate} % EA",
+      "noTerms": "Sin día de pago ni tasa registrados",
+      "recent": "Movimientos recientes",
+      "recentTransfers": "Transferencias recientes",
+      "noMovements": "Sin movimientos todavía.",
+      "viewAll": "Ver todos",
+      "viewDebt": "Ver su deuda"
+    },
     "errors": {
       "nameRequired": "Escribe un nombre",
       "nameTooLong": "El nombre puede tener hasta 80 caracteres",
@@ -1226,6 +1244,8 @@
       "date": "Fecha",
       "createTransaction": "Crear también la transacción",
       "cardHint": "Se registra como una transferencia de la cuenta que elijas a la tarjeta: baja la deuda de la tarjeta y no cuenta como gasto.",
+      "countAsExpense": "Contar como gasto del mes",
+      "cardHintExpense": "Sale de la cuenta que elijas y baja la deuda de la tarjeta una sola vez. Cuenta como gasto \"Pago de tarjeta\" en este mes.",
       "fromAccount": "Pagar desde",
       "noSourceAccounts": "Crea en Ajustes una cuenta en esta moneda para pagar la tarjeta.",
       "account": "Cuenta",
