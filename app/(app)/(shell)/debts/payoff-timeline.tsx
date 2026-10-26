@@ -3,8 +3,10 @@
 /**
  * Gráfica "Plan de pago" (04-debts.png): una barra por deuda, en el orden en
  * que se termina, desde hoy hasta su mes de pago; una línea vertical marca el
- * mes libre de deudas. El eje muestra el año en cada etiqueta (spec §4.10:
- * "Oct 2026", nunca "Oct 26") cada 12 meses, con guías sin texto cada 6.
+ * mes libre de deudas. El eje lleva a lo sumo 5 etiquetas con paso
+ * adaptable (axisTicks: mes, trimestre, semestre, año o N años); con paso
+ * anual solo el año ("2027"), si no "oct 2026" (spec §4.10: siempre con año).
+ * Una guía por etiqueta. Fechas con formatMonthShort ("ago 2027", sin "de").
  * Al cambiar de método, los anchos se transforman con un spring sin rebote.
  * Barras en ember-fill (DESIGN_SPEC §1: barras de pago).
  */
@@ -13,6 +15,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import type { PayoffResult } from "@/lib/debts/payoff";
+import { axisTicks } from "@/lib/debts/plan";
 import { useFormat } from "@/lib/i18n/use-format";
 import { useFirstView } from "@/lib/motion/first-view";
 import { shiftMonth } from "@/lib/transactions/dates";
@@ -21,45 +24,44 @@ type Props = {
   plan: Extract<PayoffResult, { ok: true }>;
   names: Record<string, string>;
   startMonth: string;
+  /** Hay deudas fuera del plan: la etiqueta final dice "de las deudas del plan". */
+  partial?: boolean;
 };
 
-export function PayoffTimeline({ plan, names, startMonth }: Props) {
+export function PayoffTimeline({ plan, names, startMonth, partial = false }: Props) {
   const t = useTranslations("debts");
   // Las barras crecen solo en la primera carga; al cambiar de método
   // (Avalanche/Snowball) se reacomodan con el resorte desde su ancho actual.
   const first = useFirstView();
   const f = useFormat();
-  // Eje: años completos desde hoy, mínimo dos.
-  const axisMonths = 12 * Math.max(2, Math.ceil(plan.months / 12));
-  const years = Array.from({ length: axisMonths / 12 + 1 }, (_, i) => i * 12);
-  const guides = Array.from({ length: axisMonths / 6 + 1 }, (_, i) => i * 6);
+  const { axisMonths, ticks, yearly } = axisTicks(plan.months);
   const pct = (months: number) => `${(months / axisMonths) * 100}%`;
-  const label = (month: string) => f.date(`${month}-01`, "shortMonthYear");
+  const label = (month: string) => f.monthShort(month);
 
   return (
     <figure aria-label={t("timelineLabel")}>
       <div className="text-callout text-ink-2 relative mb-2 h-5" aria-hidden>
-        {years.map((m, i) => (
+        {ticks.map((m, i) => (
           <span
             key={m}
-            className="absolute whitespace-nowrap capitalize"
+            className="absolute whitespace-nowrap"
             style={
               i === 0
                 ? { left: 0 }
-                : i === years.length - 1
+                : i === ticks.length - 1
                   ? { right: 0 }
                   : { left: pct(m), transform: "translateX(-50%)" }
             }
           >
-            {label(shiftMonth(startMonth, m))}
+            {f.monthShort(shiftMonth(startMonth, m), yearly)}
           </span>
         ))}
       </div>
 
       <div className="relative">
-        {/* Guías cada 6 meses y línea del mes libre de deudas. */}
+        {/* Una guía por etiqueta y línea del mes libre de deudas. */}
         <div className="pointer-events-none absolute inset-0" aria-hidden>
-          {guides.map((m) => (
+          {ticks.map((m) => (
             <span
               key={m}
               className="bg-divider absolute top-0 bottom-0 w-px"
@@ -84,7 +86,7 @@ export function PayoffTimeline({ plan, names, startMonth }: Props) {
                   </span>
                   <span className="text-body text-ink truncate font-semibold">{names[d.id]}</span>
                 </span>
-                <span className="text-callout text-ink-2 whitespace-nowrap capitalize">
+                <span className="text-callout text-ink-2 whitespace-nowrap">
                   {label(d.payoffMonth)}
                 </span>
               </div>
@@ -104,7 +106,7 @@ export function PayoffTimeline({ plan, names, startMonth }: Props) {
       <figcaption className="mt-3 flex justify-end">
         <span className="bg-positive-tint text-callout text-positive-text inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-semibold">
           <Icon name="flag" size={16} />
-          {t("debtFreeBadge", { date: label(plan.debtFreeMonth) })}
+          {t(partial ? "debtFreePlanBadge" : "debtFreeBadge", { date: label(plan.debtFreeMonth) })}
         </span>
       </figcaption>
     </figure>

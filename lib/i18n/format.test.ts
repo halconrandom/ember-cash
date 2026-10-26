@@ -50,3 +50,13 @@ describe("formatCompactDate", () => {
     expect(formatCompactDate("2026-10-17", "en")).toBe("Oct 17");
   });
 });
+
+describe("formatMonthShort", () => {
+  it("mes corto y año, sin preposición ni mayúscula", async () => {
+    const { formatMonthShort } = await import("./format");
+    expect(formatMonthShort("2027-08", "es")).toBe("ago 2027");
+    expect(formatMonthShort("2027-08", "en")).toBe("Aug 2027");
+    expect(formatMonthShort("2026-09", "es")).not.toMatch(/\.|de/);
+    expect(formatMonthShort("2045-05", "es", true)).toBe("2045");
+  });
+});

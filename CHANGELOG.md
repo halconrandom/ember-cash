@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.30.0] - 2026-10-26
+
+### Deudas: fuera del plan, eje legible y vencimientos ya pagados
+
+- **Fuera del plan**: `0030_debt_exclude_from_plan.sql` agrega `debts.exclude_from_plan` (por defecto false; las políticas de `debts` ya la cubren). En el modal, "Incluir en el plan de pago" (activado por defecto). Una deuda excluida no entra en avalancha / bola de nieve, el Gantt, la fecha libre ni el pago extra (`lib/debts/plan.ts`, `planInput`); sigue en "Tus deudas", en los totales, en el resumen del inicio y en Telegram. Su tarjeta lleva el chip "Fuera del plan". Si hay excluidas, la fecha dice "Libre de las deudas del plan"; si todas están fuera, el panel muestra "Todas tus deudas están fuera del plan".
+- **Eje del plan**: `axisTicks` deja a lo sumo 5 etiquetas, con paso de 1, 3 o 6 meses, o 1, 2, 3, 5, 10 o 20 años según el largo; con paso anual solo el año ("2027"). Las fechas salen con `formatMonthShort` ("ago 2027" / "Aug 2027"): sin "de" ni la mayúscula de `capitalize` que daba "Ago De 2027".
+- **"El saldo ya incluye el pago de este mes"** (solo al crear): el vencimiento del mes queda pagado, sin transacción, sin pago de capital y sin tocar balances; el próximo es el del mes siguiente.
+- **Vencimientos ya pagados**: la tarjeta de cada deuda (y el próximo vencimiento del inicio) calculaban la fecha solo con el día de pago e ignoraban los pagos, así que seguía en rojo "Vence el 25 de oct" después de pagar. Ahora (`debtDueState`) un mes con pago real (no el inicial de 0029) o con el vencimiento pagado u omitido pasa al siguiente, con el chip "Pagado este mes". El día exacto sale "Vence hoy" en ámbar. `recordPayment` crea los vencimientos del mes antes de saldarlos, por si todavía no existían.
+- "Pagos mínimos mensuales" e "Interés este mes" siguen siendo el compromiso y la estimación del mes completo (no se descuenta lo ya pagado).
+
 ## [0.29.0] - 2026-10-25
 
 ### Deudas: saldo actual y pago inicial

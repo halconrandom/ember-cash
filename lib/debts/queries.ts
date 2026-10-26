@@ -29,6 +29,14 @@ export type DebtSummary = {
   aprKind: AprKind;
   minPayment: Money;
   dueDay: number | null;
+  /** Fuera del plan de pago (0030): no entra en la simulación ni en el extra. */
+  excludeFromPlan: boolean;
+  /**
+   * Meses ("AAAA-MM") con el vencimiento ya saldado: un pago real ese mes, o
+   * el vencimiento marcado como pagado u omitido (p. ej. "el saldo ya incluye
+   * el pago de este mes"). El pago inicial (is_opening) no cuenta.
+   */
+  paidMonths: string[];
 };
 
 type Row = {
@@ -42,7 +50,9 @@ type Row = {
   apr_kind: string;
   min_payment_minor: number;
   due_day: number | null;
-  debt_payments: { principal_minor: number; is_opening: boolean }[];
+  exclude_from_plan: boolean;
+  debt_payments: { principal_minor: number; is_opening: boolean; paid_on: string }[];
+  recurring_items: { kind: string; recurring_occurrences: { due_on: string; status: string }[] }[];
 };
 
 function toSummary(r: Row): DebtSummary {
@@ -66,11 +76,22 @@ function toSummary(r: Row): DebtSummary {
     aprKind: r.apr_kind as AprKind,
     minPayment: money(r.min_payment_minor, currency),
     dueDay: r.due_day,
+    excludeFromPlan: r.exclude_from_plan,
+    paidMonths: [
+      ...new Set([
+        ...r.debt_payments.filter((p) => !p.is_opening).map((p) => p.paid_on.slice(0, 7)),
+        ...r.recurring_items
+          .filter((i) => i.kind === "debt_payment")
+          .flatMap((i) => i.recurring_occurrences)
+          .filter((o) => o.status === "paid" || o.status === "skipped")
+          .map((o) => o.due_on.slice(0, 7)),
+      ]),
+    ].sort(),
   };
 }
 
 const COLUMNS =
-  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, debt_payments(principal_minor, is_opening)";
+  "id, name, subtitle, icon_key, currency, original_principal_minor, apr_bps, apr_kind, min_payment_minor, due_day, exclude_from_plan, debt_payments(principal_minor, is_opening, paid_on), recurring_items(kind, recurring_occurrences(due_on, status))";
 
 export async function listDebts(): Promise<DebtSummary[]> {
   const supabase = await createClient();

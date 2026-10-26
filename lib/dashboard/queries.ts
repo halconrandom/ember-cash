@@ -20,7 +20,7 @@ import { cache } from "react";
 import type { IconName } from "@/components/ui/icon-registry";
 import { getCurrentProfile } from "@/lib/auth/session";
 import type { CategoryKey, CurrencyCode, RecurringFrequency, RecurringKind } from "@/lib/db/types";
-import { nextDueDate } from "@/lib/debts/dates";
+import { debtDueState } from "@/lib/debts/dates";
 import { listDebts } from "@/lib/debts/queries";
 import { listGoals, type GoalSummary } from "@/lib/goals/queries";
 import { add, money, type Money } from "@/lib/money/money";
@@ -61,7 +61,8 @@ export const getAggregates = cache(
       categoryKey: r.category_key as CategoryKey,
       amount: money(r.total_minor, r.currency as CurrencyCode),
       converted: money(r.converted_minor, displayCurrency),
-      uncovered: r.uncovered_minor > 0 ? money(r.uncovered_minor, r.currency as CurrencyCode) : null,
+      uncovered:
+        r.uncovered_minor > 0 ? money(r.uncovered_minor, r.currency as CurrencyCode) : null,
       count: r.tx_count,
     }));
   },
@@ -169,7 +170,7 @@ export async function getDebtsSummary(today: string): Promise<DebtsSummary> {
   const debts = (await listDebts()).filter((d) => d.balance.amountMinor > 0n);
   const dues = debts
     .filter((d) => d.dueDay !== null)
-    .map((d) => nextDueDate(d.dueDay!, today))
+    .map((d) => debtDueState(d.dueDay!, today, d.paidMonths).due)
     .sort();
   return {
     count: debts.length,

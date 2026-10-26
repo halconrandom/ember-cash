@@ -62,6 +62,13 @@ export const debtInputSchema = z.object({
   dueDay: z.string(),
   /** Saldo actual (opcional). Vacío = sin pago inicial. */
   balance: z.string().default(""),
+  /** En el plan de pago (avalancha / bola de nieve). false = exclude_from_plan. */
+  includeInPlan: z.boolean().default(true),
+  /**
+   * Solo al crear: el saldo escrito ya descuenta el pago de este mes, así que
+   * el vencimiento del mes queda saldado (sin transacción ni pago de capital).
+   */
+  paidThisMonth: z.boolean().default(false),
 });
 export type DebtInput = z.input<typeof debtInputSchema>;
 export type DebtField =
@@ -93,6 +100,9 @@ export type ValidDebt = {
    * saldo (ver 0029_debt_opening_payment.sql).
    */
   balance: Money | null;
+  includeInPlan: boolean;
+  /** Siempre false al editar (solo aplica al crear). */
+  paidThisMonth: boolean;
 };
 
 /**
@@ -157,6 +167,8 @@ export function validateDebt(
       minPayment: minPayment.value,
       dueDay,
       balance,
+      includeInPlan: i.includeInPlan,
+      paidThisMonth: i.id === null && i.paidThisMonth,
     },
   };
 }

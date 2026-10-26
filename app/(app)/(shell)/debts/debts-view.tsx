@@ -5,7 +5,9 @@
  * las deudas en otra moneda se convierten con la tasa más reciente y llevan
  * su "original" debajo. El plan de pago se simula en la moneda elegida
  * (lib/debts/payoff.ts); si falta la tasa y hay monedas mezcladas, no se
- * simula y se explica por qué.
+ * simula y se explica por qué. Las deudas fuera del plan (exclude_from_plan)
+ * siguen en la lista y en los totales, pero no en la simulación, el Gantt,
+ * la fecha libre ni el pago extra (lib/debts/plan.ts).
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -22,13 +24,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { CurrencyCode } from "@/lib/db/types";
-import { isDueSoon, nextDueDate } from "@/lib/debts/dates";
+import { debtDueState } from "@/lib/debts/dates";
 import {
   monthlyInterest,
   monthlyRateScaled,
   simulatePayoff,
   type PayoffMethod,
 } from "@/lib/debts/payoff";
+import { planInput } from "@/lib/debts/plan";
 import type { DebtSummary } from "@/lib/debts/queries";
 import { goalPercent } from "@/lib/goals/status";
 import { useFormat } from "@/lib/i18n/use-format";
@@ -74,20 +77,28 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
     return list.every(Boolean) ? (list as { d: DebtSummary; balance: Money; min: Money }[]) : null;
   }, [active, displayCurrency, usable]);
 
-  const plan = useMemo(() => {
+  // Entrada del plan: solo las deudas que no están fuera del plan.
+  const planIn = useMemo(() => {
     if (!converted) return null;
-    return simulatePayoff({
-      debts: converted.map(({ d, balance, min }) => ({
+    return planInput(
+      converted.map(({ d, balance, min }) => ({
         id: d.id,
         balanceMinor: balance.amountMinor,
         aprBps: d.aprBps,
         aprKind: d.aprKind,
         minPaymentMinor: min.amountMinor,
+        excludeFromPlan: d.excludeFromPlan,
       })),
       method,
-      startMonth: today.slice(0, 7),
-    });
+      today.slice(0, 7),
+    );
   }, [converted, method, today]);
+  const anyExcluded = active.some((d) => d.excludeFromPlan);
+  const allExcluded = active.length > 0 && active.every((d) => d.excludeFromPlan);
+  const plan = useMemo(
+    () => (planIn && planIn.debts.length > 0 ? simulatePayoff(planIn) : null),
+    [planIn],
+  );
 
   if (debts.length === 0) {
     return (
@@ -153,10 +164,14 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
       return ab < bb ? 1 : ab > bb ? -1 : 0;
     }
     if (sort === "interest") return b.aprBps - a.aprBps;
-    const ad = a.dueDay ? nextDueDate(a.dueDay, today) : "9999";
-    const bd = b.dueDay ? nextDueDate(b.dueDay, today) : "9999";
+    const ad = a.dueDay ? debtDueState(a.dueDay, today, a.paidMonths).due : "9999";
+    const bd = b.dueDay ? debtDueState(b.dueDay, today, b.paidMonths).due : "9999";
     return ad.localeCompare(bd);
   });
+  // Mínimos de las deudas del plan: base del pago extra sugerido.
+  const planMinimums = converted
+    ? converted.filter((x) => !x.d.excludeFromPlan).reduce((s, x) => add(s, x.min), zero)
+    : zero;
   const methodLabel = t(method).toLowerCase();
 
   return (
@@ -206,11 +221,20 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
             <Unavailable />
           )}
         </StatCard>
-        <StatCard icon="flag" label={t("debtFreeDate")} tone="positive">
-          {plan?.ok ? (
+        <StatCard
+          icon="flag"
+          label={anyExcluded ? t("debtFreePlanDate") : t("debtFreeDate")}
+          tone="positive"
+        >
+          {allExcluded && converted ? (
             <>
-              <p className="text-amount-l text-ink capitalize">
-                {plan.months === 0 ? "—" : f.date(`${plan.debtFreeMonth}-01`, "shortMonthYear")}
+              <p className="text-amount-l text-ink">—</p>
+              <p className="text-body text-ink-2">{t("planAllExcludedShort")}</p>
+            </>
+          ) : plan?.ok ? (
+            <>
+              <p className="text-amount-l text-ink">
+                {plan.months === 0 ? "—" : f.monthShort(plan.debtFreeMonth)}
               </p>
               <p className="text-body text-ink-2">
                 {t("debtFreeIn", { months: plan.months, method: methodLabel })}
@@ -272,6 +296,11 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
             </p>
             {!converted ? (
               <p className="text-body text-ink-2">{t("timelineUnavailable")}</p>
+            ) : allExcluded ? (
+              <div className="rounded-row bg-surface2 space-y-1 p-5 text-center">
+                <p className="text-headline text-ink">{t("planAllExcludedTitle")}</p>
+                <p className="text-body text-ink-2">{t("planAllExcludedBody")}</p>
+              </div>
             ) : plan && !plan.ok ? (
               <p className="text-body text-negative-text">{t("timelineNever")}</p>
             ) : plan && plan.ok && plan.months > 0 ? (
@@ -279,25 +308,12 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
                 plan={plan}
                 names={Object.fromEntries(active.map((d) => [d.id, d.name]))}
                 startMonth={today.slice(0, 7)}
+                partial={anyExcluded}
               />
             ) : null}
           </Card>
-          {converted && plan?.ok && plan.months > 0 && (
-            <ExtraPaymentCard
-              currency={displayCurrency}
-              minimums={totals!.minimums}
-              input={{
-                debts: converted.map(({ d, balance, min }) => ({
-                  id: d.id,
-                  balanceMinor: balance.amountMinor,
-                  aprBps: d.aprBps,
-                  aprKind: d.aprKind,
-                  minPaymentMinor: min.amountMinor,
-                })),
-                method,
-                startMonth: today.slice(0, 7),
-              }}
-            />
+          {planIn && plan?.ok && plan.months > 0 && (
+            <ExtraPaymentCard currency={displayCurrency} minimums={planMinimums} input={planIn} />
           )}
         </div>
       </div>
@@ -354,8 +370,9 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
   const shown = (m: Money) => toDisplay(m, displayCurrency, usable) ?? m;
   const canConvert = (m: Money) => toDisplay(m, displayCurrency, usable) !== null;
 
-  const due = debt.dueDay ? nextDueDate(debt.dueDay, today) : null;
-  const soon = due ? isDueSoon(due, today) : false;
+  // Vencimiento sin saldar: si el de este ciclo ya se pagó, el siguiente.
+  const dueState = debt.dueDay ? debtDueState(debt.dueDay, today, debt.paidMonths) : null;
+  const due = dueState?.due ?? null;
   const percent = goalPercent(debt.paid.amountMinor, debt.original.amountMinor);
   /** "1.700.000 de 4.900.000" en COP (unidad compartida); con símbolo en USD. */
   const pair = (paid: Money, total: Money) =>
@@ -375,13 +392,30 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
           <h3 className="text-headline text-ink">{debt.name}</h3>
           {debt.subtitle && <p className="text-callout text-ink-2">{debt.subtitle}</p>}
         </div>
-        {due ? (
+        {debt.excludeFromPlan && (
+          <Badge tone="neutral" className="bg-surface text-ink-2">
+            {t("outOfPlan")}
+          </Badge>
+        )}
+        {dueState?.paidThisCycle && (
+          <Badge tone="positive">
+            <Icon name="check" size={14} />
+            {t("paidThisMonth")}
+          </Badge>
+        )}
+        {dueState ? (
           <Badge
-            tone={soon ? "negative" : "neutral"}
-            className={cn(!soon && "bg-surface text-ink")}
+            tone={
+              dueState.tone === "today"
+                ? "warning"
+                : dueState.tone === "soon"
+                  ? "negative"
+                  : "neutral"
+            }
+            className={cn(dueState.tone === "later" && "bg-surface text-ink")}
           >
             <Icon name="calendar" size={14} />
-            {t("due", { date: f.date(due) })}
+            {dueState.tone === "today" ? t("dueToday") : t("due", { date: f.date(due!) })}
           </Badge>
         ) : (
           <Badge tone="neutral" className="bg-surface">

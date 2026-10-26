@@ -82,6 +82,24 @@ export function formatCompactDate(
     .join(" ");
 }
 
+/**
+ * Mes y año cortos, sin preposición ni punto: "ago 2027" / "Aug 2027". Con
+ * yearOnly, solo el año ("2027"), para ejes con paso anual. Recibe "AAAA-MM".
+ */
+export function formatMonthShort(month: string, locale: Locale, yearOnly = false): string {
+  const date = new Date(`${month}-01T12:00:00Z`);
+  if (yearOnly) return String(date.getUTCFullYear());
+  return new Intl.DateTimeFormat(INTL_TAGS[locale], {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+    .formatToParts(date)
+    .filter((part) => part.type === "month" || part.type === "year")
+    .map((part) => part.value.replace(/\.$/, ""))
+    .join(" ");
+}
+
 /** Hora corta ("2:45 p. m." / "2:45 PM"): la hora de cada fila de "Tasas de hoy". */
 export function formatTime(
   date: Date | string,

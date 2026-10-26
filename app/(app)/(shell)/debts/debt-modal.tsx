@@ -70,6 +70,8 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
     editing && editing.openingPaid.amountMinor > 0n ? f.amount(editing.balance) : "",
   );
   const realPaidMinor = editing ? editing.paid.amountMinor - editing.openingPaid.amountMinor : 0n;
+  const [paidThisMonth, setPaidThisMonth] = useState(false);
+  const [includeInPlan, setIncludeInPlan] = useState(!(editing?.excludeFromPlan ?? false));
   const [dueDay, setDueDay] = useState(editing?.dueDay ? String(editing.dueDay) : "");
   const [errors, setErrors] = useState<Partial<Record<DebtField, DebtErrorKey>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -96,6 +98,8 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
       minPayment,
       dueDay,
       balance,
+      includeInPlan,
+      paidThisMonth,
     };
     const check = validateDebt(input, locale, realPaidMinor);
     if (!check.ok) {
@@ -278,6 +282,42 @@ export function DebtModal({ open, editing }: { open: boolean; editing: DebtSumma
             onChange={(e) => (setDueDay(e.target.value), clear("dueDay"))}
             error={err("dueDay")}
           />
+        </div>
+
+        {!editing && (
+          <div className="space-y-1">
+            <label className="text-body text-ink flex items-center gap-3">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={paidThisMonth}
+                onChange={(e) => setPaidThisMonth(e.target.checked)}
+                className="size-5 accent-[var(--ember-fill)]"
+                aria-describedby="debt-paid-this-month-hint"
+              />
+              {t("modal.paidThisMonth")}
+            </label>
+            <p id="debt-paid-this-month-hint" className="text-callout text-ink-3 pl-8">
+              {t("modal.paidThisMonthHint")}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <label className="text-body text-ink flex items-center gap-3">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={includeInPlan}
+              onChange={(e) => setIncludeInPlan(e.target.checked)}
+              className="size-5 accent-[var(--ember-fill)]"
+              aria-describedby="debt-include-in-plan-hint"
+            />
+            {t("modal.includeInPlan")}
+          </label>
+          <p id="debt-include-in-plan-hint" className="text-callout text-ink-3 pl-8">
+            {t("modal.includeInPlanHint")}
+          </p>
         </div>
 
         {formError && (

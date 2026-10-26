@@ -49,8 +49,31 @@ describe("validateDebt", () => {
         minPayment: money(320_000n, "COP"),
         dueDay: 22,
         balance: null,
+        includeInPlan: true,
+        paidThisMonth: false,
       },
     });
+  });
+
+  it("fuera del plan: por defecto incluida, y se puede excluir", () => {
+    expect(validateDebt(debt, "es")).toMatchObject({ ok: true, value: { includeInPlan: true } });
+    expect(validateDebt({ ...debt, includeInPlan: false }, "es")).toMatchObject({
+      ok: true,
+      value: { includeInPlan: false },
+    });
+  });
+
+  it("el saldo ya incluye el pago del mes: solo al crear", () => {
+    expect(validateDebt({ ...debt, paidThisMonth: true }, "es")).toMatchObject({
+      ok: true,
+      value: { paidThisMonth: true },
+    });
+    expect(
+      validateDebt(
+        { ...debt, id: "11111111-1111-4111-8111-111111111111", paidThisMonth: true },
+        "es",
+      ),
+    ).toMatchObject({ ok: true, value: { paidThisMonth: false } });
   });
 
   describe("saldo actual (pago inicial)", () => {

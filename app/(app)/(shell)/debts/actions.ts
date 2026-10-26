@@ -25,8 +25,9 @@ import {
 } from "@/lib/debts/schema";
 import { isLocale } from "@/lib/i18n/config";
 import { markDebtOccurrencePaid, syncDebtRecurring } from "@/lib/recurring/debts";
+import { ensureOccurrences } from "@/lib/recurring/ensure";
 import { createClient } from "@/lib/supabase/server";
-import { todayIn } from "@/lib/transactions/dates";
+import { monthBounds, todayIn } from "@/lib/transactions/dates";
 
 async function context() {
   const user = await requireUser();
@@ -58,6 +59,7 @@ export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
     apr_kind: d.aprKind,
     min_payment_minor: Number(d.minPayment.amountMinor),
     due_day: d.dueDay,
+    exclude_from_plan: !d.includeInPlan,
   };
   const supabase = await createClient();
   // Al editar, el principal lo fija set_debt_opening junto con el pago
@@ -92,9 +94,31 @@ export async function saveDebt(input: unknown): Promise<DebtSaveResult> {
     }
   }
   await syncDebtRecurring(supabase, { ownerId: user.id, today });
+  // "El saldo ya incluye el pago de este mes" (solo al crear): el vencimiento
+  // del mes queda pagado sin transacción ni pago de capital. Si el día de
+  // pago de este mes ya pasó, no hay vencimiento este mes y no hace nada.
+  if (d.paidThisMonth) await settleMonth(supabase, user.id, data.id, today, null);
   revalidatePath("/debts");
   revalidatePath("/calendar");
   return { ok: true, id: data.id };
+}
+
+/**
+ * Salda el vencimiento del mes de `date`. Primero materializa los
+ * vencimientos de ese mes (idempotente), por si el cron o el calendario
+ * todavía no los crearon: si no, markDebtOccurrencePaid no encuentra nada y
+ * la tarjeta seguiría diciendo "Vence el …".
+ */
+async function settleMonth(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ownerId: string,
+  debtId: string,
+  date: string,
+  transactionId: string | null,
+) {
+  const { from, to } = monthBounds(date.slice(0, 7));
+  await ensureOccurrences(supabase, to, { from, ownerId });
+  await markDebtOccurrencePaid(supabase, debtId, date, transactionId);
 }
 
 async function setDeleted(id: string, deleted: boolean) {
@@ -189,7 +213,7 @@ export async function recordPayment(input: unknown): Promise<PaymentResult> {
     if (transactionId) await supabase.from("transactions").delete().eq("id", transactionId);
     return { ok: false, error: limitOr(error, "failed") };
   }
-  await markDebtOccurrencePaid(supabase, p.debtId, p.paidOn, transactionId);
+  await settleMonth(supabase, user.id, p.debtId, p.paidOn, transactionId);
   revalidatePath("/debts");
   revalidatePath("/transactions");
   revalidatePath("/calendar");

@@ -221,6 +221,7 @@ export type Database = {
           currency: string;
           deleted_at: string | null;
           due_day: number | null;
+          exclude_from_plan: boolean;
           icon_key: string | null;
           id: string;
           min_payment_minor: number;
@@ -237,6 +238,7 @@ export type Database = {
           currency: string;
           deleted_at?: string | null;
           due_day?: number | null;
+          exclude_from_plan?: boolean;
           icon_key?: string | null;
           id?: string;
           min_payment_minor?: number;
@@ -253,6 +255,7 @@ export type Database = {
           currency?: string;
           deleted_at?: string | null;
           due_day?: number | null;
+          exclude_from_plan?: boolean;
           icon_key?: string | null;
           id?: string;
           min_payment_minor?: number;
