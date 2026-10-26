@@ -154,6 +154,11 @@ describe("filtros", () => {
     });
   });
 
+  it("pestaña Transferencias", () => {
+    expect(parseFilters({ type: "transfer" }, today).type).toBe("transfer");
+    expect(parseFilters({ type: "opening" }, today).type).toBe("all");
+  });
+
   it("lee filtros válidos y descarta los raros", () => {
     const f = parseFilters(
       {

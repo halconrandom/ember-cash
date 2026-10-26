@@ -489,6 +489,16 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
         >
           {t("recordPayment")}
         </Button>
+        {debt.accountId && (
+          <Button
+            variant="soft"
+            size="sm"
+            icon="exchange"
+            onClick={() => router.push(`/transactions?account=${debt.accountId}&range=all`)}
+          >
+            {t("cardMovements")}
+          </Button>
+        )}
         <Button
           variant="secondary"
           size="sm"

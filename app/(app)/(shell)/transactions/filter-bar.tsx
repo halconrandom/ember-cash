@@ -203,6 +203,7 @@ export function FilterBar({ filters, accounts, today }: Props) {
             { value: "all", label: t("transactions.tabAll") },
             { value: "income", label: t("transactions.tabIncome") },
             { value: "expense", label: t("transactions.tabExpenses") },
+            { value: "transfer", label: t("transactions.tabTransfers") },
           ]}
           value={filters.type}
           onChange={(v) => apply({ type: v })}

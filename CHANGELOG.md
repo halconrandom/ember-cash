@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.34.0] - 2026-10-26
+
+### Transferencias visibles
+
+- /transactions: nueva pestaña "Transferencias" junto a Todo / Ingresos / Gastos (`?type=transfer`, filtra `kind=transfer`). La lista ya mostraba cada transferencia con la etiqueta "Transferencia", "Origen → Destino", monto con código ISO y estilo neutro.
+- /debts: las deudas vinculadas a una tarjeta tienen "Ver movimientos de la tarjeta", que abre /transactions filtrado por esa cuenta (todo el historial): ahí salen los pagos (transferencias entrantes) y las compras.
+- Totales de ingresos, gastos, categorías y tendencia sin cambios: las transferencias siguen fuera de esos cálculos.
+
 ## [0.33.1] - 2026-10-26
 
 ### Deudas de tarjeta: principal editable y avance real

@@ -13,7 +13,8 @@ import { addDays, DATE_PATTERN, monthBounds, MONTH_PATTERN } from "./dates";
 /** Filas por página (como 02-transactions.png: "Showing 9 of 42"). */
 export const PAGE_SIZE = 9;
 
-export const TYPE_TABS = ["all", "income", "expense"] as const;
+/** "transfer" muestra solo transferencias (p. ej. el pago de una tarjeta, 0031). */
+export const TYPE_TABS = ["all", "income", "expense", "transfer"] as const;
 export const RANGES = ["month", "last30", "last90", "year", "all", "custom"] as const;
 const CATEGORY_FILTERS = [
   "all",
