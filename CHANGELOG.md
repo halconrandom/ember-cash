@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.35.1] - 2026-10-26
+
+### Tarjetas del dashboard congeladas a medio contar
+
+- Causa: las tarjetas Ingresos, Gastos y Balance del mes escriben su número con el Number Ticker, que solo mostraba lo que el resorte de animación alcanzaba a contar. Si el navegador pausa los cuadros (pestaña en segundo plano, captura, equipo ocupado), el texto quedaba a medio camino. En octubre las tres tarjetas se quedaron exactamente en el 90,26 % del valor real: 7.073.615 en vez de 7.836.663, 1.609.718 en vez de 1.783.362 y 5.463.897 en vez de 6.053.301. Los datos y `dashboard_totals` estaban bien: tarjetas, tendencia, categorías y /transactions salen de las mismas filas.
+- Arreglo: al terminar el conteo, o a los 1,5 s como tope, el ticker escribe siempre el valor exacto. Un cambio posterior (moneda o mes) también escribe el valor directo.
+- Tests de regresión: el ticker termina exacto sin cuadros de animación, y el caso de octubre (dos ingresos el mismo día y cuenta, un pago de tarjeta como gasto, comparación con septiembre) cuadra entre tarjetas, tendencia y categorías.
+
 ## [0.35.0] - 2026-10-26
 
 ### Pago de tarjeta como gasto, Cuentas y Estado de cuentas

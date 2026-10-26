@@ -67,10 +67,7 @@ describe("monthTotals suma lo ya convertido", () => {
   });
 
   it("una fila sin tasa (uncovered) marca partial, aunque converted siga sumando lo que sí se pudo", () => {
-    const withGap = [
-      ...ROWS,
-      row("2026-10", "expense", "food", 5_000n, "EUR", 0n, 1, 5_000n),
-    ];
+    const withGap = [...ROWS, row("2026-10", "expense", "food", 5_000n, "EUR", 0n, 1, 5_000n)];
     const t = monthTotals(withGap, "2026-10", "COP");
     // El EUR sin tasa no suma al total (nunca se inventa), pero sí queda marcado.
     expect(t.expenses).toEqual(money(3_713_960n, "COP"));
@@ -167,5 +164,39 @@ describe("originBreakdown", () => {
       expect.arrayContaining([money(12_450_000n, "COP"), money(11_599n, "USD")]),
     );
     expect(breakdown).toHaveLength(2);
+  });
+});
+
+describe("regresión v0.35.1: tarjetas, tendencia y categorías cuadran", () => {
+  // Octubre de Isaac: dos ingresos el 22 en Banco de Bogotá, gastos por
+  // categoría y un pago de tarjeta contado como gasto (card_payment).
+  const rows = [
+    row("2026-10", "income", "salary", 7_186_495n, "COP", 7_186_495n),
+    row("2026-10", "income", "other_income", 650_168n, "COP", 650_168n),
+    row("2026-10", "expense", "housing", 989_523n, "COP", 989_523n, 2),
+    row("2026-10", "expense", "other", 449_752n, "COP", 449_752n),
+    row("2026-10", "expense", "leisure", 344_087n, "COP", 344_087n),
+    row("2026-10", "expense", "card_payment", 204_827n, "COP", 204_827n),
+    row("2026-09", "income", "salary", 7_000_000n, "COP", 7_000_000n),
+    row("2026-09", "expense", "food", 1_000_000n, "COP", 1_000_000n),
+  ];
+
+  it("la tarjeta usa las mismas filas que la tendencia y las categorías", () => {
+    const oct = monthTotals(rows, "2026-10", "COP");
+    expect(oct.income).toEqual(money(7_836_663n, "COP"));
+    const cats = spendingByCategory(rows, "2026-10", "COP");
+    expect(oct.expenses).toEqual(cats.total);
+    expect(oct.expenses).toEqual(money(1_988_189n, "COP"));
+    expect(oct.balance).toEqual(money(7_836_663n - 1_988_189n, "COP"));
+    const last = trend(rows, lastMonths("2026-10", 2), "COP").points.at(-1)!;
+    expect(last.income).toEqual(oct.income);
+    expect(last.expenses).toEqual(oct.expenses);
+  });
+
+  it("el mes anterior solo cambia el porcentaje, no el valor mostrado", () => {
+    const oct = monthTotals(rows, "2026-10", "COP");
+    const sep = monthTotals(rows, "2026-09", "COP");
+    expect(percentChange(oct.income, sep.income)).toBe(12);
+    expect(monthTotals(rows, "2026-10", "COP").income).toEqual(oct.income);
   });
 });

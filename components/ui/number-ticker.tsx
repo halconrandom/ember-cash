@@ -16,9 +16,12 @@
  * - Con movimiento reducido muestra el valor final sin contar.
  */
 import { useInView, useMotionValue, useReducedMotion, useSpring } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
+
+/** Tope del conteo: después se muestra el valor exacto pase lo que pase. */
+export const TICKER_MAX_MS = 1500;
 
 type Props = {
   value: number;
@@ -39,17 +42,29 @@ export function NumberTicker({ value, format, animate, className }: Props) {
   // ¿Ya contó una vez? Los cambios siguientes saltan sin animación.
   const done = useRef(!ticking);
 
+  // El texto final no puede depender de que el resorte llegue al final: si
+  // el navegador pausa los cuadros (pestaña en segundo plano, captura) o el
+  // resorte se corta, el número quedaba congelado a medio contar (v0.35.1:
+  // 7.073.615 en vez de 7.836.663, el 90 % en las tres tarjetas). Al terminar
+  // el conteo (o a los TICKER_MAX_MS) se escribe siempre el valor exacto.
+  const settle = useCallback(() => {
+    springValue.jump(value);
+    if (ref.current) ref.current.textContent = format(value);
+  }, [springValue, value, format]);
+
   useEffect(() => {
     if (!done.current) {
       if (!isInView) return;
       done.current = true;
       motionValue.set(value);
-      return;
+      const timer = setTimeout(settle, TICKER_MAX_MS);
+      const off = springValue.on("animationComplete", settle);
+      return () => (clearTimeout(timer), off());
     }
     // Cambio posterior (moneda o mes): directo al valor, sin contar.
     motionValue.jump(value);
-    springValue.jump(value);
-  }, [isInView, value, motionValue, springValue]);
+    settle();
+  }, [isInView, value, motionValue, springValue, settle]);
 
   useEffect(
     () =>
