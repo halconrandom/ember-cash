@@ -904,6 +904,8 @@
     "retry": "Reintentar",
     "edit": "Editar {description}",
     "transferTo": "{from} → {to}",
+    "transferFrom": "Desde {account}",
+    "transferOut": "Hacia {account}",
     "deleted": "Transacción borrada",
     "restored": "Transacción restaurada",
     "deleteFailed": "No se pudo borrar. Intenta de nuevo.",

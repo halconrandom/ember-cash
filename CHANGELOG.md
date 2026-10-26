@@ -2,6 +2,14 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.35.2] - 2026-10-26
+
+### Transferencias vistas desde la cuenta filtrada
+
+- /transactions?account=ID: una transferencia (incluido el pago de tarjeta) muestra el signo desde la cuenta filtrada. En la tarjeta que recibe el pago sale "+monto" en verde con "Desde {banco}"; en la cuenta de origen, "-monto" con "Hacia {tarjeta}".
+- Sin filtro de cuenta no cambia el signo (el pago de tarjeta sigue como gasto, "-"), pero "Origen → Destino" ya no se corta: hace wrap y tiene tooltip.
+- Solo presentación: totales, Gastos del mes y `dashboard_totals` no cambian.
+
 ## [0.35.1] - 2026-10-26
 
 ### Tarjetas del dashboard congeladas a medio contar

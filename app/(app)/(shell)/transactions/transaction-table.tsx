@@ -27,6 +27,7 @@ import { Icon } from "@/components/ui/icon";
 import { ACCOUNT_TYPE_ICON, CATEGORY_META, TRANSFER_META } from "@/lib/categories";
 import { useFirstView } from "@/lib/motion/first-view";
 import { withFilters } from "@/lib/transactions/filters";
+import { transferPerspective } from "@/lib/transactions/perspective";
 import type { DayGroup } from "@/lib/transactions/group";
 import type { TransactionRow } from "@/lib/transactions/queries";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,9 @@ export function TransactionTable({ rows, groups, total, page, pageCount, filtere
   const pathname = usePathname();
   const params = useSearchParams();
   const byId = new Map(rows.map((r) => [r.id, r]));
+  // Con filtro de cuenta, las transferencias se ven desde esa cuenta.
+  const accountFilter = params.get("account");
+  const viewAccountId = accountFilter && accountFilter !== "all" ? accountFilter : null;
   const first = useFirstView();
   // Lista base: filtros y página actuales (sin el modal) y los días que ya
   // estaban. Si cambian los filtros, la base se renueva sin animar.
@@ -143,6 +147,7 @@ export function TransactionTable({ rows, groups, total, page, pageCount, filtere
                     <AnimatedListItem key={id}>
                       <TransactionRowView
                         row={row}
+                        viewAccountId={viewAccountId}
                         onOpen={() =>
                           router.push(`${pathname}${withFilters(params, { tx: row.id })}`, {
                             scroll: false,
@@ -170,7 +175,15 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () => void }) {
+function TransactionRowView({
+  row,
+  viewAccountId,
+  onOpen,
+}: {
+  row: TransactionRow;
+  viewAccountId: string | null;
+  onOpen: () => void;
+}) {
   const t = useTranslations();
   const { displayCurrency } = useRate();
   const meta = row.countsAsExpense
@@ -187,10 +200,23 @@ function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () =
       : row.categoryKey
         ? t(`categories.${row.categoryKey}`)
         : "";
+  const perspective = transferPerspective(row, viewAccountId);
   const accountLabel =
-    row.kind === "transfer" && row.transferTo
-      ? t("transactions.transferTo", { from: row.account?.name ?? "", to: row.transferTo.name })
-      : (row.account?.name ?? "");
+    perspective === "in"
+      ? t("transactions.transferFrom", { account: row.account?.name ?? "" })
+      : perspective === "out"
+        ? t("transactions.transferOut", { account: row.transferTo?.name ?? "" })
+        : row.kind === "transfer" && row.transferTo
+          ? t("transactions.transferTo", { from: row.account?.name ?? "", to: row.transferTo.name })
+          : (row.account?.name ?? "");
+  const sign =
+    perspective === "in"
+      ? "+"
+      : perspective === "out" || row.kind === "expense" || row.countsAsExpense
+        ? "-"
+        : row.kind === "income"
+          ? "+"
+          : undefined;
 
   return (
     <button
@@ -218,7 +244,7 @@ function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () =
           </span>
           {row.note && <span className="text-callout text-ink-2 block truncate">{row.note}</span>}
           {/* En la lista del teléfono la categoría y la cuenta van bajo el nombre (m03). */}
-          <span className="text-footnote text-ink-2 block truncate lg:hidden">
+          <span className="text-footnote text-ink-2 block break-words lg:hidden">
             {[categoryLabel, accountLabel].filter(Boolean).join(" · ")}
           </span>
         </span>
@@ -232,18 +258,14 @@ function TransactionRowView({ row, onOpen }: { row: TransactionRow; onOpen: () =
         {row.account && (
           <Icon name={ACCOUNT_TYPE_ICON[row.account.type]} size={18} className="shrink-0" />
         )}
-        <span className="truncate">{accountLabel}</span>
+        <span className="break-words" title={accountLabel}>
+          {accountLabel}
+        </span>
       </span>
       <MoneyAmount
         value={row.amount}
-        sign={
-          row.kind === "expense" || row.countsAsExpense
-            ? "-"
-            : row.kind === "income"
-              ? "+"
-              : undefined
-        }
-        positive={row.kind === "income"}
+        sign={sign}
+        positive={row.kind === "income" || perspective === "in"}
         insideInteractive
         className="justify-self-end text-right"
         primaryClassName="text-headline"
