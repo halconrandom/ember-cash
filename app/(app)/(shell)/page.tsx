@@ -67,7 +67,10 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
             </div>
           ))}
         </div>
-        <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        {/* grid-cols-1 (minmax(0,1fr)) en el teléfono: sin columnas explícitas
+            la columna implícita es auto y se estira al ancho de lo que no se
+            parte, empujando la página más allá de la pantalla. */}
+        <div className="grid grid-cols-1 gap-6 min-[600px]:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           <Suspense fallback={<CardSkeleton rows={7} className="min-h-[420px]" />}>
             <CategorySlot searchParams={searchParams} />
           </Suspense>
@@ -75,7 +78,7 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
             <TrendSlot searchParams={searchParams} />
           </Suspense>
         </div>
-        <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
           <Suspense fallback={<CardSkeleton rows={5} />}>
             <UpcomingSlot />
           </Suspense>

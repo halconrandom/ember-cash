@@ -33,7 +33,11 @@ export default function ShellLayout({ children }: Readonly<{ children: React.Rea
       <TopbarProvider>
         <div className="flex min-w-0 flex-col">
           <Topbar />
-          <main className="flex-1 px-4 pt-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] min-[600px]:pb-8 lg:px-8">
+          {/* overflow-x-clip: red de seguridad para que nada empuje el ancho de
+              la página en el teléfono (las causas se arreglan en cada pantalla).
+              Clip y no hidden: hidden crea un contenedor de scroll y rompe
+              el sticky de la topbar y de lo que vive adentro. */}
+          <main className="flex-1 overflow-x-clip px-4 pt-4 pb-[calc(4.25rem+env(safe-area-inset-bottom))] min-[600px]:pb-8 lg:px-8">
             <div className="lg:mx-auto lg:max-w-[1128px]">
               <Suspense fallback={<ScopeRowFallback />}>
                 <CurrentScopeRow />

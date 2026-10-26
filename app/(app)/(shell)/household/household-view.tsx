@@ -140,7 +140,10 @@ export function HouseholdView(props: Props) {
   const monthLabel = f.date(`${month}-01`, "monthYear");
 
   return (
-    <div id="help-see-household" className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
+    <div
+      id="help-see-household"
+      className="grid grid-cols-1 gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3"
+    >
       {members.map((m) => (
         <MemberCard
           key={m.userId}

@@ -52,7 +52,7 @@ function HouseholdSkeleton() {
   return (
     <div className="space-y-6">
       <div className="h-12" />
-      <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <Card key={i}>
             <SkeletonList rows={2} />

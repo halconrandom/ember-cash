@@ -39,7 +39,7 @@ function SavingsSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <Card key={i} className="flex h-[300px] items-center gap-6">
             <Skeleton className="size-[124px] shrink-0 rounded-full" />

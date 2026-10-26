@@ -190,8 +190,9 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
           {totals ? (
             <MoneyAmount
               variant="total"
+              fit
               value={totals.remaining}
-              primaryClassName="text-amount-l"
+              primaryClassName="text-amount-l-fit"
               secondaryClassName="text-body text-ink-2"
             />
           ) : (
@@ -202,8 +203,9 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
           {totals ? (
             <MoneyAmount
               variant="total"
+              fit
               value={totals.minimums}
-              primaryClassName="text-amount-l"
+              primaryClassName="text-amount-l-fit"
               secondaryClassName="text-body text-ink-2"
             />
           ) : (
@@ -214,8 +216,9 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
           {totals ? (
             <MoneyAmount
               variant="total"
+              fit
               value={totals.interest}
-              primaryClassName="text-amount-l"
+              primaryClassName="text-amount-l-fit"
               secondaryClassName="text-body text-ink-2"
             />
           ) : (
@@ -252,7 +255,7 @@ export function DebtsView({ debts, today }: { debts: DebtSummary[]; today: strin
         </StatCard>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-title2">{t("yourDebts")}</CardTitle>
@@ -437,7 +440,7 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
         <p className="text-callout text-ink-2 mt-2">{t("cardAddRate")}</p>
       )}
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-[1.1fr_0.6fr_1.1fr_1.5fr]">
+      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.6fr)_minmax(0,1.1fr)_minmax(0,1.5fr)]">
         <Stat label={t("remaining")}>
           <AmountText value={shown(debt.balance)} className={dim} />
           {differs && canConvert(debt.balance) && (
@@ -464,7 +467,7 @@ function DebtRow({ debt, today }: { debt: DebtSummary; today: string }) {
         </Stat>
         <Stat label={t("paidOff")}>
           <p className="text-body text-positive-text font-semibold tabular-nums">{percent}%</p>
-          <p className={cn("text-callout text-ink-2 whitespace-nowrap tabular-nums", dim)}>
+          <p className={cn("text-callout text-ink-2 tabular-nums", dim)}>
             {pair(shown(debt.paid), shown(debt.original))}
           </p>
         </Stat>
@@ -530,10 +533,18 @@ function Stat({ label, children }: { label: React.ReactNode; children: React.Rea
 function AmountText({ value, className }: { value: Money; className?: string }) {
   const f = useFormat();
   const { main, unit } = f.moneyParts(value);
+  // En el teléfono cada columna del <dl> mide ~110 px: el número no se parte,
+  // pero "COP" baja de línea (espacio normal, no el no separable) antes
+  // que salirse de la fila.
   return (
-    <p className={cn("text-body text-ink font-semibold whitespace-nowrap tabular-nums", className)}>
-      {main}
-      {unit && <span className="text-ink-3 font-normal">{` ${unit}`}</span>}
+    <p className={cn("text-body text-ink font-semibold tabular-nums", className)}>
+      <span className="whitespace-nowrap">{main}</span>
+      {unit && (
+        <>
+          {" "}
+          <span className="text-ink-3 font-normal whitespace-nowrap">{unit}</span>
+        </>
+      )}
     </p>
   );
 }

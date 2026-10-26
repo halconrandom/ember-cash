@@ -705,3 +705,22 @@ main,
   border-radius: 12px;
   transition: outline-color 200ms var(--ease-out-ember);
 }
+
+/* Montos de las tarjetas de resumen que van de a dos en el teléfono
+   (MoneyAmount con `fit`): el tamaño sigue el ancho de la tarjeta (unidades
+   cqi del contenedor que crea `fit`) entre Headline y el token de su escala, así
+   "8.140.628 COP" nunca se sale de una tarjeta de media pantalla. Se
+   escriben completas (no solo font-size) para no depender del orden de
+   las utilidades frente a text-amount-xl / text-amount-l. */
+@utility text-amount-fit {
+  font-size: clamp(var(--text-headline), 16cqi, var(--text-amount-xl));
+  line-height: var(--text-amount-xl--line-height);
+  letter-spacing: var(--text-amount-xl--letter-spacing);
+  font-weight: var(--text-amount-xl--font-weight);
+}
+@utility text-amount-l-fit {
+  font-size: clamp(var(--text-headline), 14cqi, var(--text-amount-l));
+  line-height: var(--text-amount-l--line-height);
+  letter-spacing: var(--text-amount-l--letter-spacing);
+  font-weight: var(--text-amount-l--font-weight);
+}

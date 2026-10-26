@@ -75,7 +75,8 @@ function agendaAmountParts(
   f: ReturnType<typeof useFormat>,
 ): { main: string; unit: string | null; original: string | null } {
   const differs = value.currency !== displayCurrency;
-  const rate = differs && status !== "error" ? latestRateFor(rates, value.currency, displayCurrency) : null;
+  const rate =
+    differs && status !== "error" ? latestRateFor(rates, value.currency, displayCurrency) : null;
   const primary = rate ? convert(value, displayCurrency, rate) : value;
   const { main, unit } = f.moneyParts(primary);
   return { main, unit, original: differs && rate ? f.money(value) : null };
@@ -191,7 +192,9 @@ export function SubscriptionsView({
       if (!result.ok) {
         toast.show({
           message:
-            result.error === "rateLimited" ? rateLimit("write") : occurrences(`errors.${result.error}`),
+            result.error === "rateLimited"
+              ? rateLimit("write")
+              : occurrences(`errors.${result.error}`),
         });
         return;
       }
@@ -275,23 +278,25 @@ export function SubscriptionsView({
         <SummaryCard icon="refresh" label={t("monthlyTotal")}>
           <MoneyAmount
             variant="total"
+            fit
             value={sumIn(
               active.map((item) => item.monthly),
               displayCurrency,
               usable,
             )}
-            primaryClassName="text-amount-xl"
+            primaryClassName="text-amount-fit"
           />
         </SummaryCard>
         <SummaryCard icon="calendar" label={t("yearlyTotal")}>
           <MoneyAmount
             variant="total"
+            fit
             value={sumIn(
               active.map((item) => item.yearly),
               displayCurrency,
               usable,
             )}
-            primaryClassName="text-amount-xl"
+            primaryClassName="text-amount-fit"
           />
         </SummaryCard>
         <SummaryCard icon="layers" label={t("active")}>
@@ -318,7 +323,7 @@ export function SubscriptionsView({
         </SummaryCard>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-headline text-ink">{t("allTitle")}</h2>
@@ -351,7 +356,7 @@ export function SubscriptionsView({
               description={t("emptyFilterDescription")}
             />
           ) : (
-            <div className="grid gap-4 min-[600px]:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 min-[600px]:grid-cols-2">
               <AnimatedList key={filter} animateOnMount={cardsEntrance}>
                 {visible.map((item) => {
                   // Cobro de hoy o vencido de esta suscripción (el más antiguo).
@@ -514,7 +519,11 @@ export function SubscriptionsView({
                 (group) =>
                   group.items.length > 0 && (
                     <div key={group.state}>
-                      <p role="heading" aria-level={3} className="text-caption text-ink-2 mb-1 uppercase">
+                      <p
+                        role="heading"
+                        aria-level={3}
+                        className="text-caption text-ink-2 mb-1 uppercase"
+                      >
                         {group.state === "overdue"
                           ? t("groupOverdue", { count: group.items.length })
                           : t(group.labelKey)}

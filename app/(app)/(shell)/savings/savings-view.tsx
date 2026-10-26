@@ -101,17 +101,19 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
         <SummaryCard icon="sack-dollar" label={t("totalSaved")}>
           <MoneyAmount
             variant="total"
+            fit
             value={saved.total}
-            primaryClassName="text-amount-xl"
+            primaryClassName="text-amount-fit"
             secondaryClassName="text-body text-ink-2"
           />
         </SummaryCard>
         <SummaryCard icon="calendar" label={t("monthlyContributions")}>
           <MoneyAmount
             variant="total"
+            fit
             value={monthly.total}
             suffix={t("perMonth")}
-            primaryClassName="text-amount-xl"
+            primaryClassName="text-amount-fit"
             secondaryClassName="text-body text-ink-2"
           />
         </SummaryCard>
@@ -125,7 +127,7 @@ export function SavingsView({ goals, today }: { goals: GoalSummary[]; today: str
         </SummaryCard>
       </div>
 
-      <div className="grid gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 min-[600px]:grid-cols-2 xl:grid-cols-3">
         {goals.map((goal) => (
           <GoalCard key={goal.id} goal={goal} today={today} />
         ))}

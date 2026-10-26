@@ -77,6 +77,13 @@ type Props = {
    * el desglose del sheet ("Convertido con tasas del día").
    */
   breakdown?: readonly Money[];
+  /**
+   * variant="total" en tarjetas angostas (de a dos en el teléfono): el monto
+   * ocupa el ancho de la tarjeta y es contenedor de sus utilidades fluidas
+   * (text-amount-fit / text-amount-l-fit, en cqi). El número nunca se parte,
+   * pero "COP" y el sufijo bajan de línea antes que salirse de la tarjeta.
+   */
+  fit?: boolean;
 };
 
 export function MoneyAmount({
@@ -94,6 +101,7 @@ export function MoneyAmount({
   suffixClassName,
   ticker,
   breakdown,
+  fit,
 }: Props) {
   const { rates, status, now, displayCurrency } = useRate();
   const t = useTranslations("money");
@@ -128,6 +136,45 @@ export function MoneyAmount({
           {main}
         </motion.span>
       );
+    if (fit) {
+      // Signo y número juntos (nunca se parten). Entre el número y "COP" (o
+      // el sufijo) va un espacio normal, no el no separable de abajo, para
+      // que la unidad pueda bajar de línea antes que salirse de la tarjeta.
+      return (
+        <span
+          className={cn(
+            "tabular-nums",
+            positive ? "text-positive-text" : "text-ink",
+            primaryClassName,
+            extra,
+          )}
+        >
+          <span className="whitespace-nowrap">
+            {sign}
+            {number}
+          </span>
+          {unit && (
+            <>
+              {" "}
+              <span
+                className={cn(
+                  "text-callout text-ink-3 font-normal whitespace-nowrap",
+                  unitClassName,
+                )}
+              >
+                {unit}
+              </span>
+            </>
+          )}
+          {suffix && (
+            <>
+              {" "}
+              <span className={cn("whitespace-nowrap", suffixClassName)}>{suffix}</span>
+            </>
+          )}
+        </span>
+      );
+    }
     return (
       <span
         className={cn(
@@ -153,7 +200,13 @@ export function MoneyAmount({
   if (variant === "total") {
     const foreign = (breakdown ?? []).filter((m) => m.currency !== value.currency);
     return (
-      <span className={cn("inline-flex flex-col", className)}>
+      <span
+        className={cn(
+          // Con fit, bloque a todo el ancho y contenedor (cqi) del monto fluido.
+          fit ? "@container flex w-full min-w-0 flex-col" : "inline-flex flex-col",
+          className,
+        )}
+      >
         {primary(value, undefined, ticker)}
         {foreign.length > 0 && (
           <>

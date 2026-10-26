@@ -27,7 +27,11 @@ export default function CalendarPage({ searchParams }: { searchParams: SearchPar
 
 function CalendarSkeleton() {
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]" role="status" aria-busy="true">
+    <div
+      className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
+      role="status"
+      aria-busy="true"
+    >
       <Card className="h-[640px]">
         <Skeleton className="h-8 w-40 rounded-full" />
       </Card>

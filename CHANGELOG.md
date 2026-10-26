@@ -2,6 +2,17 @@
 
 Todos los cambios relevantes de Ember Cash. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versiones según [SemVer](https://semver.org/lang/es/).
 
+## [0.35.3] - 2026-10-26
+
+### Scroll horizontal en el teléfono
+
+- Causa: en el teléfono, las grillas de una sola columna (Panel, Ahorros, Deudas, Suscripciones, Calendario, Hogar y /accounts) usaban `grid` sin columnas explícitas. La columna implícita es `auto` y se estiraba al ancho de lo que no se puede partir (montos, badges), así que la página quedaba más ancha que la pantalla: el contenido se corría de lado bajo la topbar sticky y las filas de Cuentas, Próximos 7 días y Deudas se cortaban. Ahora llevan `grid-cols-1` (`minmax(0, 1fr)`), y las líneas largas ("12.859.013 COP de 130.315.761 COP · Mínimos ...") vuelven a hacer wrap.
+- Montos de las tarjetas que van de a dos (Ingresos y Gastos del Panel; resúmenes de Ahorros, Suscripciones y Deudas): tamaño fluido según el ancho de la tarjeta (`MoneyAmount fit`, utilidades `text-amount-fit` y `text-amount-l-fit` en `globals.css`). El número nunca se parte; "COP" baja de línea antes que salirse. Con espacio de sobra llegan al tamaño de siempre (Amount XL o L).
+- El distintivo "vs mes anterior" puede partirse en dos líneas en vez de salirse de su tarjeta.
+- Deudas: los montos de cada deuda y "pagado de original" hacen wrap en columnas angostas; el `<dl>` de escritorio usa `minmax(0, ...)`.
+- Calendario en el teléfono: el círculo del día se achica al ancho de la celda (en 360 px no cabían 44 px) en vez de pisar la celda vecina.
+- Red de seguridad: `overflow-x-clip` en el `<main>` del shell (clip y no hidden, para no romper el sticky).
+
 ## [0.35.2] - 2026-10-26
 
 ### Transferencias vistas desde la cuenta filtrada

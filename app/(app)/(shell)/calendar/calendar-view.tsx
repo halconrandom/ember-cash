@@ -168,7 +168,10 @@ export function CalendarView({
   });
 
   return (
-    <div id="help-see-calendar" className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div
+      id="help-see-calendar"
+      className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"
+    >
       <Card className="p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -242,7 +245,10 @@ export function CalendarView({
                   onClick={() => pickDay(cell.date)}
                   className={cn(
                     "text-footnote mb-1 tabular-nums",
-                    "max-[599px]:mx-auto max-[599px]:mb-0.5 max-[599px]:grid max-[599px]:size-11 max-[599px]:place-items-center max-[599px]:rounded-full",
+                    // Teléfono: círculo de 44 px si cabe; en 360 px la celda
+                    // mide menos, y el círculo se achica a su ancho (cuadrado)
+                    // en vez de pisar la celda vecina.
+                    "max-[599px]:mx-auto max-[599px]:mb-0.5 max-[599px]:grid max-[599px]:aspect-square max-[599px]:w-full max-[599px]:max-w-11 max-[599px]:place-items-center max-[599px]:rounded-full",
                     cell.inMonth ? "text-ink" : "text-ink-3",
                     isToday && "font-semibold",
                     isToday && "max-[599px]:bg-ember-fill max-[599px]:text-white",

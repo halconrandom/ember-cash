@@ -51,7 +51,9 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
   const value: Money =
     card === "balance" ? current.balance : card === "income" ? current.income : current.expenses;
   const breakdownRows = rows.filter(
-    (r) => r.month === month && (card === "balance" || r.kind === (card === "income" ? "income" : "expense")),
+    (r) =>
+      r.month === month &&
+      (card === "balance" || r.kind === (card === "income" ? "income" : "expense")),
   );
   const before: Money =
     card === "balance" ? previous.balance : card === "income" ? previous.income : previous.expenses;
@@ -84,7 +86,8 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
             ticker={first}
             value={value}
             breakdown={originBreakdown(breakdownRows)}
-            primaryClassName="text-amount-xl text-white"
+            fit
+            primaryClassName="text-amount-fit text-white"
             unitClassName="text-white"
             secondaryClassName="text-body text-white"
           />
@@ -112,7 +115,8 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
         ticker={first}
         value={value}
         breakdown={originBreakdown(breakdownRows)}
-        primaryClassName="text-amount-xl"
+        fit
+        primaryClassName="text-amount-fit"
         secondaryClassName="text-body text-ink-2"
       />
       {current.count === 0 ? (
@@ -124,7 +128,11 @@ export function StatCard({ rows, month, previousMonth, card }: Props) {
   );
 }
 
-/** "↑ +4,2 % vs sep" con el color de bueno o malo; "Sin datos de sep" si no hay base. */
+/**
+ * "↑ +4,2 % vs sep" con el color de bueno o malo; "Sin datos de sep" si no hay base.
+ * En una tarjeta de media pantalla el texto puede partirse en dos líneas
+ * (sin nowrap ni alto fijo) antes que salirse de la tarjeta.
+ */
 function ChangeChip({
   change,
   good,
@@ -150,7 +158,7 @@ function ChangeChip({
   return (
     <span
       className={cn(
-        "text-callout inline-flex h-7 items-center gap-1 rounded-full px-3 font-semibold whitespace-nowrap tabular-nums",
+        "text-callout inline-flex min-h-7 max-w-full items-center gap-1 rounded-full px-3 py-1 font-semibold tabular-nums",
         hero
           ? "bg-hero-chip text-white"
           : good === null

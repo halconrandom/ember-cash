@@ -28,7 +28,7 @@ export function AccountsView({ accounts }: { accounts: AccountStatement[] }) {
   }
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 min-[900px]:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 min-[900px]:grid-cols-2">
         {active.map((a) => (
           <AccountCard key={a.id} account={a} />
         ))}
@@ -38,7 +38,7 @@ export function AccountsView({ accounts }: { accounts: AccountStatement[] }) {
           <summary className="text-headline text-ink cursor-pointer list-none">
             {t("archivedSection")} ({archived.length})
           </summary>
-          <div className="mt-4 grid gap-6 min-[900px]:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-6 min-[900px]:grid-cols-2">
             {archived.map((a) => (
               <AccountCard key={a.id} account={a} />
             ))}
